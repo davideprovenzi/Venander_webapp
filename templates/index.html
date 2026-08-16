@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venander</title>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <link rel="stylesheet" href="/static/style.css">
+    
+</head>
+
+<body>
+
+    <h1>Venander</h1>
+
+    <!-- ==========================================
+         LOGIN BAR
+         ========================================== -->
+
+    <div id="login-bar">
+        <label for="user-select">Chi sei?</label>
+        <select id="user-select">
+            <option value="0">-- Seleziona --</option>
+            <option value="master" data-role="master">👑 MASTER</option>
+            
+            {% for char in characters %}
+                <!-- Mostra nel menu solo se il ruolo è 'player' -->
+                {% if char.role == 'player' %}
+                    <option value="{{ char.id }}" data-role="{{ char.role }}">{{ char.name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        
+        <button id="rename-btn" style="display:none; margin-left: 10px; padding: 4px 8px; cursor: pointer;">✏️ Rinomina</button>
+        <button id="center-cam-btn" style="display:none; margin-left: 10px; padding: 4px 8px; cursor: pointer; background: #3498db; 
+                color: white; border: 1px solid #2980b9; border-radius: 3px; font-weight: bold;">🎯 Centra Visuale</button>
+        </div>
+
+    <!-- ==========================================
+         TRACKER INIZIATIVA (COMBATTIMENTO)
+         ========================================== -->
+    <!-- ==========================================
+         TRACKER INIZIATIVA (COMBATTIMENTO)
+         ========================================== -->
+    <!-- Finestra Ordine di Turno (Volante e Trascinabile) -->
+    <div id="combat-tracker" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 1000; width: 250px; background: rgba(255, 255, 255, 0.95); border: 2px solid #2c3e50; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden;">
+        
+        <!-- Barra per trascinare la finestra -->
+        <div id="tracker-header" style="background: #2c3e50; color: white; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; cursor: grab; user-select: none;">
+            ⚔️ Ordine di Turno 🖐️
+        </div>
+        
+        <!-- Qui dentro il JS inietterà la lista dei giocatori -->
+        <div id="turn-order-list" style="padding: 10px; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;"></div>
+        
+        <!-- Pulsante per terminare il turno (visibile al master e al giocatore di turno) -->
+        <button id="btn-next-turn"  style="display: none; margin: 10px; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            ⏭️ Termina Turno
+        </button>
+    </div>
+
+    <!-- ==========================================
+         GAME
+         ========================================== -->
+
+    <div id="game-container" style="position: relative; display: inline-block;">
+        <canvas id="boardCanvas" width="800" height="600"></canvas>
+        
+        <!-- Testo Promemoria Comandi Fluttuante -->
+        <div style="position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.7); font-size: 13px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0px 0px 5px #000;">
+            💡 Comandi: [Rotellina] = Zoom | [Tieni premuto Click Sin. e Trascina] = Sposta Mappa | [Click Destro] = Ping | [SHIFT + Click Sin.] = Laser
+        </div>
+    </div>
+
+    <div id="status-bar">
+        In attesa di connessione...
+    </div>
+
+   <!-- ==========================================
+         PANNELLO MASTER
+         ========================================== -->
+
+    <div id="master-panel" style="max-height: 90vh; overflow-y: auto;">
+
+        <h3 style="margin-top: 0; color: #c0392b; border-bottom: 1px solid #c0392b; padding-bottom: 5px;">👑 Pannello Master</h3>
+
+        <!-- 1. SPAWN NPC (Chiuso di default) -->
+        <div style="margin-top: 10px; border: 1px solid #c0392b; padding: 5px; border-radius: 5px; background: #fff;">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #c0392b; background: #fadbd8;">
+                Spawna Entità <span style="font-size:12px;">▶</span>
+            </h4>
+            <div class="collapsible-content" style="display: none; padding-top: 10px;">
+                <input type="text" id="npc-name" placeholder="Nome (es. Goblin)" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <input type="number" id="npc-hp" placeholder="HP (es. 30)" style="width: 48%; padding: 5px;" value="30">
+                    <input type="color" id="npc-color" value="#8e44ad" style="width: 48%; height: 32px; cursor: pointer;">
+                </div>
+                
+                <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 5px; background: #f9f9f9; padding: 5px; border-radius: 3px; border: 1px dashed #ccc;">
+                    <input type="checkbox" id="npc-hidden" checked>
+                    <label for="npc-hidden" style="font-size: 12px; font-weight: bold; color: #555; cursor: pointer;">Spawna Nascosto (Fog of War)</label>
+                </div>
+                
+                <button id="spawn-npc-btn" style="width: 100%; padding: 8px; background: #c0392b; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">
+                    📍 Posiziona sulla Mappa
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. GESTIONE MAPPA (Chiuso di default) -->
+        <div style="margin-top: 10px; border: 1px solid #3498db; padding: 5px; border-radius: 5px; background: #fff;">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #2980b9; background: #d6eaf8;">
+                🗺️ Sfondo Mappa (Locale) <span style="font-size:12px;">▶</span>
+            </h4>
+            <div class="collapsible-content" style="display: none; padding-top: 10px;">
+                <input type="file" id="map-file-input" accept="image/*" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box;">
+                
+                <div style="display: flex; gap: 5px; margin-bottom: 5px; background: #f4f6f7; padding: 5px; border-radius: 4px; border: 1px solid #ccc;">
+                    <div style="flex: 1; text-align: center;">
+                        <label style="font-size: 10px; font-weight: bold;">Scala (es. 1.5)</label>
+                        <input type="number" id="map-scale" step="0.1" value="1.0" style="width: 100%; padding: 3px; box-sizing: border-box; text-align: center;">
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <label style="font-size: 10px; font-weight: bold;">Sposta X</label>
+                        <input type="number" id="map-dx" value="0" style="width: 100%; padding: 3px; box-sizing: border-box; text-align: center;">
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <label style="font-size: 10px; font-weight: bold;">Sposta Y</label>
+                        <input type="number" id="map-dy" value="0" style="width: 100%; padding: 3px; box-sizing: border-box; text-align: center;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 5px;">
+                    <button id="set-map-btn" style="flex: 1; padding: 8px; background: #2980b9; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Salva e Applica</button>
+                    <button id="clear-map-btn" style="flex: 1; padding: 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Rimuovi</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. STRUMENTI DISEGNO (Chiuso di default) -->
+        <div style="margin-top: 10px; border: 1px solid #27ae60; padding: 5px; border-radius: 5px; background: #fff;">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #27ae60; background: #d5f5e3;">
+                🖌️ Disegno & Sticker <span style="font-size:12px;">▶</span>
+            </h4>
+            <div class="collapsible-content" style="display: none; padding-top: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+                    <button id="toggle-draw-btn" style="padding: 5px; background: #eee; border: 1px solid #ccc; cursor: pointer; border-radius: 3px; font-size: 12px;">Disegno OFF</button>
+                    <button id="eraser-btn" style="padding: 5px; background: #eee; border: 1px solid #ccc; cursor: pointer; border-radius: 3px; font-size: 12px;">Gomma OFF</button>
+                    <button id="delete-selected-draw-btn" style="padding: 5px; background: #f39c12; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 12px;">🗑️ Elimina Sel.</button>
+                    <button id="clear-draw-btn" style="padding: 5px; background: #e74c3c; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">Pulisci Tutto</button>
+                </div>
+                
+                <select id="draw-tool-select" style="width: 100%; padding: 5px; margin-bottom: 10px; border-radius: 3px;">
+                    <option value="select">🖐️ Seleziona e Sposta</option>
+                    <option value="rectangle">🔲 Rettangolo Libero</option>
+                    <option value="line">✏️ Tratto Libero</option>
+                    <option value="circle">⭕ Cerchio</option>
+                    <option value="square">🟩 Quadrato (Dal Centro)</option>
+                    <option value="triangle">🔺 Triangolo</option>
+                    <option value="icon">🌲 Sticker / Icona PNG</option>
+                </select>
+                
+                <div id="icon-upload-section" style="display: none; margin-bottom: 10px; padding: 5px; background: #f9f9f9; border: 1px dashed #ccc; border-radius: 3px;">
+                    <label style="font-size: 11px; font-weight: bold;">Carica Icona dal PC:</label>
+                    <input type="file" id="icon-file-input" accept="image/png, image/jpeg, image/webp" style="width: 100%; font-size: 11px; margin-top: 3px;">
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <div style="width: 48%;">
+                        <label style="font-size: 12px;">Colore</label>
+                        <input type="color" id="draw-color" value="#000000" style="width: 100%; height: 25px; cursor: pointer;">
+                    </div>
+                    <div style="width: 48%;">
+                        <label style="font-size: 12px;">Dimensione</label>
+                        <input type="number" id="draw-width" value="3" min="1" max="100" style="width: 100%; padding: 3px; box-sizing: border-box;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. ENTITÀ SELEZIONATA (Aperto di default) -->
+        <div id="selected-entity-panel" style="margin-top: 10px; opacity: 0.5; pointer-events: none; background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #ccc; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #333; background: #ecf0f1;">
+                🎯 Entità Selezionata <span style="font-size:12px;">▼</span>
+            </h4>
+            <div class="collapsible-content" style="padding-top: 10px; display: block;">
+                <p id="sel-name" style="margin: 0 0 10px 0; font-weight: bold; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px;">Nessuna selezione</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; background: #fdf2e9; padding: 5px; border-radius: 4px;">
+                        <span style="font-size: 12px; font-weight: bold; color: #d35400;">HP: <span id="sel-hp">--</span></span>
+                        <div style="display: flex; gap: 2px; margin-top: 5px;">
+                            <button class="vital-btn" data-type="hp" data-val="-1" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">-</button>
+                            <button class="vital-btn" data-type="hp" data-val="1" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer;">+</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; background: #fef9e7; padding: 5px; border-radius: 4px;">
+                        <span style="font-size: 12px; font-weight: bold; color: #f39c12;">STM: <span id="sel-stam">--</span></span>
+                        <div style="display: flex; gap: 2px; margin-top: 5px;">
+                            <button class="vital-btn" data-type="stamina" data-val="-5" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">-</button>
+                            <button class="vital-btn" data-type="stamina" data-val="5" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer;">+</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; background: #ebf5fb; padding: 5px; border-radius: 4px;">
+                        <span style="font-size: 12px; font-weight: bold; color: #2980b9;">CONC: <span id="sel-conc">--</span></span>
+                        <div style="display: flex; gap: 2px; margin-top: 5px;">
+                            <button class="vital-btn" data-type="conc" data-val="-5" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">-</button>
+                            <button class="vital-btn" data-type="conc" data-val="5" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer;">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px; text-align: center;">
+                    <label style="font-size: 12px; font-weight: bold; color: #333;">Stato Personaggio:</label>
+                    <select id="sel-status" style="width: 100%; padding: 4px; margin-top: 4px; font-size: 12px; border-radius: 3px;">
+                        <option value="Perfetta forma">Perfetta forma</option>
+                        <option value="Affaticato">Affaticato</option>
+                        <option value="Stanco">Stanco</option>
+                        <option value="Esausto">Esausto</option>
+                        <option value="Ferito">Ferito</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button id="btn-toggle-visibility" style="flex: 1; min-width: 45%; padding: 8px; background: #95a5a6; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">👁️ Nascondi (FoW)</button>
+                    <button id="btn-toggle-invisible" style="flex: 1; min-width: 45%; padding: 8px; background: #8e44ad; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">👻 Invisibile</button>
+                    <button id="btn-view-sheet" style="flex: 1; min-width: 45%; padding: 8px; background: #3498db; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">📋 Scheda</button>
+                    <button id="btn-edit-sheet" style="flex: 1; min-width: 45%; padding: 8px; background: #e67e22; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">✏️ Modifica</button>
+                    <button id="btn-delete-entity" style="flex: 1; min-width: 100%; padding: 8px; background: #333; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">🗑️ Elimina</button>
+                </div>
+            </div>
+        </div>
+        
+        <button id="btn-toggle-combat" style="width: 100%; margin-top: 15px; padding: 10px; background: #c0392b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            ⚔️ INIZIA COMBATTIMENTO
+        </button>
+
+    </div>
+
+    <!-- ==========================================
+         PULSANTE SCHEDA
+         ========================================== -->
+
+    <div id="sheet-btn">📜</div>
+
+    <!-- ==========================================
+         MODAL SCHEDA GIOCATORE
+         ========================================== -->
+
+    <div id="sheet-modal" class="modal-overlay">
+
+        <div class="sheet-content">
+
+            <span class="close-btn" id="close-modal">&times;</span>
+
+            <div class="sheet-header">
+                <div class="sheet-photo" id="ui-photo"></div>
+                <div style="width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 id="ui-name" style="margin: 0;">Nome</h2>
+                        <button id="btn-edit-profile" style="display: none; padding: 4px 10px; font-size: 12px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 4px; font-weight: bold;">✏️ Modifica Profilo</button>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #eee;">
+                        <p style="margin: 0; font-size: 14px; font-weight: bold; line-height: 1.6;">
+                            ❤️ HP: <span id="ui-hp-current">0</span> / <span id="ui-hp-max">0</span> &nbsp;|&nbsp; 
+                            ⚡ STM: <span id="ui-stamina-current">0</span> / <span id="ui-stamina-max">0</span> &nbsp;|&nbsp; 
+                            🧠 CONC: <span id="ui-conc-current">0</span> / <span id="ui-conc-max">0</span><br>
+                            🎭 STATO: <span id="ui-status" style="color: #e67e22;">Perfetta forma</span> &nbsp;|&nbsp; 
+                            <span style="color: #8e44ad;">XP: <span id="ui-xp">0</span></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sheet-grid">
+                <!-- Sezione Lore (Occupa entrambe le colonne) -->
+                <div class="sheet-section" style="grid-column: span 2;">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">📖 Lore & Background <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        <p id="ui-lore" style="margin: 0; font-size: 14px; color: #555; white-space: pre-wrap; font-style: italic;"></p>
+                    </div>
+                </div>
+
+                <!-- Sezioni Standard a tendina -->
+                <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">Statistiche <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;"><ul id="ui-stats" style="list-style-type: none; padding: 0; margin: 0; font-size: 14px;"></ul></div>
+                </div>
+
+                <!-- Sezione Bonus & Malus -->
+                <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">Bonus & Malus <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        
+                        <!-- Bonus Permanenti Auto-Generati -->
+                        <h4 style="margin: 0 0 5px 0; color: #2980b9; font-size: 13px;">Permanenti (da Abilità)</h4>
+                        <ul id="ui-bonuses-perm" style="list-style-type: none; padding: 0; margin: 0 0 15px 0; font-size: 13px; color: #555;"></ul>
+                        
+                        <!-- Bonus Temporanei Gestibili -->
+                        <h4 style="margin: 0 0 5px 0; color: #e67e22; font-size: 13px;">Temporanei / Attivi</h4>
+                        <ul id="ui-bonuses-temp" style="list-style-type: none; padding: 0; margin: 0; font-size: 14px; display: flex; flex-direction: column; gap: 8px;"></ul>
+                        
+                        <button id="btn-show-add-bonus" style="display: none; width: 100%; margin-top: 10px; padding: 6px; background: #e67e22; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">+ Aggiungi Effetto</button>
+                        
+                        <div id="add-bonus-form" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
+                            
+                            <label style="font-size: 12px; font-weight: bold; color: #555;">Nome Effetto:</label>
+                            <input type="text" id="new-bonus-name" placeholder="Es. Veleno / Rigenerazione" style="width: 100%; padding: 5px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box;">
+                            
+                            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; font-weight: bold; color: #555;">N. Turni:</label>
+                                    <input type="number" id="new-bonus-turns" value="1" min="1" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; font-weight: bold; color: #555;">HP / Turno:</label>
+                                    <input type="number" id="new-bonus-hp" placeholder="Es. -5 o 5" value="0" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box;">
+                                </div>
+                            </div>
+                            
+                            <label style="font-size: 12px; font-weight: bold; color: #555;">Descrizione:</label>
+                            <textarea id="new-bonus-desc" placeholder="Cosa fa questo effetto?..." style="width: 100%; height: 50px; margin-bottom: 8px; padding: 5px; box-sizing: border-box; resize: vertical; border: 1px solid #ccc; border-radius: 3px;"></textarea>
+                            
+                            <button id="btn-confirm-add-bonus" style="width: 100%; padding: 8px; background: #d35400; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Attiva Effetto</button>
+                        </div>
+                    </div>
+                </div>
+
+               <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">Armi <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        <!-- Lista Armi -->
+                        <ul id="ui-weapons" style="list-style-type: none; padding: 0; margin: 0; font-size: 14px; display: flex; flex-direction: column; gap: 8px;"></ul>
+                        
+                        <!-- Bottone e Form -->
+                        <button id="btn-show-add-weapon" style="display: none; width: 100%; margin-top: 10px; padding: 6px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">+ Aggiungi Arma</button>
+                        
+                        <div id="add-weapon-form" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
+                            <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                                <input type="text" id="new-weapon-name" placeholder="Nome Arma" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box;">
+                            </div>
+                            <textarea id="new-weapon-desc" placeholder="Danni, gittata, particolarità..." style="width: 100%; height: 50px; margin-bottom: 5px; padding: 5px; box-sizing: border-box; resize: vertical; border: 1px solid #ccc; border-radius: 3px;"></textarea>
+                            <button id="btn-confirm-add-weapon" style="width: 100%; padding: 8px; background: #c0392b; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Salva nelle Armi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">Abilità <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;"><ul id="ui-skills" style="padding-left: 20px; margin: 0; font-size: 14px;"></ul></div>
+                </div>
+
+                <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">Zaino <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        <!-- Qui apparirà la lista degli oggetti -->
+                        <ul id="ui-backpack" style="list-style-type: none; padding: 0; margin: 0; font-size: 14px; display: flex; flex-direction: column; gap: 8px;"></ul>
+                        
+                        <!-- Bottone e Form per aggiungere nuovi oggetti -->
+                        <button id="btn-show-add-item" style="display: none; width: 100%; margin-top: 10px; padding: 6px; background: #3498db; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">+ Aggiungi Oggetto</button>
+                        
+                        <div id="add-item-form" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc;">
+                            <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                                <input type="text" id="new-item-name" placeholder="Nome Oggetto" style="flex: 2; padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+                                <input type="number" id="new-item-qty" placeholder="Qtà" value="1" min="1" style="flex: 1; padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+                            </div>
+                            <textarea id="new-item-desc" placeholder="Descrizione dell'oggetto..." style="width: 100%; height: 50px; margin-bottom: 5px; padding: 5px; box-sizing: border-box; resize: vertical; border: 1px solid #ccc; border-radius: 3px;"></textarea>
+                            <button id="btn-confirm-add-item" style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">Salva nello Zaino</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sezione Negozio -->
+                <div class="sheet-section" style="grid-column: span 2; border: 2px dashed #8e44ad; background-color: #fdfae3; padding: 15px;">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)" style="color: #8e44ad; background: #f4ecf7;">🛒 Negozio Abilità & Armi <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        <!-- MENU TAB SHOP PRINCIPALE -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+                            <button class="shop-tab-btn" data-tab="Statistiche" style="flex:1; padding:8px; cursor:pointer; font-weight:bold; border:1px solid #8e44ad; border-radius:4px;">Statistiche</button>
+                            <button class="shop-tab-btn" data-tab="Armi" style="flex:1; padding:8px; cursor:pointer; font-weight:bold; border:1px solid #8e44ad; border-radius:4px;">Armi</button>
+                            <button class="shop-tab-btn" data-tab="Personalizzati" style="flex:1; padding:8px; cursor:pointer; font-weight:bold; border:1px solid #8e44ad; border-radius:4px;">Personalizzati</button>
+                        </div>
+
+                        <!-- SOTTO-MENU STATISTICHE -->
+                        <div id="stats-subtabs-container" style="display: none; flex-wrap: wrap; gap: 5px; margin-bottom: 15px;"></div>
+
+                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Acquistabili</h4>
+                        <ul id="ui-shop-available" style="list-style-type: none; padding: 0; margin: 0 0 20px 0; display: flex; flex-wrap: wrap; gap: 15px;"></ul>
+
+                        <h4 style="margin: 0 0 10px 0; color: #7f8c8d;">Acquistate</h4>
+                        <ul id="ui-shop-purchased" style="list-style-type: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px;"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL EDIT SCHEDA MASTER
+         ========================================== -->
+
+    <div id="edit-sheet-modal" class="modal-overlay">
+
+        <div class="sheet-content">
+
+            <span class="close-btn" id="close-edit-modal">&times;</span>
+
+            <h2 style="margin-top: 0; color: #c0392b;">Modifica Scheda: <span id="edit-char-name"></span></h2>
+
+
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Scrivi un elemento per riga. Statistiche: usa il formato <strong>Nome: Valore</strong>.</p>
+
+            <div class="sheet-grid">
+                <div class="sheet-section">
+                    <h3>Statistiche</h3>
+                    <textarea id="edit-stats" style="width: 100%; height: 100px; box-sizing: border-box; resize: vertical; padding: 5px;"></textarea>
+                </div>
+                <div class="sheet-section">
+                    <h3>Armi</h3>
+                    <textarea id="edit-weapons" style="width: 100%; height: 100px; box-sizing: border-box; resize: vertical; padding: 5px;"></textarea>
+                </div>
+                <div class="sheet-section">
+                    <h3>Abilità</h3>
+                    <textarea id="edit-skills" style="width: 100%; height: 100px; box-sizing: border-box; resize: vertical; padding: 5px;"></textarea>
+                </div>
+
+
+                <!-- COMPENDIO MASTER -->
+                <div class="sheet-section" style="grid-column: span 2; background: #fdfae3; border: 1px solid #c0392b;">
+                    <h3 style="color: #c0392b; margin-top: 0;">📚 Gestione Negozio da Compendio</h3>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <select id="compendio-category" style="padding: 5px; flex: 1;">
+                            <option value="">-- Seleziona Scuola/Attributo --</option>
+                        </select>
+                    </div>
+                    <div id="compendio-list" style="max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
+                        <em style="color: #777; font-size: 13px; text-align: center; padding: 10px;">Seleziona una categoria sopra per vedere le abilità disponibili.</em>
+                    </div>
+                </div>
+            </div>
+
+            <button id="save-sheet-btn" style="width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 15px; border-radius: 5px;">
+                💾 Salva Modifiche
+            </button>
+
+        </div>
+    </div>
+
+   <!-- ==========================================
+         CHAT E DADI
+         ========================================== -->
+
+    <div id="dice-panel" style="position: fixed; right: 20px; top: 20px; width: 300px; background: white; border: 2px solid #ccc; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 40;">
+        
+        <!-- Intestazione Cliccabile -->
+        <h3 id="dice-panel-header" style="margin: 0; padding: 12px; background: #34495e; color: white; border-radius: 6px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+            <span>🎲 Lancio Dadi <span id="dice-toggle-icon" style="font-size:12px; margin-left:5px;">▶</span></span>
+            <span id="chat-status" style="font-size: 11px; color: #1abc9c;">Pubblico</span>
+        </h3>
+
+        <!-- Contenitore nascosto di default -->
+        <div id="dice-panel-content" style="display: none; flex-direction: column; height: 75vh;">
+            <div id="chat-log" style="flex: 1; overflow-y: auto; padding: 12px; font-size: 14px; background: #fafafa; display: flex; flex-direction: column; gap: 8px;">
+                <div style="text-align: center; color: #95a5a6; font-size: 12px; margin-top: 10px;">Inizio sessione</div>
+            </div>
+
+            <div style="padding: 12px; border-top: 1px solid #ccc; background: #eee; border-radius: 0 0 6px 6px;">
+                <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                    <button class="dice-btn" data-dice="1d20" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d20</button>
+                    <button class="dice-btn" data-dice="1d10" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d10</button>
+                    <button class="dice-btn" data-dice="1d6" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d6</button>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="custom-dice" placeholder="Es. 2d8, 3d12" style="flex: 1; padding: 6px; border: 1px solid #bdc3c7; border-radius: 4px; outline: none;">
+                    <button id="btn-custom-dice" style="padding: 6px 12px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Tira</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SETUP PERSONAGGIO
+         ========================================== -->
+
+    <div id="character-setup">
+        <div id="character-setup-content">
+            <h2>🎭 Benvenuto in Venander</h2>
+            <p>Inserisci il nome del tuo personaggio per iniziare la partita.</p>
+            <input type="text" id="character-name-input" placeholder="Nome del personaggio" maxlength="100">
+            <button id="character-setup-btn">Inizia a giocare</button>
+        </div>
+    </div>
+    <!-- MODAL EDIT PROFILO (AVATAR E LORE) -->
+    <div id="profile-edit-modal" class="modal-overlay">
+        <div class="sheet-content" style="max-width: 400px;">
+            <span class="close-btn" id="close-profile-modal">&times;</span>
+            <h2 style="margin-top: 0; color: #2980b9;">👤 Modifica Profilo</h2>
+            
+            <label style="font-weight: bold; font-size: 13px;">Carica Immagine Avatar (Dal tuo PC):</label>
+            <input type="file" id="profile-photo-file" accept="image/*" style="width: 100%; margin-bottom: 15px; margin-top: 5px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            
+            <label style="font-weight: bold; font-size: 13px;">Lore / Background:</label>
+            <textarea id="profile-lore" style="width: 100%; height: 120px; padding: 5px; resize: vertical; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Scrivi la storia del tuo personaggio..."></textarea>
+            
+            <button id="save-profile-btn" style="width: 100%; padding: 10px; background: #27ae60; color: white; border: none; font-weight: bold; margin-top: 15px; border-radius: 5px; cursor: pointer; font-size: 15px;">💾 Salva Profilo</button>
+        </div>
+    </div>
+
+    <!-- POP-UP SCELTA MOVIMENTO -->
+    <div id="move-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border:3px solid #2980b9; border-radius:8px; z-index:2000; text-align:center; box-shadow: 0 0 20px rgba(0,0,0,0.6);">
+        <h3 style="margin-top:0; color:#2c3e50;">Spostamento Tattico</h3>
+        <p id="move-modal-text" style="font-size:15px; font-weight:bold; margin-bottom:15px;"></p>
+        
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="move-btn" data-cost="0" data-name="Marcia" style="padding:10px; background:#34495e; color:white; border:none; border-radius:5px; cursor:pointer;">Marcia (0 PA)</button>
+            <button class="move-btn" data-cost="2" data-name="Camminata" style="padding:10px; background:#2980b9; color:white; border:none; border-radius:5px; cursor:pointer;">Camminata (2 PA ogni 5m)</button>
+            <button class="move-btn" data-cost="5" data-name="Corsa" style="padding:10px; background:#27ae60; color:white; border:none; border-radius:5px; cursor:pointer;">Corsa (5 PA ogni 5m)</button>
+            <button class="move-btn" data-cost="5" data-name="Furtivo" style="padding:10px; background:#8e44ad; color:white; border:none; border-radius:5px; cursor:pointer;">Passo Furtivo (5 PA ogni 5m)</button>
+            <button class="move-btn" data-cost="10" data-name="Salto" style="padding:10px; background:#d35400; color:white; border:none; border-radius:5px; cursor:pointer;">Salto (10 PA ogni 5m)</button>
+            <button class="move-btn" data-cost="8" data-name="Trascinarsi" style="padding:10px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">Trascinarsi (8 PA ogni 5m)</button>
+        </div>
+        
+        <button onclick="document.getElementById('move-modal').style.display='none'; window.pendingMove = null; render();" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer;">Annulla Azione</button>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT
+         ========================================== -->
+    <script src="/static/utils.js"></script>
+    <script src="/static/game.js"></script>
+    <script src="/static/renderer.js"></script>
+    <script src="/static/ui.js"></script>
+    <script src="/static/control.js"></script>
+ 
+    
+
+</body>
+</html>

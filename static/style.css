@@ -1,0 +1,374 @@
+
+body {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+}
+
+#login-bar {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 800px;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 10;
+}
+
+#login-bar select {
+    padding: 5px;
+    font-size: 16px;
+}
+
+#game-container {
+    margin-top: 10px;
+}
+
+canvas {
+    background-color: #ffffff;
+    cursor: crosshair;
+    border: 2px solid #000000;
+    display: block;
+}
+
+#status-bar {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    width: 800px;
+    text-align: center;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* ==========================================
+    LOGIN / PERSONAGGI
+    ========================================== */
+
+#character-setup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+#character-setup-content {
+    background: white;
+    width: 400px;
+    max-width: 90%;
+    padding: 25px;
+    border-radius: 10px;
+    border: 2px solid #34495e;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    text-align: center;
+}
+
+#character-setup-content h2 {
+    margin-top: 0;
+    color: #34495e;
+}
+
+#character-name-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    font-size: 16px;
+    margin: 15px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#character-setup-btn {
+    width: 100%;
+    padding: 10px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+#character-setup-btn:hover {
+    background: #2980b9;
+}
+
+/* ==========================================
+    PANNELLO MASTER
+    ========================================== */
+
+#master-panel {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 320px;
+    background-color: #fdfae3;
+    border: 2px solid #c0392b;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 50;
+}
+
+#master-panel h3 {
+    margin-top: 0;
+    color: #c0392b;
+    border-bottom: 1px solid #c0392b;
+    padding-bottom: 5px;
+}
+
+/* ==========================================
+    PULSANTE SCHEDA
+    ========================================== */
+
+#sheet-btn {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    background-color: #34495e;
+    color: white;
+    border-radius: 50%;
+    font-size: 30px;
+    text-align: center;
+    line-height: 70px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    border: 3px solid #fff;
+    transition: transform 0.2s;
+    z-index: 100;
+}
+
+#sheet-btn:hover {
+    transform: scale(1.1);
+}
+
+/* ==========================================
+    MODALS
+    ========================================== */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.sheet-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    width: 700px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 2px solid #000;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+.sheet-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.sheet-photo {
+    width: 80px;
+    height: 80px;
+    background-color: #ddd;
+    border-radius: 50%;
+    margin-right: 20px;
+    border: 2px solid #000;
+}
+
+.sheet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.sheet-section {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.sheet-section h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+    font-size: 16px;
+}
+
+/* ==========================================
+    ANIMAZIONE PING (LASER POINTER)
+    ========================================== */
+@keyframes ping-anim {
+    0% { transform: scale(0.1); opacity: 1; border-width: 6px; }
+    100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+}
+
+.ping-container {
+    position: absolute;
+    pointer-events: none;
+    z-index: 150;
+    transform: translate(-50%, -50%);
+}
+
+.ping-marker {
+    width: 40px;
+    height: 40px;
+    border-style: solid;
+    border-radius: 50%;
+    animation: ping-anim 1s ease-out;
+}
+
+.ping-name {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    white-space: nowrap;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Modifica vitale per far allineare i ping alla mappa */
+#game-container {
+    margin-top: 10px;
+    position: relative; 
+    display: inline-block;
+}
+
+#combat-tracker {
+    position: absolute;
+    top: 70px;         /* Abbassato per fare spazio al menu soprastante */
+    left: 10px;
+    z-index: 100;
+    width: 250px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #c0392b;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    
+    max-height: calc(100vh - 90px); 
+    overflow-y: auto;
+}
+
+/* ========================================== */
+/* TRACKER INIZIATIVA (Finestra Trascinabile) */
+/* ========================================== */
+#combat-tracker {
+    position: absolute;
+    top: 20px;
+    right: 20px; /* Posizione di partenza */
+    z-index: 1000;
+    width: 250px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #2c3e50;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Arrotonda gli angoli dell'intestazione */
+}
+
+/* La barra superiore per trascinare */
+#tracker-header {
+    background: #2c3e50;
+    color: white;
+    padding: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: grab;
+    user-select: none;
+}
+#tracker-header:active {
+    cursor: grabbing;
+}
+
+/* L'area con i personaggi */
+#tracker-list {
+    padding: 10px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Stile per il turno attivo */
+.active-turn {
+    background-color: #f1c40f !important;
+    border: 2px solid #e67e22 !important;
+    font-weight: bold;
+}
+
+/* ==========================================
+    EFFETTO TENDINA (ACCORDION)
+    ========================================== */
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ecf0f1;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-top: 0 !important;
+    transition: background 0.2s;
+}
+.collapsible-header:hover {
+    background: #d0d3d4;
+}
+.collapsible-content {
+    display: block; /* Di base aperto */
+    padding-top: 10px;
+}
+
