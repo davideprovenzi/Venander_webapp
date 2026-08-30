@@ -554,7 +554,7 @@ const dicePanelHeader = document.getElementById('dice-panel-header');
 const dicePanelContent = document.getElementById('dice-panel-content');
 const diceToggleIcon = document.getElementById('dice-toggle-icon');
 
-// Funzione per aprire/chiudere la tendina
+// --- 1. APERTURA E CHIUSURA TENDINA ---
 dicePanelHeader?.addEventListener('click', () => {
     if (dicePanelContent.style.display === 'none') {
         dicePanelContent.style.display = 'flex';
@@ -574,6 +574,7 @@ function updateChatStatus() {
     else { chatStatus.innerText = "Pubblico"; chatStatus.style.color = "#1abc9c"; }
 }
 
+// --- 2. RICEZIONE MESSAGGI E DADI DAL SERVER ---
 socket.on('dice_result', (data) => {
     const div = document.createElement('div');
     div.style.padding = '8px 10px'; div.style.borderRadius = '5px'; div.style.lineHeight = '1.4';
@@ -590,6 +591,35 @@ socket.on('dice_result', (data) => {
     }
     
     chatLog.scrollTop = chatLog.scrollHeight;
+});
+
+// --- 3. INVIO LANCIO DADI (BOTTONI E TASTIERA) ---
+document.querySelectorAll('.dice-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const diceExpr = e.target.getAttribute('data-dice');
+        const selectElem = document.getElementById('user-select');
+        const charId = selectElem ? parseInt(selectElem.value) : null;
+        
+        socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster });
+    });
+});
+
+document.getElementById('btn-custom-dice')?.addEventListener('click', () => {
+    const input = document.getElementById('custom-dice');
+    const diceExpr = input.value.trim();
+    const selectElem = document.getElementById('user-select');
+    const charId = selectElem ? parseInt(selectElem.value) : null;
+    
+    if (diceExpr) {
+        socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster });
+        input.value = ''; // Pulisce la barra dopo il lancio
+    }
+});
+
+document.getElementById('custom-dice')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        document.getElementById('btn-custom-dice').click();
+    }
 });
 // ==========================================
 // COMPENDIO SHOP (LOGICA)
