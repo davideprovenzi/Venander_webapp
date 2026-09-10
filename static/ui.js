@@ -482,6 +482,7 @@ document.getElementById('btn-view-sheet')?.addEventListener('click', () => {
 // ==========================================
 // MODIFICA SCHEDA MASTER
 // ==========================================
+// MODIFICA SCHEDA MASTER (Apertura)
 document.getElementById('btn-edit-sheet')?.addEventListener('click', () => {
     let targetId = selectedCharacterId || (parseInt(userSelect?.value) > 0 ? parseInt(userSelect?.value) : null);
     if (!targetId) { alert("Prima seleziona un personaggio!"); return; }
@@ -492,18 +493,75 @@ document.getElementById('btn-edit-sheet')?.addEventListener('click', () => {
     selectedCharacterId = char.id;
     document.getElementById('edit-char-name').innerText = char.name;
   
-    
     let statsStr = "";
     if (char.stats) for (const [key, value] of Object.entries(char.stats)) statsStr += `${key}: ${value}\n`;
-    document.getElementById('edit-stats').value = statsStr.trim();
-    document.getElementById('edit-weapons').value = (char.weapons || []).join('\n');
-    document.getElementById('edit-skills').value = (char.skills || []).join('\n');
-    document.getElementById('edit-backpack').value = (char.backpack || []).join('\n');
+    
+    // Controlli di sicurezza per evitare crash se manca un pezzo nell'HTML
+    const statsEl = document.getElementById('edit-stats');
+    if (statsEl) statsEl.value = statsStr.trim();
+    
+    const wpEl = document.getElementById('edit-weapons');
+    if (wpEl) wpEl.value = (char.weapons || []).map(w => typeof w === 'string' ? w : w.name).join('\n');
+    
+    const skEl = document.getElementById('edit-skills');
+    if (skEl) skEl.value = (char.skills || []).join('\n');
+    
+    const bpEl = document.getElementById('edit-backpack');
+    if (bpEl) bpEl.value = (char.backpack || []).map(b => typeof b === 'string' ? b : b.name).join('\n');
     
     if (editSheetModal) editSheetModal.style.display = 'flex';
     socket.emit('get_compendio');
 });
 
+// SALVATAGGIO SCHEDA MASTER
+document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
+    if (!selectedCharacterId) return;
+    
+    const char = characters.find(c => c.id === selectedCharacterId);
+    if (!char) return;
+
+    // Lettura sicura
+    const statsLines = document.getElementById('edit-stats') ? document.getElementById('edit-stats').value.split('\n').filter(l => l.trim() !== '') : [];
+    const statsObj = {};
+    statsLines.forEach(line => {
+        const parts = line.split(':');
+        if (parts.length >= 2) statsObj[parts.shift().trim()] = parts.join(':').trim();
+    });
+    
+    const parseList = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value.split('\n').map(s => s.trim()).filter(s => s !== '') : [];
+    };
+    
+    const newWeaponsNames = parseList('edit-weapons');
+    const newBackpackNames = parseList('edit-backpack');
+
+    // Ricostruzione sicura
+    const updatedWeapons = newWeaponsNames.map(name => {
+        const existing = (char.weapons || []).find(w => (typeof w === 'string' ? w : w.name) === name);
+        return existing ? existing : { name: name, desc: "Nessuna descrizione" };
+    });
+
+    const updatedBackpack = newBackpackNames.map(name => {
+        const existing = (char.backpack || []).find(b => (typeof b === 'string' ? b : b.name) === name);
+        return existing ? existing : { name: name, desc: "Nessuna descrizione", qty: 1 };
+    });
+
+    const photoUrl = document.getElementById('edit-photo-url') ? document.getElementById('edit-photo-url').value.trim() : "";
+    const loreText = document.getElementById('edit-lore') ? document.getElementById('edit-lore').value.trim() : "";
+
+    socket.emit('update_character_sheet', { 
+        char_id: selectedCharacterId, 
+        photo_url: photoUrl,
+        lore: loreText,
+        stats: statsObj, 
+        weapons: updatedWeapons, 
+        skills: parseList('edit-skills'), 
+        backpack: updatedBackpack 
+    });
+    
+    if (editSheetModal) editSheetModal.style.display = 'none';
+});
 // ==========================================
 // SALVATAGGIO SCHEDA
 // ==========================================

@@ -176,6 +176,14 @@ canvas.addEventListener('mousedown', (event) => {
     const pos = getWorldPos(event);
     lastX = pos.x;
     lastY = pos.y;
+
+    // Righello: Se premi ALT, attiva la modalità righello
+    if (event.altKey) {
+        window.isRulerMode = true;
+        window.rulerStart = { x: lastX, y: lastY };
+        window.rulerCurrent = { x: lastX, y: lastY };
+        return;
+    }
     
     // 1. LASER
     if (event.shiftKey) {
@@ -280,6 +288,13 @@ canvas.addEventListener('mousemove', (event) => {
     const currentX = pos.x;
     const currentY = pos.y;
 
+    // --- NUOVO: Aggiorna Righello in tempo reale ---
+    if (window.isRulerMode) {
+        window.rulerCurrent = { x: currentX, y: currentY };
+        render();
+        return;
+    }
+
     // TRACCIAMENTO MOUSE PER LA LINEA DI MOVIMENTO
     window.hoveredHex = pixelToHex(currentX, currentY);
     if (window.lastHoveredHex?.col !== window.hoveredHex?.col || window.lastHoveredHex?.row !== window.hoveredHex?.row) {
@@ -339,6 +354,16 @@ canvas.addEventListener('mousemove', (event) => {
 });
 
 canvas.addEventListener('mouseup', () => { 
+    // --- NUOVO: Rilascio Righello ---
+    if (window.isRulerMode) {
+        justFinishedAction = true;
+        window.isRulerMode = false;
+        window.rulerStart = null;
+        window.rulerCurrent = null;
+        render();
+        setTimeout(() => { justFinishedAction = false; }, 100);
+        return;
+    }
     if (isPanning) {
         isPanning = false;
         canvas.style.cursor = isMaster ? "pointer" : "crosshair";

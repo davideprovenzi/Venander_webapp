@@ -296,6 +296,47 @@ function drawMovementPath() {
     }
 }
 
+// ==========================================
+// DISEGNO RIGHELLO
+// ==========================================
+function drawRuler() {
+    if (window.isRulerMode && window.rulerStart && window.rulerCurrent) {
+        const startHex = pixelToHex(window.rulerStart.x, window.rulerStart.y);
+        const endHex = pixelToHex(window.rulerCurrent.x, window.rulerCurrent.y);
+        const dist = hexDistance(startHex.col, startHex.row, endHex.col, endHex.row);
+
+        ctx.save();
+        
+        // Disegna la linea tratteggiata
+        ctx.beginPath();
+        ctx.moveTo(window.rulerStart.x, window.rulerStart.y);
+        ctx.lineTo(window.rulerCurrent.x, window.rulerCurrent.y);
+        ctx.strokeStyle = '#e67e22'; // Arancione per differenziarlo dal movimento blu
+        ctx.lineWidth = 4;
+        ctx.setLineDash([8, 8]);
+        ctx.stroke();
+
+        // Disegna i punti di ancoraggio
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#e67e22';
+        ctx.beginPath(); ctx.arc(window.rulerStart.x, window.rulerStart.y, 6, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(window.rulerCurrent.x, window.rulerCurrent.y, 6, 0, Math.PI*2); ctx.fill();
+
+        // Testo della distanza
+        const midX = (window.rulerStart.x + window.rulerCurrent.x) / 2;
+        const midY = (window.rulerStart.y + window.rulerCurrent.y) / 2;
+
+        ctx.font = 'bold 20px Arial';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'white';
+        ctx.strokeText(`${dist}m`, midX, midY - 15);
+        ctx.fillStyle = '#d35400';
+        ctx.fillText(`${dist}m`, midX, midY - 15);
+        
+        ctx.restore();
+    }
+}
+
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -342,6 +383,9 @@ function render() {
 
     // 5. Puntatori Laser Temporanei (Sempre in primissimo piano)
     drawLaserLines(); 
+
+    // --- NUOVO: Disegna il Righello in cima a tutto ---
+    drawRuler();
     
     ctx.restore(); 
 }

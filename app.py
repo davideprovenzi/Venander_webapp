@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
+from sqlalchemy.orm.attributes import flag_modified
 import os
 import random
 import re
@@ -93,7 +94,9 @@ world_state = {
     "map_url": "",
     "map_scale": 1.0,
     "map_dx": 0,
-    "map_dy": 0
+    "map_dy": 0,
+    "fow_enabled": False,
+    "revealed_hexes": []
 }
 
 with app.app_context():
@@ -217,34 +220,35 @@ def handle_next_turn():
         if isinstance(char.bonuses, list):
             updated_bonuses = []
             expired_effects = []
-            chat_messages = [] # Memorizza i messaggi di danno/cura
+            chat_messages = [] 
             
             for b in char.bonuses:
                 if isinstance(b, dict) and "turns" in b:
-                    # 1. APPLICAZIONE AUTOMATICA DANNO/CURA
-                    hp_change = int(b.get("hpChange", 0))
+                    # Crea una copia fresca del dizionario per assicurarsi che SQLAlchemy rilevi il cambiamento
+                    new_b = dict(b)
+                    
+                    hp_change = int(new_b.get("hpChange", 0))
                     if hp_change != 0:
                         old_hp = char.hp_current
-                        # Applica la modifica non superando i massimi o scendendo sotto zero
                         char.hp_current = max(0, min(char.hp_max, char.hp_current + hp_change))
                         actual_change = char.hp_current - old_hp
                         
-                        # Genera il messaggio da inviare in chat
                         if actual_change < 0:
-                            chat_messages.append(f"ha subito {-actual_change} danni da <b>{b['name']}</b>")
+                            chat_messages.append(f"ha subito {-actual_change} danni da <b>{new_b['name']}</b>")
                         elif actual_change > 0:
-                            chat_messages.append(f"ha recuperato {actual_change} HP grazie a <b>{b['name']}</b>")
+                            chat_messages.append(f"ha recuperato {actual_change} HP grazie a <b>{new_b['name']}</b>")
                     
-                    # 2. SCALA I TURNI
-                    b["turns"] -= 1
-                    if b["turns"] > 0:
-                        updated_bonuses.append(b)
+                    # SCALA I TURNI SULLA COPIA
+                    new_b["turns"] -= 1
+                    if new_b["turns"] > 0:
+                        updated_bonuses.append(new_b)
                     else:
-                        expired_effects.append(b["name"])
+                        expired_effects.append(new_b["name"])
                 else:
                     updated_bonuses.append(b)
             
             char.bonuses = updated_bonuses
+            flag_modified(char, "bonuses") # Forza il salvataggio della colonna JSON
             db.session.commit()
             emit("update_character", get_char_data(char), broadcast=True)
             
@@ -623,6 +627,27 @@ def handle_toggle_invisible(data):
         char.is_invisible = bool(data.get("is_invisible", False))
         db.session.commit()
         emit("character_invisible_update", {"id": char.id, "is_invisible": char.is_invisible}, broadcast=True)
+
+# Gestione FOW
+
+@socketio.on("toggle_global_fow")
+def handle_toggle_global_fow(data):
+    world_state["fow_enabled"] = data.get("enabled", False)
+    emit("map_update", world_state, broadcast=True)
+
+@socketio.on("reset_fow")
+def handle_reset_fow():
+    world_state["revealed_hexes"] = []
+    emit("map_update", world_state, broadcast=True)
+
+@socketio.on("reveal_hexes")
+def handle_reveal_hexes(data):
+    new_hexes = data.get("hexes", [])
+    # Unisce i nuovi esagoni a quelli vecchi eliminando i duplicati
+    current_set = set(world_state["revealed_hexes"])
+    current_set.update(new_hexes)
+    world_state["revealed_hexes"] = list(current_set)
+    emit("map_update", world_state, broadcast=True)
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
