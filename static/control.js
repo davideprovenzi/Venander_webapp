@@ -65,6 +65,16 @@ canvas.addEventListener('click', (event) => {
     }
 
     if (!isMaster) {
+
+        // --- NUOVO: BLOCCO MOVIMENTO NELLA FOG OF WAR ---
+        if (window.fowEnabled) {
+            const targetHexStr = `${gridX},${gridY}`;
+            if (!window.revealedHexes.has(targetHexStr)) {
+                alert("L'area è avvolta dalla nebbia! Avvicinati per esplorarla prima di poterci camminare.");
+                return; // Ferma il codice, impedendo il movimento
+            }
+        }
+        
         const myChar = characters.find(c => c.id === currentCharacterId);
         let isMyTurn = false;
         

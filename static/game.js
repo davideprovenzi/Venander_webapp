@@ -27,6 +27,9 @@ window.draggingDrawing = null;
 window.dragOffset = { sx: 0, sy: 0, ex: 0, ey: 0 };
 window.selectDrawing = null;
 
+window.fowEnabled = false;
+window.revealedHexes = new Set();
+const VISION_RADIUS = 3; // Quanti esagoni vede il giocatore attorno a sé
 
 
 // Trasforma il click sullo schermo nella coordinata esatta sulla mappa zoomata
@@ -286,6 +289,37 @@ socket.on('combat_update', (data) => {
     
     render();
 });
+
+
+// ==========================================
+// FOG OF WAR: CALCOLO VISIONE
+// ==========================================
+function getHexesInRadius(centerCol, centerRow, radius) {
+    let results = [];
+    const centerCube = offsetToCube(centerCol, centerRow);
+    for (let q = -radius; q <= radius; q++) {
+        for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
+            let s = -q - r;
+            let targetCube = { q: centerCube.q + q, r: centerCube.r + r, s: centerCube.s + s };
+            let offset = cubeToOffset(targetCube);
+            results.push(`${offset.col},${offset.row}`);
+        }
+    }
+    return results;
+}
+
+window.autoReveal = function(x, y) {
+    if (!window.fowEnabled || isMaster) return;
+    
+    const visibleHexes = getHexesInRadius(x, y, VISION_RADIUS);
+    const newHexes = visibleHexes.filter(h => !window.revealedHexes.has(h));
+    
+    if (newHexes.length > 0) {
+        socket.emit('reveal_hexes', { hexes: newHexes });
+    }
+};
+
+
 socket.on('update_character', (updatedChar) => {
     const index = characters.findIndex(c => c.id === updatedChar.id);
     if (index !== -1) characters[index] = updatedChar;
@@ -305,6 +339,10 @@ socket.on('update_character', (updatedChar) => {
         populatePlayerSheetUI(updatedChar);
     }
     
+    if (!isMaster && updatedChar.id === parseInt(userSelect?.value)) {
+        window.autoReveal(updatedChar.x, updatedChar.y);
+    }
+
     render();
     updateSheetButton();
     statusBar.innerText = `${updatedChar.name} aggiornato.`;
@@ -547,6 +585,16 @@ socket.on('map_update', (data) => {
     mapDx = data.map_dx || 0;
     mapDy = data.map_dy || 0;
     
+    // --- NUOVO: Aggiorna lo stato della nebbia ---
+    window.fowEnabled = data.fow_enabled || false;
+    window.revealedHexes = new Set(data.revealed_hexes || []);
+    
+    if (document.getElementById('btn-toggle-fow')) {
+        const btn = document.getElementById('btn-toggle-fow');
+        btn.innerText = window.fowEnabled ? "☁️ Disattiva Fog of War" : "☁️ Attiva Fog of War";
+        btn.style.background = window.fowEnabled ? "#27ae60" : "#8e44ad";
+    }
+    
     if (currentMapUrl) {
         bgImage = new Image();
         bgImage.onload = () => { render(); };
@@ -708,3 +756,31 @@ document.getElementById('btn-next-turn')?.addEventListener('click', () => {
         socket.emit('next_turn');
     }
 });
+
+
+// ==========================================
+// CONTROLLO MASTER: ATTIVAZIONE FOG OF WAR
+// ==========================================
+window.toggleFogOfWar = function() {
+    const turningOn = !window.fowEnabled;
+    socket.emit('toggle_global_fow', { enabled: turningOn });
+    
+    // Se stiamo accendendo la nebbia, scopriamo subito dove sono i giocatori!
+    if (turningOn) {
+        let initialHexes = [];
+        
+        characters.forEach(c => {
+            // Se è una pedina giocabile e non è nascosta nel buio...
+            if (c.role !== 'master' && !c.is_hidden) {
+                // ...calcola gli esagoni intorno a lei e aggiungili alla lista
+                initialHexes.push(...getHexesInRadius(c.x, c.y, VISION_RADIUS));
+            }
+        });
+        
+        // Rimuove i doppioni (se due giocatori sono vicini) e invia al server
+        const uniqueHexes = [...new Set(initialHexes)];
+        if (uniqueHexes.length > 0) {
+            socket.emit('reveal_hexes', { hexes: uniqueHexes });
+        }
+    }
+};

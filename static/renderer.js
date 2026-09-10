@@ -102,6 +102,10 @@ function drawTokens() {
         // I giocatori non vedono NULLA né se in FoW né se Invisibili. Il Master procede.
         if ((char.is_hidden || char.is_invisible) && !isMaster) return; 
 
+        // --- NUOVO: Nascondi pedine se sono dentro la Fog of War non esplorata ---
+        const hexStr = `${char.x},${char.y}`;
+        if (!isMaster && window.fowEnabled && !window.revealedHexes.has(hexStr)) return;
+
         ctx.save(); 
         
         // Differenza visiva per il Master
@@ -257,6 +261,12 @@ function drawMovementPath() {
     // --- NOVITÀ: Sceglie il bersaglio fisso se c'è un popup aperto, altrimenti segue il mouse ---
     const targetHex = window.pendingMove ? { col: window.pendingMove.x, row: window.pendingMove.y } : window.hoveredHex;
 
+    // --- NUOVO: Nascondi la linea se punta nella nebbia ---
+    if (!isMaster && window.fowEnabled && targetHex) {
+        const targetHexStr = `${targetHex.col},${targetHex.row}`;
+        if (!window.revealedHexes.has(targetHexStr)) return;
+    }
+
     if (isMyTurn && myChar && targetHex) {
         const dist = hexDistance(myChar.x, myChar.y, targetHex.col, targetHex.row);
         if (dist > 0) {
@@ -338,6 +348,90 @@ function drawRuler() {
 }
 
 
+// ==========================================
+// FOG OF WAR (EFFETTO NUVOLE E SFUMATURA)
+// ==========================================
+let fogCloudTexture = null;
+
+// Funzione che genera una texture a nuvolette una sola volta per non pesare sulla CPU
+function generateCloudTexture() {
+    if (fogCloudTexture) return fogCloudTexture;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = 400;
+    offscreen.height = 400;
+    const offCtx = offscreen.getContext('2d');
+
+    // Sfondo di base (Blu notte scuro)
+    offCtx.fillStyle = '#0b131a';
+    offCtx.fillRect(0, 0, 400, 400);
+
+    // Disegna 200 "nuvolette" casuali sovrapposte per creare la densità
+    for (let i = 0; i < 200; i++) {
+        offCtx.beginPath();
+        const x = Math.random() * 400;
+        const y = Math.random() * 400;
+        const radius = Math.random() * 60 + 20;
+        offCtx.arc(x, y, radius, 0, Math.PI * 2);
+        
+        // Colore delle singole nuvole (grigio/bluastro semitrasparente)
+        offCtx.fillStyle = `rgba(44, 62, 80, ${Math.random() * 0.4})`;
+        offCtx.fill();
+    }
+    
+    fogCloudTexture = offscreen;
+    return fogCloudTexture;
+}
+
+function drawFogOfWar() {
+    if (!window.fowEnabled) return;
+
+    const fogCanvas = document.createElement('canvas');
+    fogCanvas.width = canvas.width;
+    fogCanvas.height = canvas.height;
+    const fogCtx = fogCanvas.getContext('2d');
+
+    fogCtx.translate(camera.x, camera.y);
+    fogCtx.scale(camera.zoom, camera.zoom);
+
+    // 1. Applica il pattern a nuvole invece del colore piatto
+    const cloudImg = generateCloudTexture();
+    const pattern = fogCtx.createPattern(cloudImg, 'repeat');
+    
+    fogCtx.fillStyle = pattern;
+    fogCtx.globalAlpha = isMaster ? 0.5 : 1.0; // Il Master vede attraverso le nuvole
+    fogCtx.fillRect(-10000, -10000, 20000, 20000);
+    fogCtx.globalAlpha = 1.0; // Ripristina l'opacità per la gomma
+
+    // 2. Gomma da cancellare (Sfumatura)
+    fogCtx.globalCompositeOperation = 'destination-out';
+
+    window.revealedHexes.forEach(hexStr => {
+        const parts = hexStr.split(',');
+        const col = parseInt(parts[0]);
+        const row = parseInt(parts[1]);
+        const center = hexToPixel(col, row);
+
+        const blurRadius = HEX_SIZE * 2.5; 
+
+        // Rimuove le nuvole dolcemente creando radure esplorate
+        const gradient = fogCtx.createRadialGradient(center.x, center.y, HEX_SIZE * 0.5, center.x, center.y, blurRadius);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');       
+        gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.8)');   
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');       
+
+        fogCtx.fillStyle = gradient;
+        fogCtx.beginPath();
+        fogCtx.arc(center.x, center.y, blurRadius, 0, Math.PI * 2);
+        fogCtx.fill();
+    });
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); 
+    ctx.drawImage(fogCanvas, 0, 0);
+    ctx.restore();
+}
+
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -374,6 +468,8 @@ function render() {
         }
         ctx.restore();
     }
+
+    drawFogOfWar();
 
     // 3.1 Percorso Movimento (Sopra le pedine)
     drawMovementPath();

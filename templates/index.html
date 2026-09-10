@@ -136,6 +136,17 @@
             </div>
         </div>
 
+        <!-- SEZIONE FOG OF WAR (NUOVA) -->
+        <div style="margin-top: 10px; border: 1px solid #8e44ad; padding: 5px; border-radius: 5px; background: #fff;">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #8e44ad; background: #ebdef0;">
+                ☁️ Fog of War Automatica <span style="font-size:12px;">▶</span>
+            </h4>
+            <div class="collapsible-content" style="display: none; padding-top: 10px;">
+               <button id="btn-toggle-fow" onclick="window.toggleFogOfWar()" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #8e44ad; color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer;">☁️ Attiva Fog of War</button>
+                <button id="btn-reset-fow" onclick="if(confirm('Vuoi davvero coprire nuovamente tutta la mappa?')) socket.emit('reset_fow')" style="width: 100%; padding: 8px; background: #34495e; color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer;">⬛ Ripristina Nebbia (Copri Tutto)</button>
+            </div>
+        </div>
+
         <!-- 3. STRUMENTI DISEGNO (Chiuso di default) -->
         <div style="margin-top: 10px; border: 1px solid #27ae60; padding: 5px; border-radius: 5px; background: #fff;">
             <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #27ae60; background: #d5f5e3;">
