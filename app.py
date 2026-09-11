@@ -86,7 +86,8 @@ combat_state = {
     "turn_order": [],
     "current_index": 0,
     "epicenter": {"x": 0, "y": 0},
-    "players_pa": {}  # Dizionario per memorizzare i PA dei giocatori
+    "players_pa": {},  # Dizionario per memorizzare i PA dei giocatori
+    "players_limbs":{}
 }
 
 # Mappa di sfondo
@@ -192,6 +193,7 @@ def handle_toggle_combat():
                 "is_npc": c.role == "npc", "start_x": c.pos_x, "start_y": c.pos_y
             })
             combat_state["players_pa"][str(c.id)] = 120 # Dà a tutti 120 frames
+            combat_state["players_limbs"][str(c.id)] = {"bd": 60, "bs": 60, "gd": 60, "gs": 60} # 60 frames per arto
         
         # Ordina l'array dal più vicino (distanza minore) al più lontano
         turn_order.sort(key=lambda x: x["distance"])
@@ -212,7 +214,7 @@ def handle_next_turn():
     if not combat_state["is_active"] or not combat_state["turn_order"]: 
         return
         
-    # --- NOVITÀ: SCALA I TURNI DEGLI EFFETTI DEL PERSONAGGIO CHE HA FINITO IL TURNO ---
+    # Scala effetti per turno
     current_actor_info = combat_state["turn_order"][combat_state["current_index"]]
     char = db.session.get(Character, current_actor_info["id"])
     
@@ -283,6 +285,8 @@ def handle_next_turn():
                 "id": c.id, "name": c.name, "distance": dist,
                 "is_npc": c.role == "npc", "start_x": c.pos_x, "start_y": c.pos_y
             })
+            # NUOVO ROUND: RESETTA GLI ARTI A TUTTI
+            combat_state["players_limbs"][str(c.id)] = {"bd": 60, "bs": 60, "gd": 60, "gs": 60}
         
         turn_order.sort(key=lambda x: x["distance"])
         combat_state["turn_order"] = turn_order
@@ -649,6 +653,105 @@ def handle_reveal_hexes(data):
     world_state["revealed_hexes"] = list(current_set)
     emit("map_update", world_state, broadcast=True)
 
+
+# Gestione attacco limbs
+@socketio.on("sync_limbs")
+def handle_sync_limbs(data):
+    combat_state["players_limbs"][str(data["char_id"])] = data["limbs"]
+    emit("sync_limbs", data, broadcast=True, include_self=False)
+
+@socketio.on("declare_attack")
+def handle_declare_attack(data):
+    # Invia l'allarme di attacco al difensore (e a tutti per la chat)
+    emit("incoming_attack", data, broadcast=True)
+
+@socketio.on("resolve_reaction")
+def handle_resolve_reaction(data):
+    # Uso .get() così se manca un dato non va in crash (KeyError)
+    attacker_id = data.get("attacker_id")
+    defender_id = data.get("defender_id")
+    
+    if not attacker_id or not defender_id: 
+        return
+        
+    attacker = db.session.get(Character, attacker_id)
+    defender = db.session.get(Character, defender_id)
+
+    if not attacker or not defender: return
+
+    att_speed = int(data.get("att_speed", 85))
+    def_speed = int(data.get("def_speed", 100))
+    weapon_name = data.get("weapon", "Mani Nude")
+    reaction = data.get("reaction_type", "Schivata")
+    def_limb_key = data.get("def_limb", "bd")
+
+    # 1. Calcolo Danno Arma dell'Attaccante
+    damage = 5 # Danno base Mani Nude
+    if attacker.stats and "equipped" in attacker.stats and attacker.stats["equipped"]:
+        for slot in ["mano_dx", "mano_sx"]:
+            item = attacker.stats["equipped"].get(slot)
+            if item and item.get("name") == weapon_name:
+                match = re.search(r'Danno:\s*(\d+)', item.get("desc", ""), re.IGNORECASE)
+                if match: damage = int(match.group(1))
+                break
+
+    # 2. Lancio Dadi Automatico (1d20 + Bonus Velocità diviso 10)
+    att_roll = random.randint(1, 20) + (att_speed // 10)
+    def_roll = random.randint(1, 20) + (def_speed // 10)
+
+    chat_msgs = ["⚔️ <b>RISOLUZIONE AUTOMATICA SCONTRO</b> ⚔️",
+                 f"Attacco ({weapon_name}): {att_roll} (Dado + Vel)",
+                 f"Difesa ({reaction}): {def_roll} (Dado + Vel)"]
+
+    # 3. Risoluzione della Difesa
+    if reaction == "Schivata":
+        if def_roll >= att_roll:
+            chat_msgs.append(f"💨 <b>{defender.name}</b> schiva perfettamente l'attacco!")
+        else:
+            defender.hp_current = max(0, defender.hp_current - damage)
+            chat_msgs.append(f"🩸 Schivata fallita! <b>{defender.name}</b> subisce <b>{damage} danni</b> (HP Rimanenti: {defender.hp_current}).")
+
+    elif reaction == "Parata":
+        armor_hp = 0
+        stats_copy = dict(defender.stats) if defender.stats else {}
+        equipped = stats_copy.get("equipped") or {}
+        equipped_armor = equipped.get(def_limb_key)
+
+        # Cerca i Punti Vita dell'armatura sull'arto usato per parare
+        if equipped_armor:
+            hp_match = re.search(r'HP:\s*(\d+)', equipped_armor.get("desc", ""), re.IGNORECASE)
+            if hp_match: armor_hp = int(hp_match.group(1))
+
+        if def_roll >= att_roll:
+            chat_msgs.append(f"🛡️ <b>{defender.name}</b> para perfettamente! L'attacco è respinto senza danni.")
+        else:
+            dmg_to_armor = min(damage, armor_hp)
+            dmg_to_player = damage - dmg_to_armor
+
+            # Danno all'armatura
+            if equipped_armor and armor_hp > 0:
+                new_armor_hp = armor_hp - dmg_to_armor
+                new_desc = re.sub(r'HP:\s*\d+', f'HP: {new_armor_hp}', equipped_armor["desc"], flags=re.IGNORECASE)
+                stats_copy["equipped"][def_limb_key]["desc"] = new_desc
+                defender.stats = stats_copy
+                flag_modified(defender, "stats")
+                chat_msgs.append(f"🛡️ L'armatura su {def_limb_key} si usura assorbendo {dmg_to_armor} danni (HP Armatura restanti: {new_armor_hp}).")
+
+            # Danno in eccesso al giocatore
+            if dmg_to_player > 0:
+                defender.hp_current = max(0, defender.hp_current - dmg_to_player)
+                chat_msgs.append(f"🩸 L'attacco trapassa la guardia! <b>{defender.name}</b> subisce <b>{dmg_to_player} danni</b> (HP Rimanenti: {defender.hp_current}).")
+
+    elif reaction == "Scambio":
+        defender.hp_current = max(0, defender.hp_current - damage)
+        chat_msgs.append(f"⚔️ Nessuna difesa! <b>{defender.name}</b> accetta <b>{damage} danni</b> per colpire a sua volta (HP Rimanenti: {defender.hp_current}).")
+
+    # 4. Salva ed Emetti i risultati
+    db.session.commit()
+    emit("update_character", get_char_data(defender), broadcast=True)
+    
+    for msg in chat_msgs:
+        emit("dice_result", {"name": "SISTEMA", "message": msg, "is_master_roll": False}, broadcast=True)
 if __name__ == "__main__":
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
 

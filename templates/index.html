@@ -39,23 +39,22 @@
         </div>
 
     <!-- ==========================================
-         TRACKER INIZIATIVA (COMBATTIMENTO)
-         ========================================== -->
-    <!-- Finestra Ordine di Turno (Volante e Trascinabile) -->
+     TRACKER INIZIATIVA
+    ========================================== -->
     <div id="combat-tracker" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 1000; width: 250px; background: rgba(255, 255, 255, 0.95); border: 2px solid #2c3e50; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden;">
         
-        <!-- Barra per trascinare la finestra -->
-        <div id="tracker-header" style="background: #2c3e50; color: white; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; cursor: grab; user-select: none;">
-            ⚔️ Ordine di Turno 🖐️
+        <div id="tracker-header" style="background: #2c3e50; color: white; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
+            <span style="visibility: hidden; padding: 0 5px;">▼</span>
+            <span>⚔️ Ordine di Turno 🖐️</span>
+            <span id="tracker-toggle" style="cursor: pointer; padding: 0 5px;" title="Riduci a icona">▼</span>
         </div>
         
-        <!-- Qui dentro il JS inietterà la lista dei giocatori -->
-        <div id="turn-order-list" style="padding: 10px; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;"></div>
-        
-        <!-- Pulsante per terminare il turno (visibile al master e al giocatore di turno) -->
-        <button id="btn-next-turn"  style="display: none; margin: 10px; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            ⏭️ Termina Turno
-        </button>
+        <div id="tracker-content" style="display: block;">
+            <div id="turn-order-list" style="padding: 10px; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;"></div>
+            <button id="btn-next-turn" style="display: none; margin: 10px; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: calc(100% - 20px);">
+                ⏭️ Termina Turno
+            </button>
+        </div>
     </div>
 
     <!-- ==========================================
@@ -72,38 +71,44 @@
 
     </div>
 
-    <!-- PANNELLO EQUIPAGGIAMENTO (STILE PAPER DOLL OLOGRAFICO) -->
+    <!-- ==========================================
+         2. PANNELLO EQUIPAGGIAMENTO (PAPER DOLL)
+         ========================================== -->
     <div id="equipped-panel" style="display: none; position: absolute; bottom: 40px; left: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
         
-        <div id="equip-header" style="background: #1a252f; color: #3498db; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #3498db; text-transform: uppercase; letter-spacing: 2px;">
-            Armatura & Armi 🖐️
+        <div id="equip-header" style="background: #1a252f; color: #3498db; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #3498db; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="visibility: hidden; padding: 0 5px;">▼</span>
+            <span>Armatura & Armi 🖐️</span>
+            <span id="equip-toggle" style="cursor: pointer; padding: 0 5px;" title="Riduci a icona">▼</span>
         </div>
 
-        <div class="paper-doll-layout">
-            <!-- RIGA 1: Testa e Schiena -->
-            <div class="doll-slot" id="slot-visore"><div class="doll-icon"></div><div class="doll-name">Visore</div></div>
-            <div class="doll-slot" id="slot-elmo"><div class="doll-icon"></div><div class="doll-name">Elmo</div></div>
-            <div class="doll-slot" id="slot-schiena"><div class="doll-icon"></div><div class="doll-name">Schiena</div></div>
+        <div id="equip-content" style="display: block;">
+            <div class="paper-doll-layout">
+                <!-- RIGA 1: Testa e Schiena -->
+                <div class="doll-slot" id="slot-visore"><div class="doll-icon"></div><div class="doll-name">Visore</div></div>
+                <div class="doll-slot" id="slot-elmo"><div class="doll-icon"></div><div class="doll-name">Elmo</div></div>
+                <div class="doll-slot" id="slot-schiena"><div class="doll-icon"></div><div class="doll-name">Schiena</div></div>
 
-            <!-- RIGA 2: Spalle e Petto -->
-            <div class="doll-slot" id="slot-spalla_dx"><div class="doll-icon"></div><div class="doll-name">Spalla Dx</div></div>
-            <div class="doll-slot" id="slot-petto"><div class="doll-icon"></div><div class="doll-name">Petto</div></div>
-            <div class="doll-slot" id="slot-spalla_sx"><div class="doll-icon"></div><div class="doll-name">Spalla Sx</div></div>
+                <!-- RIGA 2: Spalle e Petto -->
+                <div class="doll-slot" id="slot-spalla_dx"><div class="doll-icon"></div><div class="doll-name">Spalla Dx</div></div>
+                <div class="doll-slot" id="slot-petto"><div class="doll-icon"></div><div class="doll-name">Petto</div></div>
+                <div class="doll-slot" id="slot-spalla_sx"><div class="doll-icon"></div><div class="doll-name">Spalla Sx</div></div>
 
-            <!-- RIGA 3: Avambracci e Cintura -->
-            <div class="doll-slot" id="slot-avambr_dx"><div class="doll-icon"></div><div class="doll-name">Avambr. Dx</div></div>
-            <div class="doll-slot" id="slot-cintura"><div class="doll-icon"></div><div class="doll-name">Cintura</div></div>
-            <div class="doll-slot" id="slot-avambr_sx"><div class="doll-icon"></div><div class="doll-name">Avambr. Sx</div></div>
+                <!-- RIGA 3: Avambracci e Cintura -->
+                <div class="doll-slot" id="slot-avambr_dx"><div class="doll-icon"></div><div class="doll-name">Avambr. Dx</div></div>
+                <div class="doll-slot" id="slot-cintura"><div class="doll-icon"></div><div class="doll-name">Cintura</div></div>
+                <div class="doll-slot" id="slot-avambr_sx"><div class="doll-icon"></div><div class="doll-name">Avambr. Sx</div></div>
 
-            <!-- RIGA 4: Guanti e Gambe -->
-            <div class="doll-slot" id="slot-guanti"><div class="doll-icon"></div><div class="doll-name">Guanti</div></div>
-            <div class="doll-slot" id="slot-gambe"><div class="doll-icon"></div><div class="doll-name">Gambe</div></div>
-            <div style="visibility: hidden;"></div> <!-- Spazio vuoto per simmetria -->
+                <!-- RIGA 4: Guanti e Gambe -->
+                <div class="doll-slot" id="slot-guanti"><div class="doll-icon"></div><div class="doll-name">Guanti</div></div>
+                <div class="doll-slot" id="slot-gambe"><div class="doll-icon"></div><div class="doll-name">Gambe</div></div>
+                <div style="visibility: hidden;"></div>
 
-            <!-- RIGA 5: Armi e Stivali -->
-            <div class="doll-slot" id="slot-mano_dx"><div class="doll-icon"></div><div class="doll-name">Arma Dx</div></div>
-            <div class="doll-slot" id="slot-stivali"><div class="doll-icon"></div><div class="doll-name">Stivali</div></div>
-            <div class="doll-slot" id="slot-mano_sx"><div class="doll-icon"></div><div class="doll-name">Arma Sx</div></div>
+                <!-- RIGA 5: Armi e Stivali -->
+                <div class="doll-slot" id="slot-mano_dx"><div class="doll-icon"></div><div class="doll-name">Arma Dx</div></div>
+                <div class="doll-slot" id="slot-stivali"><div class="doll-icon"></div><div class="doll-name">Stivali</div></div>
+                <div class="doll-slot" id="slot-mano_sx"><div class="doll-icon"></div><div class="doll-name">Arma Sx</div></div>
+            </div>
         </div>
     </div>
 
@@ -572,6 +577,69 @@
         </div>
         
         <button onclick="document.getElementById('move-modal').style.display='none'; window.pendingMove = null; render();" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer;">Annulla Azione</button>
+    </div>
+<!-- PANNELLO AZIONE COMBATTIMENTO -->
+    <div id="combat-action-panel" style="display: none; position: absolute; bottom: 40px; right: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #e74c3c; border-radius: 8px; padding: 15px; color: white; width: 280px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
+        
+        <div id="action-header" style="background: #c0392b; color: white; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
+            <span style="visibility: hidden; padding: 0 5px;">▼</span>
+            <span>⚔️ AZIONE OFFENSIVA 🖐️</span>
+            <span id="action-toggle" style="cursor: pointer; padding: 0 5px;" title="Riduci a icona">▼</span>
+        </div>
+        
+        <div id="action-content" style="display: block;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; font-size: 11px; text-align: center;">
+                <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Dx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bd">60</strong>/60</div>
+                <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Sx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bs">60</strong>/60</div>
+                <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Gamba Dx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-gd">60</strong>/60</div>
+                <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Gamba Sx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-gs">60</strong>/60</div>
+            </div>
+            <select id="attack-target" style="width: 100%; padding: 5px; margin-bottom: 8px; border-radius: 3px; border: 1px solid #7f8c8d;"></select>
+            <select id="attack-weapon" style="width: 100%; padding: 5px; margin-bottom: 10px; border-radius: 3px; background: #2c3e50; color: white; border: 1px solid #34495e; font-weight: bold;"></select>
+            
+            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <select id="attack-limb" style="flex: 1; padding: 5px; border-radius: 3px; border: 1px solid #7f8c8d; background: #34495e; color: white;">
+                    <option value="bd">Braccio Dx</option>
+                    <option value="bs">Braccio Sx</option>
+                    <option value="gd">Gamba Dx</option>
+                    <option value="gs">Gamba Sx</option>
+                </select>
+                <input type="number" id="attack-speed" placeholder="Vel." value="85" style="width: 60px; text-align: center; border-radius: 3px; border: 1px solid #7f8c8d; font-weight: bold;">
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
+                Costo in Frame (110 - Vel): <strong id="attack-cost" style="color: #e74c3c; font-size: 14px;">25</strong>
+            </div>
+            <button id="btn-execute-attack" style="width: 100%; padding: 10px; background: #c0392b; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">SFERRA ATTACCO</button>
+        </div>
+    </div>
+
+    <!-- POP-UP REAZIONE (DIFESA) -->
+    <div id="defense-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(10, 15, 20, 0.98); padding:20px; border:3px solid #f39c12; border-radius:8px; z-index:3000; text-align:center; box-shadow: 0 0 30px rgba(243, 156, 18, 0.5); color: white; width: 320px;">
+        <h3 style="margin-top:0; color:#f39c12;">⚠️ ATTACCO IN ARRIVO!</h3>
+        <p id="defense-alert-text" style="font-size:14px; margin-bottom:15px;"></p>
+        
+        <select id="reaction-type" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 3px; font-weight: bold;">
+            <option value="Parata">🛡️ Parata</option>
+            <option value="Schivata">💨 Schivata</option>
+            <option value="Scambio">⚔️ Scambio d'Attacco</option>
+        </select>
+
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <select id="reaction-limb" style="flex: 1; padding: 5px; border-radius: 3px;">
+                <option value="bd">Braccio Dx</option>
+                <option value="bs">Braccio Sx</option>
+                <option value="gd">Gamba Dx</option>
+                <option value="gs">Gamba Sx</option>
+            </select>
+            <input type="number" id="reaction-speed" placeholder="Velocità" value="100" style="width: 70px; text-align: center; border-radius: 3px;">
+        </div>
+
+        <div style="text-align: center; margin-bottom: 15px; font-size: 12px; color: #bdc3c7;">
+            Costo in Frame (110 - Vel): <strong id="reaction-cost" style="color: #e74c3c; font-size: 14px;">10</strong>
+        </div>
+
+        <button id="btn-execute-reaction" style="width: 100%; padding: 12px; background: #f39c12; color: black; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">DICHIARA REAZIONE</button>
     </div>
 
     <!-- ==========================================

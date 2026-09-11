@@ -1125,13 +1125,47 @@ if (equipHeader && equipPanel) {
 }
 
 // ==========================================
+// TRASCINAMENTO PANNELLO AZIONE COMBATTIMENTO
+// ==========================================
+const actionPanel = document.getElementById('combat-action-panel');
+const actionHeader = document.getElementById('action-header');
+
+let isDraggingAction = false;
+let dragActionOffsetX = 0;
+let dragActionOffsetY = 0;
+
+if (actionHeader && actionPanel) {
+    actionHeader.addEventListener('mousedown', (e) => {
+        isDraggingAction = true;
+        dragActionOffsetX = e.clientX - actionPanel.getBoundingClientRect().left;
+        dragActionOffsetY = e.clientY - actionPanel.getBoundingClientRect().top;
+        actionHeader.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingAction) return;
+        actionPanel.style.left = (e.clientX - dragActionOffsetX) + 'px';
+        actionPanel.style.top = (e.clientY - dragActionOffsetY) + 'px';
+        actionPanel.style.bottom = 'auto'; // Sgancia la finestra dal basso
+        actionPanel.style.right = 'auto';  // Sgancia la finestra da destra
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDraggingAction = false;
+        if(actionHeader) actionHeader.style.cursor = 'grab';
+    });
+}
+
+
+
+// ==========================================
 // HUD EQUIPAGGIAMENTO
 // ==========================================
 window.updateEquippedPanel = function(char) {
     const panel = document.getElementById('equipped-panel');
     if (!panel) return;
 
-    if (!char || (isMaster && char.id !== selectedCharacterId)) {
+    if (!char || (typeof isMaster !== 'undefined' && isMaster && char.id !== selectedCharacterId)) {
         panel.style.display = 'none';
         return;
     }
@@ -1151,6 +1185,15 @@ window.updateEquippedPanel = function(char) {
         'gambe': 'GAMBE', 'mano_sx': 'ARMA SX', 'stivali': 'STIVALI'
     };
 
+    // Emoji Placeholder
+    const slotEmojis = {
+        'visore': '🥽', 'elmo': '🪖', 'schiena': '🎒', 
+        'spalla_dx': '🦾', 'petto': '🦺', 'spalla_sx': '🦾', 
+        'avambr_dx': '🛡️', 'cintura': '🥋', 'avambr_sx': '🛡️', 
+        'guanti': '🧤', 'mano_dx': '🗡️', 
+        'gambe': '👖', 'mano_sx': '🗡️', 'stivali': '🥾'
+    };
+
     slotKeys.forEach(key => {
         const el = document.getElementById(`slot-${key}`);
         if (!el) return;
@@ -1164,33 +1207,59 @@ window.updateEquippedPanel = function(char) {
             nameEl.style.color = '#f1c40f';
             el.classList.add('filled');
             
+            let overlayHtml = '';
+            
+            // Estrazione Danno (Armi)
+            const dmgMatch = itemData.desc.match(/Danno:\s*(\d+)/i);
+            if (dmgMatch) {
+                overlayHtml += `<div style="position:absolute; top:2px; right:2px; background:#c0392b; color:white; font-size:9px; padding:1px 3px; border-radius:3px; font-weight:bold; box-shadow:0 0 2px #000; z-index:5;">⚔️ ${dmgMatch[1]}</div>`;
+            }
+            
+            // Estrazione HP e Barra Vita (Armature)
+            const hpMatch = itemData.desc.match(/HP:\s*(\d+)(?:\/(\d+))?/i);
+            if (hpMatch) {
+                let curHp = parseInt(hpMatch[1]);
+                let maxHp = hpMatch[2] ? parseInt(hpMatch[2]) : curHp;
+                if (maxHp < curHp) maxHp = curHp; // Sicurezza per evitare barre oltre il 100%
+
+                let hpPercent = (curHp / maxHp) * 100;
+                let barColor = '#2ecc71'; // Verde
+                if (hpPercent <= 25) barColor = '#e74c3c'; // Rosso
+                else if (hpPercent <= 50) barColor = '#f39c12'; // Arancione
+
+                // Testo HP
+                overlayHtml += `<div style="position:absolute; bottom:10px; left:2px; background:#2980b9; color:white; font-size:9px; padding:1px 3px; border-radius:3px; font-weight:bold; box-shadow:0 0 2px #000; z-index:5;">🛡️ ${curHp}/${maxHp}</div>`;
+
+                // Barra di avanzamento
+                overlayHtml += `<div style="position:absolute; bottom:2px; left:2px; right:2px; height:4px; background:rgba(0,0,0,0.5); border-radius:2px; overflow:hidden; z-index:5;">
+                                    <div style="width:${hpPercent}%; height:100%; background:${barColor}; transition:width 0.3s ease;"></div>
+                                </div>`;
+            }
+
             if (itemData.img) {
                 iconEl.style.backgroundImage = `url('${itemData.img}')`;
-                iconEl.innerHTML = '';
+                iconEl.innerHTML = overlayHtml;
             } else {
                 iconEl.style.backgroundImage = 'none';
-                iconEl.innerHTML = `<span style="color: #f1c40f; font-size: 10px; opacity: 0.5;">[DATA]</span>`;
+                let fallbackEmoji = slotEmojis[key] || '📦';
+                iconEl.innerHTML = overlayHtml + `<span style="font-size: 22px; opacity: 0.9; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); margin-bottom: 5px;">${fallbackEmoji}</span>`;
             }
         } else {
-            // Quando lo slot è vuoto, la label in basso dice "Vuoto" e al centro compare il nome della parte del corpo
             nameEl.innerText = 'Vuoto';
             nameEl.style.color = '#7f8c8d';
             el.classList.remove('filled');
             iconEl.style.backgroundImage = 'none';
-            
-            // --- NUOVO: Testo olografico al centro dello slot ---
             iconEl.innerHTML = `<span style="font-size: 10px; font-weight: bold; letter-spacing: 1px; color: rgba(52, 152, 219, 0.4); text-transform: uppercase;">${defaultSlotText[key]}</span>`;
         }
 
-        // Riassegna eventi Tooltip per sicurezza
         const newEl = el.cloneNode(true);
         el.parentNode.replaceChild(newEl, el);
 
         newEl.addEventListener('mouseenter', (e) => {
-            if (!itemData) return; // Non mostra il tooltip se vuoto
+            if (!itemData) return; 
             const tt = document.getElementById('equip-tooltip');
             document.getElementById('tt-name').innerText = itemData.name;
-            document.getElementById('tt-desc').innerHTML = itemData.desc; // Supporta i tag HTML del compendio
+            document.getElementById('tt-desc').innerHTML = itemData.desc; 
             tt.style.display = 'block';
             tt.style.left = (e.pageX + 15) + 'px';
             tt.style.top = (e.pageY - 15) + 'px';
@@ -1204,7 +1273,6 @@ window.updateEquippedPanel = function(char) {
             document.getElementById('equip-tooltip').style.display = 'none';
         });
 
-        // --- NUOVO: Clicca per disequipaggiare ---
         newEl.addEventListener('click', () => {
             if (itemData) {
                 if (confirm(`Vuoi rimettere "${itemData.name}" nello zaino?`)) {
@@ -1214,7 +1282,7 @@ window.updateEquippedPanel = function(char) {
             }
         });
     });
-}
+};
 window.equipItem = function(charId, itemName, itemDesc, slot) {
     if (!slot) return;
     const char = characters.find(c => c.id === charId);
@@ -1274,3 +1342,225 @@ window.unequipFromSlot = function(charId, slotKey) {
     char.stats.equipped[slotKey] = null;
     socket.emit('update_character_sheet', { char_id: charId, stats: char.stats, backpack: bp });
 };
+
+
+// ==========================================
+// LOGICA COMBATTIMENTO: FRAME E ARTI
+// ==========================================
+window.playersLimbs = {}; // Memoria locale dei frame (sincronizzata col server)
+
+// Aggiorna l'HUD dell'attaccante
+window.updateCombatActionPanel = function() {
+    const panel = document.getElementById('combat-action-panel');
+    if (!panel || typeof combatState === 'undefined' || !combatState.is_active) {
+        if(panel) panel.style.display = 'none';
+        return;
+    }
+
+    let isMyTurn = false;
+    let activeCharId = null;
+
+    if (combatState.turn_order && combatState.turn_order.length > 0) {
+        const currentActor = combatState.turn_order[combatState.current_index];
+        if (currentActor) {
+            activeCharId = currentActor.id !== undefined ? currentActor.id : currentActor.char_id;
+            const selectElem = document.getElementById('user-select');
+            const myCharId = selectElem ? parseInt(selectElem.value) : -1;
+            
+            if (activeCharId === myCharId) isMyTurn = true;
+            if (typeof isMaster !== 'undefined' && isMaster && currentActor.is_npc) isMyTurn = true;
+        }
+    }
+
+    if (isMyTurn && activeCharId) {
+        panel.style.display = 'block';
+        const myLimbs = window.playersLimbs[activeCharId] || {bd: 60, bs: 60, gd: 60, gs: 60};
+        document.getElementById('hud-bd').innerText = myLimbs.bd;
+        document.getElementById('hud-bs').innerText = myLimbs.bs;
+        document.getElementById('hud-gd').innerText = myLimbs.gd;
+        document.getElementById('hud-gs').innerText = myLimbs.gs;
+
+        const targetSelect = document.getElementById('attack-target');
+        targetSelect.innerHTML = '<option value="">-- Seleziona Bersaglio --</option>';
+        characters.forEach(c => {
+            if (c.id !== activeCharId && c.hp_current > 0 && !c.is_hidden) {
+                targetSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            }
+        });
+
+        const weaponSelect = document.getElementById('attack-weapon');
+        weaponSelect.innerHTML = '';
+        
+        const activeChar = characters.find(c => c.id === activeCharId);
+        if (activeChar && activeChar.stats && activeChar.stats.equipped) {
+            const eq = activeChar.stats.equipped;
+            if (eq.mano_dx) weaponSelect.innerHTML += `<option value="${eq.mano_dx.name}" data-limb="bd">🗡️ ${eq.mano_dx.name} (Dx)</option>`;
+            else weaponSelect.innerHTML += `<option value="Pugno Dx" data-limb="bd">✊ Pugno Vuoto (Dx)</option>`;
+
+            if (eq.mano_sx) weaponSelect.innerHTML += `<option value="${eq.mano_sx.name}" data-limb="bs">🗡️ ${eq.mano_sx.name} (Sx)</option>`;
+            else weaponSelect.innerHTML += `<option value="Pugno Sx" data-limb="bs">✊ Pugno Vuoto (Sx)</option>`;
+        } else {
+            weaponSelect.innerHTML += `<option value="Pugno Dx" data-limb="bd">✊ Pugno Vuoto (Dx)</option>`;
+        }
+    } else {
+        panel.style.display = 'none';
+    }
+};
+
+// Modifica anche l'ascoltatore per chiamarla correttamente
+socket.on('combat_update', (data) => {
+    if (data.players_limbs) window.playersLimbs = data.players_limbs;
+    setTimeout(() => { window.updateCombatActionPanel(); }, 50);
+});
+
+// Ascolta i dati degli arti in parallelo a game.js
+socket.on('combat_update', (data) => {
+    if (data.players_limbs) window.playersLimbs = data.players_limbs;
+    setTimeout(() => { updateCombatActionPanel(); }, 50);
+});
+
+// Calcolatore Costo Dinamico (Attacco)
+document.getElementById('attack-speed')?.addEventListener('input', (e) => {
+    let speed = parseInt(e.target.value) || 0;
+    let cost = 110 - speed;
+    document.getElementById('attack-cost').innerText = cost < 0 ? 0 : cost;
+});
+
+// Seleziona automaticamente l'arto (bd/bs) in base all'arma scelta
+document.getElementById('attack-weapon')?.addEventListener('change', (e) => {
+    const selectedOption = e.target.options[e.target.selectedIndex];
+    if (!selectedOption) return;
+    const autoLimb = selectedOption.getAttribute('data-limb');
+    if (autoLimb) {
+        document.getElementById('attack-limb').value = autoLimb;
+    }
+});
+
+// Sferra Attacco
+document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
+    const targetId = document.getElementById('attack-target').value;
+    const weaponName = document.getElementById('attack-weapon').value;
+    const limb = document.getElementById('attack-limb').value;
+    const speed = parseInt(document.getElementById('attack-speed').value) || 85;
+    const cost = 110 - speed;
+    
+    // Recupera l'ID di chi sta attaccando (Giocatore o NPC)
+    const currentActor = combatState.turn_order[combatState.current_index];
+    const attackerId = currentActor.id !== undefined ? currentActor.id : currentActor.char_id;
+    
+    if (!targetId) { alert("Seleziona un bersaglio!"); return; }
+    
+    let myLimbs = window.playersLimbs[attackerId] || {bd: 60, bs: 60, gd: 60, gs: 60};
+    if (myLimbs[limb] < cost) {
+        alert(`Frame insufficienti in questo arto! Ne servono ${cost}, ne hai ${myLimbs[limb]}`);
+        return;
+    }
+
+    myLimbs[limb] -= cost;
+    socket.emit('sync_limbs', { char_id: attackerId, limbs: myLimbs });
+    
+    const targetName = document.getElementById('attack-target').options[document.getElementById('attack-target').selectedIndex].text;
+    const attackerName = characters.find(c => c.id === attackerId).name;
+
+    socket.emit('combat_msg', { name: attackerName, message: `sferra un attacco con <b>${weaponName}</b> contro <b>${targetName}</b> a Velocità <b>${speed}</b>!` });
+    
+    socket.emit('declare_attack', { 
+        attacker_id: attackerId, attacker_name: attackerName, 
+        defender_id: parseInt(targetId), defender_name: targetName, 
+        weapon: weaponName, speed: speed 
+    });
+    
+    updateCombatActionPanel();
+});
+
+// ==========================================
+// DIFESA: RICEZIONE ATTACCO E REAZIONE
+// ==========================================
+let pendingIncomingAttack = null;
+
+socket.on('incoming_attack', (data) => {
+    const myCharId = parseInt(userSelect?.value);
+    const targetChar = characters.find(c => c.id === data.defender_id);
+    
+    // Mostra il pop-up se l'attacco è contro di me, OPPURE se sono il Master e attaccano un NPC
+    const isMe = (myCharId === data.defender_id);
+    const isNpcForMaster = (isMaster && targetChar && targetChar.role === 'npc');
+
+    if (isMe || isNpcForMaster) {
+        pendingIncomingAttack = data;
+        document.getElementById('defense-alert-text').innerHTML = `<b>${data.attacker_name}</b> sta attaccando <b>${targetChar.name}</b> con <b>${data.weapon}</b> a <span style="color:#e74c3c; font-weight:bold; font-size:18px;">Velocità ${data.speed}</span>!`;
+        document.getElementById('defense-modal').style.display = 'block';
+    }
+});
+
+document.getElementById('reaction-speed')?.addEventListener('input', (e) => {
+    let speed = parseInt(e.target.value) || 0;
+    let cost = 110 - speed;
+    document.getElementById('reaction-cost').innerText = cost < 0 ? 0 : cost;
+});
+
+document.getElementById('btn-execute-reaction')?.addEventListener('click', () => {
+    if (!pendingIncomingAttack) return;
+    
+    const reactionType = document.getElementById('reaction-type').value;
+    const limb = document.getElementById('reaction-limb').value;
+    const speed = parseInt(document.getElementById('reaction-speed').value) || 100;
+    const cost = 110 - speed;
+    
+    // L'ID del difensore reale (Giocatore o NPC)
+    const defenderId = pendingIncomingAttack.defender_id;
+    
+    let myLimbs = window.playersLimbs[defenderId] || {bd: 60, bs: 60, gd: 60, gs: 60};
+    if (myLimbs[limb] < cost) {
+        alert(`Frame insufficienti per reagire a questa velocità! Ne servono ${cost}, ne hai ${myLimbs[limb]}`);
+        return;
+    }
+
+    // Scala i frame e chiudi la finestra
+    myLimbs[limb] -= cost;
+    socket.emit('sync_limbs', { char_id: defenderId, limbs: myLimbs });
+    
+    // Invia i dati precisi ad app.py per il calcolo matematico
+    socket.emit('resolve_reaction', {
+        attacker_id: pendingIncomingAttack.attacker_id,
+        defender_id: defenderId,
+        reaction_type: reactionType,
+        def_limb: limb,
+        def_speed: speed,
+        att_speed: pendingIncomingAttack.speed,
+        weapon: pendingIncomingAttack.weapon
+    });
+
+    document.getElementById('defense-modal').style.display = 'none';
+    pendingIncomingAttack = null;
+    
+    if (window.updateCombatActionPanel) window.updateCombatActionPanel();
+});
+
+// ==========================================
+// RIDUZIONE A TENDINA DELLE FINESTRE HUD
+// ==========================================
+['tracker', 'equip', 'action'].forEach(prefix => {
+    const toggleBtn = document.getElementById(`${prefix}-toggle`);
+    const contentDiv = document.getElementById(`${prefix}-content`);
+    const headerDiv = document.getElementById(`${prefix}-header`);
+    
+    if (toggleBtn && contentDiv) {
+        // Blocca il mousedown in modo che cliccando la freccina non si trascini per sbaglio la finestra
+        toggleBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+        
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (contentDiv.style.display === 'none') {
+                contentDiv.style.display = 'block';
+                toggleBtn.innerText = '▼';
+                if (prefix === 'equip') headerDiv.style.borderBottom = '2px solid #3498db';
+            } else {
+                contentDiv.style.display = 'none';
+                toggleBtn.innerText = '▶';
+                // Nasconde la riga estetica inferiore se chiuso
+                if (prefix === 'equip') headerDiv.style.borderBottom = 'none';
+            }
+        });
+    }
+});

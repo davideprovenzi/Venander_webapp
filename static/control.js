@@ -405,3 +405,4 @@ canvas.addEventListener('mouseup', () => {
 });
 
 canvas.addEventListener('mouseout', () => { isDrawing = false; isLaserDrawing = false; });
+

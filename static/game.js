@@ -527,7 +527,11 @@ userSelect?.addEventListener('change', () => {
     }
     // --- NUOVO: Mostra l'HUD Equipaggiamento quando il Giocatore sceglie il suo PG ---
     const char = characters.find(c => c.id === parseInt(value));
+   
     if (window.updateEquippedPanel) window.updateEquippedPanel(char || null);
+    
+    // --- NUOVO: Forza l'aggiornamento dell'HUD d'attacco ---
+    if (window.updateCombatActionPanel) window.updateCombatActionPanel();
 });
 
 document.getElementById('rename-btn')?.addEventListener('click', () => {
