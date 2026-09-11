@@ -122,12 +122,20 @@ function getSelectedCharacter() {
 }
 
 function updateSheetButton() {
-    if (!sheetBtn) return;
+    const sheetBtn = document.getElementById('sheet-btn');
+    const notesBtn = document.getElementById('btn-toggle-notes');
+    const renameBtn = document.getElementById('rename-btn');
+    
     if (isMaster) {
-        sheetBtn.style.display = selectedCharacterId ? 'block' : 'none';
-        return;
+        if (sheetBtn) sheetBtn.style.display = selectedCharacterId ? 'flex' : 'none'; // Il cerchio usa flex per centrare l'icona
+        if (notesBtn) notesBtn.style.display = selectedCharacterId ? 'inline-block' : 'none';
+        if (renameBtn) renameBtn.style.display = 'none'; 
+    } else {
+        const char = getSelectedCharacter();
+        if (sheetBtn) sheetBtn.style.display = char ? 'flex' : 'none';
+        if (notesBtn) notesBtn.style.display = char ? 'inline-block' : 'none';
+        if (renameBtn) renameBtn.style.display = char ? 'inline-block' : 'none'; 
     }
-    sheetBtn.style.display = getSelectedCharacter() ? 'block' : 'none';
 }
 
 // Funzione per cercare se una determinata abilità ha dei bonus nel Compendio
@@ -321,36 +329,58 @@ window.autoReveal = function(x, y) {
 
 
 socket.on('update_character', (updatedChar) => {
+    // 1. Aggiorna l'array locale in memoria
     const index = characters.findIndex(c => c.id === updatedChar.id);
     if (index !== -1) characters[index] = updatedChar;
     else characters.push(updatedChar);
 
+    // 2. Aggiorna il Nome nel Menu a Tendina AL VOLO
     if (userSelect) {
         const option = userSelect.querySelector(`option[value="${updatedChar.id}"]`);
         if (option) option.text = updatedChar.name;
     }
 
+    // 3. Aggiorna l'HUD dell'entità selezionata dal Master
     if (selectedCharacterId === updatedChar.id) updateMasterEditPanel(updatedChar);
 
-    // Risoluzione Bug: Assicura che la scheda si aggiorni in tempo reale anche per il Master
     const currentViewedId = isMaster ? selectedCharacterId : parseInt(userSelect?.value);
     
-    if (sheetModal && sheetModal.style.display === 'flex' && currentViewedId === updatedChar.id) {
-        populatePlayerSheetUI(updatedChar);
+    // 4. Aggiorna la Modale della Scheda se è aperta
+    if (typeof sheetModal !== 'undefined' && sheetModal.style.display === 'flex' && currentViewedId === updatedChar.id) {
+        if (typeof populatePlayerSheetUI === 'function') populatePlayerSheetUI(updatedChar);
     }
     
-    // --- NUOVO: Aggiorna l'HUD dell'equipaggiamento ---
+    // 5. Aggiorna l'HUD dell'equipaggiamento
     if (window.updateEquippedPanel && currentViewedId === updatedChar.id) {
         window.updateEquippedPanel(updatedChar);
     }
 
-    if (!isMaster && updatedChar.id === parseInt(userSelect?.value)) {
-        window.autoReveal(updatedChar.x, updatedChar.y);
+    // 6. Aggiorna gli Appunti in tempo reale (solo se non li stai scrivendo ora)
+    if (currentViewedId === updatedChar.id) {
+        const textarea = document.getElementById('notes-textarea');
+        if (textarea && document.activeElement !== textarea) {
+            textarea.value = updatedChar.notes || "";
+        }
     }
 
-    render();
+    // 7. Svela la mappa (Fog of War) se ti muovi
+    if (!isMaster && updatedChar.id === parseInt(userSelect?.value)) {
+        if (typeof window.autoReveal === 'function') window.autoReveal(updatedChar.x, updatedChar.y);
+    }
+
+    // 8. Aggiorna il testo della Barra di Stato in basso al volo
+    const myCharId = parseInt(userSelect?.value);
+    if (!isMaster && myCharId === updatedChar.id) {
+        if (statusBar) statusBar.innerText = `Modalità Giocatore (${updatedChar.name}).`;
+    } else if (isMaster && selectedCharacterId === updatedChar.id) {
+        if (statusBar) statusBar.innerText = `[MASTER] Entità selezionata: ${updatedChar.name}`;
+    } else if (isMaster) {
+        if (statusBar) statusBar.innerText = `${updatedChar.name} aggiornato.`;
+    }
+
+    // 9. Ridisegna la Mappa per cambiare subito l'iniziale della pedina e i bottoni
+    if (typeof render === 'function') render();
     updateSheetButton();
-    statusBar.innerText = `${updatedChar.name} aggiornato.`;
 });
 
 socket.on('character_deleted', (data) => {
@@ -532,6 +562,14 @@ userSelect?.addEventListener('change', () => {
     
     // --- NUOVO: Forza l'aggiornamento dell'HUD d'attacco ---
     if (window.updateCombatActionPanel) window.updateCombatActionPanel();
+
+    // --- NUOVO: CARICA GLI APPUNTI DAL DATABASE ---
+    const textarea = document.getElementById('notes-textarea');
+    if (textarea) {
+        textarea.value = char && char.notes ? char.notes : "";
+    }
+
+    updateSheetButton();
 });
 
 document.getElementById('rename-btn')?.addEventListener('click', () => {

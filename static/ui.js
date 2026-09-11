@@ -1549,7 +1549,7 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
 // ==========================================
 // RIDUZIONE A TENDINA DELLE FINESTRE HUD
 // ==========================================
-['tracker', 'equip', 'action'].forEach(prefix => {
+['tracker', 'equip', 'action', 'notes'].forEach(prefix => {
     const toggleBtn = document.getElementById(`${prefix}-toggle`);
     const contentDiv = document.getElementById(`${prefix}-content`);
     const headerDiv = document.getElementById(`${prefix}-header`);
@@ -1572,4 +1572,64 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
             }
         });
     }
+});
+
+// ==========================================
+// LOGICA APPUNTI E TRASCINAMENTO
+// ==========================================
+const notesPanel = document.getElementById('notes-panel');
+const notesHeader = document.getElementById('notes-header');
+let isDraggingNotes = false, dragNotesX = 0, dragNotesY = 0;
+
+if (notesHeader && notesPanel) {
+    notesHeader.addEventListener('mousedown', (e) => {
+        isDraggingNotes = true;
+        dragNotesX = e.clientX - notesPanel.getBoundingClientRect().left;
+        dragNotesY = e.clientY - notesPanel.getBoundingClientRect().top;
+        notesHeader.style.cursor = 'grabbing';
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingNotes) return;
+        notesPanel.style.left = (e.clientX - dragNotesX) + 'px';
+        notesPanel.style.top = (e.clientY - dragNotesY) + 'px';
+    });
+    document.addEventListener('mouseup', () => { isDraggingNotes = false; notesHeader.style.cursor = 'grab'; });
+}
+// Apertura / Chiusura (Gestione sicura globale)
+document.body.addEventListener('click', (e) => {
+    // Intercetta il click sia sul bottone principale che sulla X del pannello
+    if (e.target && (e.target.id === 'btn-toggle-notes' || e.target.id === 'notes-close-x')) {
+        const panel = document.getElementById('notes-panel');
+        const btn = document.getElementById('btn-toggle-notes');
+        
+        if (panel) {
+            if (panel.style.display === 'none') {
+                // APERTURA: Mostra il pannello e fai diventare rosso il bottone
+                panel.style.display = 'block';
+                if (btn) {
+                    btn.innerHTML = '❌ Chiudi Appunti';
+                    btn.style.background = '#e74c3c';
+                }
+            } else {
+                // CHIUSURA: Nascondi il pannello e fai tornare normale il bottone
+                panel.style.display = 'none';
+                if (btn) {
+                    btn.innerHTML = '📝 Appunti';
+                    btn.style.background = '#f39c12';
+                }
+            }
+        }
+    }
+});
+
+// Salvataggio
+document.getElementById('save-notes-btn')?.addEventListener('click', () => {
+    const charId = isMaster ? selectedCharacterId : parseInt(document.getElementById('user-select')?.value);
+    if (!charId) return;
+    
+    socket.emit('update_character_sheet', { char_id: charId, notes: document.getElementById('notes-textarea').value });
+    
+    const msg = document.getElementById('notes-saved-msg');
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 2000);
 });
