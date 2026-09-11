@@ -145,23 +145,10 @@ function populatePlayerSheetUI(myChar) {
             if (canEdit) {
                 controlsHtml = `
                     <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
-                       <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
+                      <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value, 'weapon')" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
                             <option value="">-- Assegna --</option>
-                            <option value="visore">Visore</option>
-                            <option value="elmo">Elmo</option>
-                            <option value="schiena">Schiena</option>
-                            <option value="spalla_dx">Spalla Dx</option>
-                            <option value="spalla_sx">Spalla Sx</option>
-                            <option value="petto">Pettorali</option>
-                            <option value="avambr_dx">Avambraccio Dx</option>
-                            <option value="avambr_sx">Avambraccio Sx</option>
-                            <option value="cintura">Cintura</option>
-                            <option value="guanti">Guanti</option>
-                            <option value="gambe">Gambe</option>
-                            <option value="stivali">Stivali</option>
                             <option value="mano_dx">Arma Dx</option>
                             <option value="mano_sx">Arma Sx</option>
-                            <option value="rimuovi">Rimuovi</option>
                         </select>
                         <button onclick="window.removeWeaponItem(${myChar.id}, ${index})" style="padding: 4px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">🗑️</button>
                     </div>
@@ -385,7 +372,7 @@ function populatePlayerSheetUI(myChar) {
                         options += '<option value="mano_dx">Mano Dx</option><option value="mano_sx">Mano Sx</option>';
                     }
 
-                    selectHtml = `<select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">${options}</select>`;
+                    selectHtml = `<select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value, 'backpack')" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">${options}</select>`;
                 }
 
                 // 3. Genera l'HTML (se selectHtml è vuoto, mostra solo i bottoni +/- e Cestino)
@@ -1283,7 +1270,7 @@ window.updateEquippedPanel = function(char) {
         });
     });
 };
-window.equipItem = function(charId, itemName, itemDesc, slot) {
+window.equipItem = function(charId, itemName, itemDesc, slot, itemType = 'backpack') {
     if (!slot) return;
     const char = characters.find(c => c.id === charId);
     if (!char) return;
@@ -1291,58 +1278,88 @@ window.equipItem = function(charId, itemName, itemDesc, slot) {
     let stats = char.stats || {};
     if (!stats.equipped) stats.equipped = {};
     let bp = char.backpack || [];
+    let wp = char.weapons || []; // Prende anche le armi
 
     if (slot === 'rimuovi') {
-        // Se usi il comando rimuovi, sposta nello zaino
         for (let k in stats.equipped) {
             if (stats.equipped[k] && stats.equipped[k].name === itemName) {
-                const existing = bp.find(b => b.name === stats.equipped[k].name);
-                if (existing) existing.qty = (existing.qty || 1) + 1;
-                else bp.push(stats.equipped[k]);
+                let oldItem = stats.equipped[k];
+                let oType = oldItem.original_type || 'backpack';
+                
+                if (oType === 'weapon') {
+                    const existingWp = wp.find(w => (w.name || w) === oldItem.name);
+                    if (!existingWp) wp.push({ name: oldItem.name, desc: oldItem.desc });
+                } else {
+                    const existingBp = bp.find(b => (b.name || b) === oldItem.name);
+                    if (existingBp) existingBp.qty = (existingBp.qty || 1) + 1;
+                    else bp.push(oldItem);
+                }
                 stats.equipped[k] = null;
             }
         }
     } else {
-        // 1. Rimuovi l'oggetto dallo Zaino
-        const bpIndex = bp.findIndex(b => b.name === itemName);
+        // 1. Rimuovi l'oggetto dall'inventario corretto
         let itemImg = "";
-        if (bpIndex !== -1) {
-            itemImg = bp[bpIndex].img || "";
-            if (bp[bpIndex].qty > 1) bp[bpIndex].qty -= 1;
-            else bp.splice(bpIndex, 1); // Rimuove se è l'ultimo
+        if (itemType === 'weapon') {
+            const wpIndex = wp.findIndex(w => (w.name || w) === itemName);
+            if (wpIndex !== -1) {
+                itemImg = wp[wpIndex].img || "";
+                wp.splice(wpIndex, 1);
+            }
+        } else {
+            const bpIndex = bp.findIndex(b => (b.name || b) === itemName);
+            if (bpIndex !== -1) {
+                itemImg = bp[bpIndex].img || "";
+                if (bp[bpIndex].qty > 1) bp[bpIndex].qty -= 1;
+                else bp.splice(bpIndex, 1);
+            }
         }
 
-        // 2. Se lo slot è già occupato, rimetti il vecchio oggetto nello Zaino
+        // 2. Se c'è già un oggetto nello slot, rimettilo al suo posto d'origine
         if (stats.equipped[slot]) {
             const oldItem = stats.equipped[slot];
-            const existing = bp.find(b => b.name === oldItem.name);
-            if (existing) existing.qty = (existing.qty || 1) + 1;
-            else bp.push({ name: oldItem.name, desc: oldItem.desc, qty: 1, img: oldItem.img || "" });
+            let oType = oldItem.original_type || 'backpack';
+            
+            if (oType === 'weapon') {
+                const existingWp = wp.find(w => (w.name || w) === oldItem.name);
+                if (!existingWp) wp.push({ name: oldItem.name, desc: oldItem.desc });
+            } else {
+                const existingBp = bp.find(b => (b.name || b) === oldItem.name);
+                if (existingBp) existingBp.qty = (existingBp.qty || 1) + 1;
+                else bp.push({ name: oldItem.name, desc: oldItem.desc, qty: oldItem.qty || 1, img: oldItem.img || "" });
+            }
         }
 
-        // 3. Equipaggia il nuovo
-        stats.equipped[slot] = { name: itemName, desc: itemDesc, qty: 1, img: itemImg };
+        // 3. Equipaggia il nuovo oggetto memorizzando la sua natura
+        stats.equipped[slot] = { name: itemName, desc: itemDesc, qty: 1, img: itemImg, original_type: itemType };
     }
 
-    socket.emit('update_character_sheet', { char_id: charId, stats: stats, backpack: bp });
+    socket.emit('update_character_sheet', { char_id: charId, stats: stats, backpack: bp, weapons: wp });
 };
 
-// Funzione globale per disequipaggiare cliccando sull'HUD
 window.unequipFromSlot = function(charId, slotKey) {
     const char = characters.find(c => c.id === charId);
     if (!char || !char.stats?.equipped || !char.stats.equipped[slotKey]) return;
     
     const item = char.stats.equipped[slotKey];
     let bp = char.backpack || [];
+    let wp = char.weapons || [];
     
-    const existing = bp.find(b => b.name === item.name);
-    if (existing) existing.qty = (existing.qty || 1) + 1;
-    else bp.push(item);
+    let oType = item.original_type || 'backpack';
+    
+    // Lo smista nel contenitore giusto
+    if (oType === 'weapon') {
+        const existingWp = wp.find(w => (w.name || w) === item.name);
+        if (!existingWp) wp.push({ name: item.name, desc: item.desc });
+    } else {
+        const existingBp = bp.find(b => (b.name || b) === item.name);
+        if (existingBp) existingBp.qty = (existingBp.qty || 1) + 1;
+        else bp.push(item);
+    }
     
     char.stats.equipped[slotKey] = null;
-    socket.emit('update_character_sheet', { char_id: charId, stats: char.stats, backpack: bp });
+    socket.emit('update_character_sheet', { char_id: charId, stats: char.stats, backpack: bp, weapons: wp });
 };
-
 
 // ==========================================
 // LOGICA COMBATTIMENTO: FRAME E ARTI
