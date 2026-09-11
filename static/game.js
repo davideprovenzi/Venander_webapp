@@ -418,11 +418,20 @@ socket.on('character_invisible_update', (data) => {
 function updateMasterEditPanel(char) {
     const panel = document.getElementById('selected-entity-panel');
     if (!panel) return;
-
-    const visBtn = document.getElementById('btn-toggle-visibility');
-    const invBtn = document.getElementById('btn-toggle-invisible');
+if (char) {
+        panel.style.display = 'block'; // Fa riapparire il pannello
+        panel.style.opacity = '1';
+        panel.style.pointerEvents = 'auto';
         
-        // --- LOGICA BOTTONE VISIBILITÀ (FoW) ---
+        document.getElementById('sel-name').innerText = char.name;
+        document.getElementById('sel-hp').innerText = char.hp_current !== undefined ? char.hp_current : "?";
+        document.getElementById('sel-stam').innerText = char.stamina_current !== undefined ? char.stamina_current : "?";
+        document.getElementById('sel-conc').innerText = char.conc_current !== undefined ? char.conc_current : "?";
+        
+        const statusSelect = document.getElementById('sel-status');
+        if (statusSelect && char.status) statusSelect.value = char.status;
+        
+        const visBtn = document.getElementById('btn-toggle-visibility');
         if (visBtn) {
             visBtn.style.display = 'block';
             visBtn.innerText = char.is_hidden ? "👁️ Rivela (FoW)" : "👁️ Nascondi (FoW)";
@@ -430,42 +439,17 @@ function updateMasterEditPanel(char) {
             visBtn.onclick = () => socket.emit('toggle_hidden', { char_id: char.id, is_hidden: !char.is_hidden });
         }
         
-        // --- LOGICA BOTTONE INVISIBILE IN COMBATTIMENTO ---
+        const invBtn = document.getElementById('btn-toggle-invisible');
         if (invBtn) {
             invBtn.style.display = 'block';
             invBtn.innerText = char.is_invisible ? "👻 Torna Visibile" : "👻 Rendi Invisibile";
             invBtn.style.background = char.is_invisible ? "#27ae60" : "#8e44ad";
             invBtn.onclick = () => socket.emit('toggle_invisible', { char_id: char.id, is_invisible: !char.is_invisible });
         }
-
-    if (char) {
-        panel.style.opacity = '1';
-        panel.style.pointerEvents = 'auto';
-        document.getElementById('sel-name').innerText = char.name;
-        document.getElementById('sel-hp').innerText = char.hp_current !== undefined ? char.hp_current : "?";
-        document.getElementById('sel-stam').innerText = char.stamina_current !== undefined ? char.stamina_current : "?";
-        document.getElementById('sel-conc').innerText = char.conc_current !== undefined ? char.conc_current : "?";
-        const statusSelect = document.getElementById('sel-status');
-        if (statusSelect && char.status) statusSelect.value = char.status;
-        
-        // --- LOGICA BOTTONE VISIBILITÀ ---
-        if (visBtn) {
-            visBtn.style.display = 'block';
-            visBtn.innerText = char.is_hidden ? "👁️ Rivela (Invisibile)" : "👁️ Nascondi (Visibile)";
-            visBtn.style.background = char.is_hidden ? "#27ae60" : "#95a5a6";
-            visBtn.onclick = () => {
-                socket.emit('toggle_hidden', { char_id: char.id, is_hidden: !char.is_hidden });
-            };
-        }
     } else {
-        panel.style.opacity = '0.5';
-        panel.style.pointerEvents = 'none';
-        document.getElementById('sel-name').innerText = 'Nessuna selezione';
-        document.getElementById('sel-hp').innerText = '--';
-        document.getElementById('sel-stam').innerText = '--';
-        document.getElementById('sel-conc').innerText = '--';
-        
-        if (visBtn) visBtn.style.display = 'none';
+        // --- SPARIZIONE TOTALE SE NON C'È SELEZIONE ---
+        panel.style.display = 'none';
+        if (equipPanel) equipPanel.style.display = 'none';
     }
 }
 

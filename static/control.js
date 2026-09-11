@@ -1,6 +1,39 @@
 // Memoria dei tasti premuti per le scorciatoie
 window.keysDown = {};
-window.addEventListener('keydown', e => window.keysDown[e.key.toLowerCase()] = true);
+
+window.addEventListener('keydown', e => {
+    window.keysDown[e.key.toLowerCase()] = true;
+    
+    // --- Tasto Esc per Annullare Selezioni e Strumenti ---
+    if (e.key === 'Escape') {
+        let changed = false;
+        
+        // Svuota completamente l'interfaccia Master
+        if (isMaster && selectedCharacterId !== null) {
+            selectedCharacterId = null;
+            updateMasterEditPanel(null);
+            updateSheetButton();
+            if (window.updateEquippedPanel) window.updateEquippedPanel(null);
+            if (typeof statusBar !== 'undefined') statusBar.innerText = `[MASTER] Selezione annullata.`;
+            changed = true;
+        }
+        
+        if (window.selectedDrawing) {
+            window.selectedDrawing = null;
+            changed = true;
+        }
+        
+        if (window.isRulerMode) {
+            window.isRulerMode = false;
+            window.rulerStart = null;
+            window.rulerCurrent = null;
+            changed = true;
+        }
+        
+        if (changed && typeof render === 'function') render();
+    }
+});
+
 window.addEventListener('keyup', e => window.keysDown[e.key.toLowerCase()] = false);
 
 
@@ -162,24 +195,32 @@ canvas.addEventListener('click', (event) => {
     }
 
     // Il Master può cliccare tutti, i giocatori solo quelli visibili (né FoW né Invisibili)
+   // Il Master può cliccare tutti, i giocatori solo quelli visibili (né FoW né Invisibili)
     const clickedChar = characters.find(c => c.x === gridX && c.y === gridY && (isMaster || (!c.is_hidden && !c.is_invisible)));
+    
     if (clickedChar) {
-        selectedCharacterId = clickedChar.id;
+        // Se clicchi sulla pedina già selezionata, la deselezioni
+        if (selectedCharacterId === clickedChar.id) {
+            selectedCharacterId = null;
+            statusBar.innerText = `[MASTER] Entità deselezionata.`;
+            updateMasterEditPanel(null); // Questo comando fa sparire tutto
+        } else {
+            selectedCharacterId = clickedChar.id;
+            statusBar.innerText = `[MASTER] Entità selezionata: ${clickedChar.name}`;
+            updateMasterEditPanel(clickedChar);
+            if (window.updateEquippedPanel) window.updateEquippedPanel(clickedChar);
+        }
         render();
-        statusBar.innerText = `[MASTER] Entità selezionata: ${clickedChar.name}`;
-        updateMasterEditPanel(clickedChar);
         updateSheetButton();
-
-        if (window.updateEquippedPanel) window.updateEquippedPanel(clickedChar);
     } else if (selectedCharacterId !== null) {
         socket.emit('declare_move', { char_id: selectedCharacterId, target_x: gridX, target_y: gridY });
         statusBar.innerText = `[MASTER] Spostamento in X:${gridX}, Y:${gridY}`;
+        
+        // Deseleziona e nasconde i pannelli dopo il movimento
         selectedCharacterId = null;
-        render();
         updateMasterEditPanel(null);
+        render();
         updateSheetButton();
-
-        if (window.updateEquippedPanel) window.updateEquippedPanel(null);
     }
 });
 
