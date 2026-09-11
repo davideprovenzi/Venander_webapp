@@ -48,7 +48,7 @@ canvas.addEventListener('click', (event) => {
     const gridX = hex.col;
     const gridY = hex.row;
 
-    // --- NUOVO: POSIZIONAMENTO NPC (MASTER) ---
+    // --- POSIZIONAMENTO NPC (MASTER) ---
     if (isMaster && window.isSpawningNpc) {
         const name = document.getElementById('npc-name')?.value || "Mistero";
         const hp = parseInt(document.getElementById('npc-hp')?.value) || 30;
@@ -163,6 +163,8 @@ canvas.addEventListener('click', (event) => {
         statusBar.innerText = `[MASTER] Entità selezionata: ${clickedChar.name}`;
         updateMasterEditPanel(clickedChar);
         updateSheetButton();
+
+        if (window.updateEquippedPanel) window.updateEquippedPanel(clickedChar);
     } else if (selectedCharacterId !== null) {
         socket.emit('declare_move', { char_id: selectedCharacterId, target_x: gridX, target_y: gridY });
         statusBar.innerText = `[MASTER] Spostamento in X:${gridX}, Y:${gridY}`;
@@ -170,6 +172,8 @@ canvas.addEventListener('click', (event) => {
         render();
         updateMasterEditPanel(null);
         updateSheetButton();
+
+        if (window.updateEquippedPanel) window.updateEquippedPanel(null);
     }
 });
 

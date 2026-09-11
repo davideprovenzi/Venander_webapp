@@ -372,3 +372,76 @@ canvas {
     padding-top: 10px;
 }
 
+/* ==========================================
+   HUD EQUIPAGGIAMENTO 
+   ========================================== */
+#equipped-panel {
+    position: absolute;
+    bottom: 40px;
+    left: 20px;
+    background: rgba(15, 20, 30, 0.9);
+    border: 2px solid #34495e;
+    border-radius: 8px;
+    padding: 12px;
+    color: #ecf0f1;
+    z-index: 100;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    width: 220px;
+    pointer-events: auto;
+}
+
+.equip-slot {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #7f8c8d;
+    border-radius: 4px;
+    cursor: help;
+    font-size: 13px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.equip-slot:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: #f1c40f;
+    transform: translateX(5px);
+}
+
+.equip-slot span {
+    color: #bdc3c7;
+    font-weight: normal;
+    display: block;
+    font-size: 12px;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.finestra-drag {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  z-index: 9999; /* Lo mantiene sempre in primo piano */
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  width: 300px;
+}
+
+#finestra-header {
+  padding: 10px;
+  cursor: move; /* Cambia il cursore per indicare che è trascinabile */
+  background-color: #f1f1f1;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  font-weight: bold;
+  user-select: none; /* Evita di evidenziare il testo durante il trascinamento */
+}
+
+.finestra-content {
+  padding: 15px;
+}

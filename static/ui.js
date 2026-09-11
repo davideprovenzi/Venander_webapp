@@ -143,10 +143,15 @@ function populatePlayerSheetUI(myChar) {
             
             let controlsHtml = '';
             if (canEdit) {
-                // Per le armi c'è solo il tasto di rimozione, occupando tutta la larghezza
                 controlsHtml = `
-                    <div style="margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px;">
-                        <button onclick="window.removeWeaponItem(${myChar.id}, ${index})" style="width: 100%; padding: 4px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">🗑️ Rimuovi Arma</button>
+                    <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
+                        <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 4px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
+                            <option value="">-- Assegna --</option>
+                            <option value="mano_dx">Mano Destra</option>
+                            <option value="mano_sx">Mano Sinistra</option>
+                            <option value="rimuovi">Rimuovi (Svuota slot)</option>
+                        </select>
+                        <button onclick="window.removeWeaponItem(${myChar.id}, ${index})" style="padding: 4px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">🗑️</button>
                     </div>
                 `;
             }
@@ -235,8 +240,17 @@ function populatePlayerSheetUI(myChar) {
             let controlsHtml = '';
             if (canEdit) {
                 controlsHtml = `
-                    <div style="margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px;">
-                        <button onclick="window.removeBonusItem(${myChar.id}, ${index})" style="width: 100%; padding: 4px 8px; background: #e67e22; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">🗑️ Rimuovi Effetto</button>
+                    <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
+                        <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
+                            <option value="">-- Assegna --</option>
+                            <option value="armatura">Armatura</option>
+                            <option value="mano_dx">Mano Dx</option>
+                            <option value="mano_sx">Mano Sx</option>
+                            <option value="rimuovi">Rimuovi</option>
+                        </select>
+                        <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, -1)" style="padding: 2px 8px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">-</button>
+                        <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, 1)" style="padding: 2px 8px; background: #2ecc71; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">+</button>
+                        <button onclick="window.removeBackpackItem(${myChar.id}, ${index})" style="padding: 2px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: auto;">🗑️</button>
                     </div>
                 `;
             }
@@ -951,3 +965,107 @@ if (trackerHeader) {
         isDraggingTracker = false;
     });
 }
+
+// ==========================================
+// TRASCINAMENTO PANNELLO EQUIPAGGIAMENTO
+// ==========================================
+const equipPanel = document.getElementById('equipped-panel');
+const equipHeader = document.getElementById('equip-header');
+
+let isDraggingEquip = false;
+let dragEquipOffsetX = 0;
+let dragEquipOffsetY = 0;
+
+if (equipHeader && equipPanel) {
+    equipHeader.addEventListener('mousedown', (e) => {
+        isDraggingEquip = true;
+        // Calcola dove hai cliccato rispetto al bordo del pannello
+        dragEquipOffsetX = e.clientX - equipPanel.getBoundingClientRect().left;
+        dragEquipOffsetY = e.clientY - equipPanel.getBoundingClientRect().top;
+        equipHeader.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingEquip) return;
+        // Aggiorna la posizione in base al mouse
+        equipPanel.style.left = (e.clientX - dragEquipOffsetX) + 'px';
+        equipPanel.style.top = (e.clientY - dragEquipOffsetY) + 'px';
+        // Rimuove il vincolo del "bottom" originario per lasciarlo libero
+        equipPanel.style.bottom = 'auto'; 
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDraggingEquip = false;
+        equipHeader.style.cursor = 'grab';
+    });
+}
+
+// ==========================================
+// HUD EQUIPAGGIAMENTO
+// ==========================================
+window.updateEquippedPanel = function(char) {
+    const panel = document.getElementById('equipped-panel');
+    if (!panel) return;
+
+    if (!char || (isMaster && char.id !== selectedCharacterId)) {
+        panel.style.display = 'none';
+        return;
+    }
+    panel.style.display = 'block';
+
+    const equipped = char.stats?.equipped || { mano_dx: null, mano_sx: null, armatura: null };
+    const slots = [
+        { id: 'slot-armatura', data: equipped.armatura, icon: '🛡️', label: 'Armatura' },
+        { id: 'slot-mano-dx', data: equipped.mano_dx, icon: '🗡️', label: 'Mano Dx' },
+        { id: 'slot-mano-sx', data: equipped.mano_sx, icon: '🗡️', label: 'Mano Sx' }
+    ];
+
+    slots.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (!el) return;
+        const itemName = s.data ? s.data.name : 'Vuoto';
+        const itemDesc = s.data ? s.data.desc : 'Nessun oggetto assegnato a questo slot.';
+
+        el.innerHTML = `${s.icon} ${s.label}:<br><span style="color: ${s.data ? '#f1c40f' : '#bdc3c7'}">${itemName}</span>`;
+
+        const newEl = el.cloneNode(true);
+        el.parentNode.replaceChild(newEl, el);
+
+        newEl.addEventListener('mouseenter', (e) => {
+            const tt = document.getElementById('equip-tooltip');
+            document.getElementById('tt-name').innerText = itemName;
+            document.getElementById('tt-desc').innerText = itemDesc;
+            tt.style.display = 'block';
+            tt.style.left = (e.pageX + 15) + 'px';
+            tt.style.top = (e.pageY - 15) + 'px';
+        });
+        newEl.addEventListener('mousemove', (e) => {
+            document.getElementById('equip-tooltip').style.left = (e.pageX + 15) + 'px';
+            document.getElementById('equip-tooltip').style.top = (e.pageY - 15) + 'px';
+        });
+        newEl.addEventListener('mouseleave', () => {
+            document.getElementById('equip-tooltip').style.display = 'none';
+        });
+    });
+};
+
+window.equipItem = function(charId, itemName, itemDesc, slot) {
+    if (!slot) return;
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+
+    let stats = char.stats || {};
+    if (!stats.equipped) stats.equipped = { mano_dx: null, mano_sx: null, armatura: null };
+
+    if (slot === 'rimuovi') {
+        for (let k in stats.equipped) {
+            if (stats.equipped[k] && stats.equipped[k].name === itemName) {
+                stats.equipped[k] = null;
+            }
+        }
+    } else {
+        stats.equipped[slot] = { name: itemName, desc: itemDesc };
+    }
+
+    socket.emit('update_character_sheet', { char_id: charId, stats: stats });
+};

@@ -339,6 +339,11 @@ socket.on('update_character', (updatedChar) => {
         populatePlayerSheetUI(updatedChar);
     }
     
+    // --- NUOVO: Aggiorna l'HUD dell'equipaggiamento ---
+    if (window.updateEquippedPanel && currentViewedId === updatedChar.id) {
+        window.updateEquippedPanel(updatedChar);
+    }
+
     if (!isMaster && updatedChar.id === parseInt(userSelect?.value)) {
         window.autoReveal(updatedChar.x, updatedChar.y);
     }
@@ -520,6 +525,9 @@ userSelect?.addEventListener('change', () => {
         // Il vecchio bottone fine turno è riservato solo al Master
         if (btnNext) btnNext.style.display = (isMaster || isMyTurn) ? 'block' : 'none';
     }
+    // --- NUOVO: Mostra l'HUD Equipaggiamento quando il Giocatore sceglie il suo PG ---
+    const char = characters.find(c => c.id === parseInt(value));
+    if (window.updateEquippedPanel) window.updateEquippedPanel(char || null);
 });
 
 document.getElementById('rename-btn')?.addEventListener('click', () => {

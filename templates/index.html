@@ -69,6 +69,25 @@
         <div style="position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.7); font-size: 13px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0px 0px 5px #000;">
     💡 Comandi: [Rotellina] = Zoom | [Tieni premuto Click Sin. e Trascina] = Sposta | [Click Destro] = Ping | [SHIFT + Drag] = Laser | [ALT + Drag] = Righello
         </div>
+
+    </div>
+
+    <div id="equipped-panel" style="display: none; position: absolute; bottom: 40px; left: 20px; z-index: 1000; background: rgba(15, 20, 30, 0.9); border: 2px solid #34495e; border-radius: 8px; padding: 12px; color: #ecf0f1; width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        
+        <!-- Intestazione trascinabile -->
+        <div id="equip-header" style="background: #2c3e50; color: white; padding: 6px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -12px -12px 10px -12px; border-bottom: 2px solid #34495e;">
+            🎒 Equipaggiamento 🖐️
+        </div>
+
+        <div style="font-size: 11px; color: #7f8c8d; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">In Uso</div>
+        <div class="equip-slot" id="slot-armatura">🛡️ Armatura:<br><span>Vuoto</span></div>
+        <div class="equip-slot" id="slot-mano-dx">🗡️ Mano Dx:<br><span>Vuoto</span></div>
+        <div class="equip-slot" id="slot-mano-sx">🗡️ Mano Sx:<br><span>Vuoto</span></div>
+    </div>
+
+    <div id="equip-tooltip" style="display: none; position: absolute; background: rgba(15, 20, 30, 0.95); color: white; padding: 12px; border-radius: 6px; border: 1px solid #f1c40f; pointer-events: none; z-index: 3000; width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+        <strong id="tt-name" style="color: #f1c40f; display: block; margin-bottom: 6px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px;"></strong>
+        <span id="tt-desc" style="font-size: 12px; font-style: italic; color: #bdc3c7; line-height: 1.4; display: block;"></span>
     </div>
 
     <div id="status-bar">
