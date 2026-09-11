@@ -1442,7 +1442,7 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     const weaponName = document.getElementById('attack-weapon').value;
     const limb = document.getElementById('attack-limb').value;
     const speed = parseInt(document.getElementById('attack-speed').value) || 85;
-    const cost = 110 - speed;
+    const cost = 110 - speed < 0 ? 0 : 110 - speed;
     
     // Recupera l'ID di chi sta attaccando (Giocatore o NPC)
     const currentActor = combatState.turn_order[combatState.current_index];
@@ -1456,10 +1456,19 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
         return;
     }
 
+    const targetSelect = document.getElementById('attack-target');
+    const targetName = targetSelect.options[targetSelect.selectedIndex].text;
+    const limbName = document.getElementById('attack-limb').options[document.getElementById('attack-limb').selectedIndex].text;
+
+    // --- LA SICURA: Pop-up di conferma ---
+    if (!confirm(`⚔️ Confermi l'attacco contro ${targetName}?\nArma: ${weaponName}\nArto: ${limbName} (Costo: ${cost} Frame)`)) {
+        return; // Annulla l'attacco
+    }
+
+    // Se confermato, scala i frame ed emette l'attacco
     myLimbs[limb] -= cost;
     socket.emit('sync_limbs', { char_id: attackerId, limbs: myLimbs });
     
-    const targetName = document.getElementById('attack-target').options[document.getElementById('attack-target').selectedIndex].text;
     const attackerName = characters.find(c => c.id === attackerId).name;
 
     socket.emit('combat_msg', { name: attackerName, message: `sferra un attacco con <b>${weaponName}</b> contro <b>${targetName}</b> a Velocità <b>${speed}</b>!` });
