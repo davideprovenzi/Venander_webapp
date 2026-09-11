@@ -592,12 +592,14 @@ document.getElementById('btn-delete-entity')?.addEventListener('click', () => {
 // MAPPA DI SFONDO (LOCALE)
 // ==========================================
 socket.on('map_update', (data) => {
+    const oldUrl = currentMapUrl; // Salva la vecchia immagine per confronto
+    
     currentMapUrl = data.map_url;
     mapScale = data.map_scale || 1.0;
     mapDx = data.map_dx || 0;
     mapDy = data.map_dy || 0;
     
-    // --- NUOVO: Aggiorna lo stato della nebbia ---
+    // Aggiorna lo stato della nebbia
     window.fowEnabled = data.fow_enabled || false;
     window.revealedHexes = new Set(data.revealed_hexes || []);
     
@@ -607,10 +609,15 @@ socket.on('map_update', (data) => {
         btn.style.background = window.fowEnabled ? "#27ae60" : "#8e44ad";
     }
     
+    // BLOCCO FLASH: Ricarica l'immagine SOLO se la mappa è davvero cambiata
     if (currentMapUrl) {
-        bgImage = new Image();
-        bgImage.onload = () => { render(); };
-        bgImage.src = currentMapUrl;
+        if (currentMapUrl !== oldUrl || !bgImage) {
+            bgImage = new Image();
+            bgImage.onload = () => { render(); };
+            bgImage.src = currentMapUrl;
+        } else {
+            render(); // Se la mappa è la stessa, limitati a ridisegnare la nebbia
+        }
     } else {
         bgImage = null;
         render();
@@ -630,32 +637,69 @@ socket.on('drawing_deleted', (data) => {
     render();
 });
 
-// Applica le dimensioni della mappa
-document.getElementById('set-map-btn')?.addEventListener('click', () => {
-    if (!isMaster) return;
-    const fileInput = document.getElementById('map-file-input');
-    const scale = parseFloat(document.getElementById('map-scale').value) || 1.0;
-    const dx = parseInt(document.getElementById('map-dx').value) || 0;
-    const dy = parseInt(document.getElementById('map-dy').value) || 0;
+// ==========================================
+// MODALITÀ MODIFICA VISIVA SFONDO E GESTIONE MAPPA
+// ==========================================
+window.isEditingMap = false;
+window.mapDragAction = null; 
+window.mapStartParams = { dx: 0, dy: 0, scale: 1 };
+window.mapMouseStart = { x: 0, y: 0 };
+
+document.getElementById('toggle-map-edit-btn')?.addEventListener('click', () => {
+    if (!isMaster || !bgImage) {
+        alert("Carica prima una mappa per poterla modificare!");
+        return;
+    }
+    window.isEditingMap = !window.isEditingMap;
+    const btn = document.getElementById('toggle-map-edit-btn');
     
-    if (fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            socket.emit('set_map', { url: e.target.result, scale, dx, dy });
-        };
-        reader.readAsDataURL(fileInput.files[0]);
+    if (window.isEditingMap) {
+        btn.style.background = '#e74c3c';
+        btn.innerText = '✅ Fine Modifica Sfondo';
+        canvas.style.cursor = 'move';
     } else {
-        // Aggiorna solo le coordinate se non si sta caricando una nuova immagine
-        socket.emit('set_map', { url: currentMapUrl, scale, dx, dy });
+        btn.style.background = '#8e44ad';
+        btn.innerText = '📐 Modalità Muovi e Ridimensiona';
+        canvas.style.cursor = 'pointer';
+        // Salva le modifiche in via definitiva
+        socket.emit('set_map', { url: currentMapUrl, scale: mapScale, dx: mapDx, dy: mapDy });
+    }
+    render();
+});
+
+// --- CARICAMENTO AUTOMATICO MAPPA ---
+document.getElementById('map-file-input')?.addEventListener('change', (e) => {
+    if (!isMaster) return;
+    const file = e.target.files[0];
+    if (file) {
+        // Appena selezioni il file, lo carica e resetta Scala a 1 e Coordinate a 0
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            socket.emit('set_map', { url: evt.target.result, scale: 1.0, dx: 0, dy: 0 });
+            
+            if (document.getElementById('map-scale')) document.getElementById('map-scale').value = "1.0";
+            if (document.getElementById('map-dx')) document.getElementById('map-dx').value = "0";
+            if (document.getElementById('map-dy')) document.getElementById('map-dy').value = "0";
+        };
+        reader.readAsDataURL(file);
     }
 });
 
+// --- SALVATAGGIO MANUALE (Per i campi di testo) ---
+document.getElementById('set-map-btn')?.addEventListener('click', () => {
+    if (!isMaster) return;
+    const scale = parseFloat(document.getElementById('map-scale').value) || 1.0;
+    const dx = parseInt(document.getElementById('map-dx').value) || 0;
+    const dy = parseInt(document.getElementById('map-dy').value) || 0;
+    socket.emit('set_map', { url: currentMapUrl, scale, dx, dy });
+});
 
 document.getElementById('clear-map-btn')?.addEventListener('click', () => {
     if (!isMaster) return;
     document.getElementById('map-file-input').value = ""; 
     socket.emit('set_map', { url: "" }); 
 });
+
 // ==========================================
 // Sincronizzazione PA (per tutti i giocatori)
 // ==========================================
@@ -789,3 +833,11 @@ window.toggleFogOfWar = function() {
         }
     }
 };
+
+// Sincronizzazione fluida della Nebbia di Guerra senza flash
+socket.on('update_fow_hexes', (data) => {
+    if (window.fowEnabled) {
+        window.revealedHexes = new Set(data);
+        render(); // Aggiorna la grafica istantaneamente per i giocatori
+    }
+});

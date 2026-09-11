@@ -17,7 +17,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///venander.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=50000000)
 
 # ==========================================
 # MODELLI DATABASE
@@ -52,6 +52,7 @@ class Character(db.Model):
 
     xp = db.Column(db.Integer, default=0)
     shop = db.Column(db.JSON, default=list)
+    notes = db.Column(db.Text, default="")
 
 class Line(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,7 +76,14 @@ class DrawItem(db.Model):
     size = db.Column(db.Integer, default=3) # Usato per lo spessore o per il raggio
     img_data = db.Column(db.Text, nullable=True) # Conterrà l'immagine convertita
 
-
+class WorldState(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    map_url = db.Column(db.Text, default="")
+    map_scale = db.Column(db.Float, default=1.0)
+    map_dx = db.Column(db.Integer, default=0)
+    map_dy = db.Column(db.Integer, default=0)
+    fow_enabled = db.Column(db.Boolean, default=False)
+    revealed_hexes = db.Column(db.JSON, default=list)
 
 
 # ==========================================
@@ -90,18 +98,25 @@ combat_state = {
     "players_limbs":{}
 }
 
-# Mappa di sfondo
-world_state = {
-    "map_url": "",
-    "map_scale": 1.0,
-    "map_dx": 0,
-    "map_dy": 0,
-    "fow_enabled": False,
-    "revealed_hexes": []
-}
+# Funzione per leggere sempre i dati aggiornati dal database
+def get_world_state():
+    ws = WorldState.query.first()
+    return {
+        "map_url": ws.map_url,
+        "map_scale": ws.map_scale,
+        "map_dx": ws.map_dx,
+        "map_dy": ws.map_dy,
+        "fow_enabled": ws.fow_enabled,
+        "revealed_hexes": ws.revealed_hexes
+    }
+
 
 with app.app_context():
     db.create_all()
+    if not WorldState.query.first():
+        db.session.add(WorldState())
+        db.session.commit()
+
     if not Character.query.first():
         print("Popolamento iniziale del database in corso...")
         base_stats = {"Forza": 1, "Destrezza": 1, "Percezione": 1, "Arguzia": 1, "Volontà": 1, "Spirito": 1, "Virtù": 1}
@@ -139,7 +154,7 @@ def get_char_data(char):
         "conc_current": char.conc_current, "conc_max": char.conc_max, "pa_stats": char.pa_stats,
         "status": char.status, "stats": char.stats, "weapons": char.weapons,
         "skills": char.skills, "backpack": char.backpack, "bonuses": char.bonuses, "is_hidden": char.is_hidden, 
-        "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop
+        "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop, "notes": char.notes
     }
 
 # ==========================================
@@ -157,7 +172,7 @@ def handle_connect():
     emit("combat_update", combat_state)
     emit("init_drawings", draw_list) # Invia i nuovi disegni
     emit("compendio_data", load_compendio())
-    emit("map_update", world_state["map_url"])
+    emit("map_update", get_world_state())
 # ==========================================
 # GESTIONE COMBATTIMENTO
 # ==========================================
@@ -456,8 +471,9 @@ def handle_update_character_sheet(data):
     if "weapons" in data: char.weapons = data["weapons"]
     if "skills" in data: char.skills = data["skills"]
     if "backpack" in data: char.backpack = data["backpack"]
-    if "bonuses" in data: char.bonuses = data["bonuses"] # <--- NUOVO SALVATAGGIO
+    if "bonuses" in data: char.bonuses = data["bonuses"]
     if "shop" in data: char.shop = data["shop"]
+    if "notes" in data: char.notes = data["notes"]
     db.session.commit()
     emit("update_character", get_char_data(char), broadcast=True)
 
@@ -569,13 +585,6 @@ def handle_draw_laser(data):
     # Ritrasmette la scia del laser a tutti gli altri giocatori
     emit("show_laser", data, broadcast=True, include_self=False)
 
-@socketio.on("set_map")
-def handle_set_map(data):
-    world_state["map_url"] = data.get("url", world_state["map_url"])
-    world_state["map_scale"] = float(data.get("scale", 1.0))
-    world_state["map_dx"] = int(data.get("dx", 0))
-    world_state["map_dy"] = int(data.get("dy", 0))
-    emit("map_update", world_state, broadcast=True)
 
 @socketio.on("draw_item")
 def handle_draw_item(data):
@@ -632,26 +641,50 @@ def handle_toggle_invisible(data):
         db.session.commit()
         emit("character_invisible_update", {"id": char.id, "is_invisible": char.is_invisible}, broadcast=True)
 
-# Gestione FOW
 
+@socketio.on("set_map")
+def handle_set_map(data):
+    ws = WorldState.query.first()
+    ws.map_url = data.get("url", ws.map_url)
+    ws.map_scale = float(data.get("scale", ws.map_scale))
+    ws.map_dx = int(data.get("dx", ws.map_dx))
+    ws.map_dy = int(data.get("dy", ws.map_dy))
+    db.session.commit()
+    emit("map_update", get_world_state(), broadcast=True)
+
+# ==========================================
+# GESTIONE FOG OF WAR (SALVATAGGIO DB)
+# ==========================================
 @socketio.on("toggle_global_fow")
 def handle_toggle_global_fow(data):
-    world_state["fow_enabled"] = data.get("enabled", False)
-    emit("map_update", world_state, broadcast=True)
+    ws = WorldState.query.first()
+    ws.fow_enabled = data.get("enabled", False)
+    db.session.commit()
+    emit("map_update", get_world_state(), broadcast=True)
 
 @socketio.on("reset_fow")
 def handle_reset_fow():
-    world_state["revealed_hexes"] = []
-    emit("map_update", world_state, broadcast=True)
+    ws = WorldState.query.first()
+    ws.revealed_hexes = []
+    db.session.commit()
+    emit("map_update", get_world_state(), broadcast=True)
 
 @socketio.on("reveal_hexes")
 def handle_reveal_hexes(data):
+    ws = WorldState.query.first()
     new_hexes = data.get("hexes", [])
-    # Unisce i nuovi esagoni a quelli vecchi eliminando i duplicati
-    current_set = set(world_state["revealed_hexes"])
+    current_set = set(ws.revealed_hexes)
     current_set.update(new_hexes)
-    world_state["revealed_hexes"] = list(current_set)
-    emit("map_update", world_state, broadcast=True)
+    ws.revealed_hexes = list(current_set)
+    db.session.commit()
+    emit("map_update", get_world_state(), broadcast=True)
+
+@socketio.on("sync_fow_hexes")
+def handle_sync_fow(hex_list):
+    ws = WorldState.query.first()
+    ws.revealed_hexes = hex_list
+    db.session.commit()
+    emit("update_fow_hexes", hex_list, broadcast=True)
 
 
 # Gestione attacco limbs
@@ -752,6 +785,9 @@ def handle_resolve_reaction(data):
     
     for msg in chat_msgs:
         emit("dice_result", {"name": "SISTEMA", "message": msg, "is_master_roll": False}, broadcast=True)
+
+
+
 if __name__ == "__main__":
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
 

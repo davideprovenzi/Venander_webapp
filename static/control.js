@@ -1,3 +1,9 @@
+// Memoria dei tasti premuti per le scorciatoie
+window.keysDown = {};
+window.addEventListener('keydown', e => window.keysDown[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => window.keysDown[e.key.toLowerCase()] = false);
+
+
 // --- ZOOM (Rotellina) ---
 canvas.addEventListener('wheel', (event) => {
     event.preventDefault(); // Evita che la pagina web scorra in giù
@@ -179,11 +185,50 @@ canvas.addEventListener('click', (event) => {
 
 
 canvas.addEventListener('mousedown', (event) => {
+
     if (event.button !== 0) return; 
 
     const pos = getWorldPos(event);
+
+    // --- PENNELLO NEBBIA DI GUERRA (Click singolo) ---
+    if (isMaster && window.fowEnabled && (window.keysDown['f'] || window.keysDown['g'])) {
+        const hex = pixelToHex(pos.x, pos.y);
+        const hexStr = `${hex.col},${hex.row}`;
+        
+        if (window.keysDown['f']) window.revealedHexes.add(hexStr);
+        else window.revealedHexes.delete(hexStr);
+        
+        socket.emit('sync_fow_hexes', Array.from(window.revealedHexes));
+        render();
+        justFinishedAction = true;
+        return; // Blocca tutto il resto
+    }
+
     lastX = pos.x;
     lastY = pos.y;
+
+    // --- NUOVO: MODIFICA MAPPA (Inizia l'azione) ---
+    if (isMaster && window.isEditingMap && typeof bgImage !== 'undefined' && bgImage) {
+        const mapW = bgImage.width * mapScale;
+        const mapH = bgImage.height * mapScale;
+        const handleHitbox = 40 / camera.zoom; // Hitbox generosa per l'angolino in basso a destra
+
+        // Controllo: Cliccato l'angolino per Ridimensionare?
+        if (Math.hypot(pos.x - (mapDx + mapW), pos.y - (mapDy + mapH)) < handleHitbox) {
+            window.mapDragAction = 'resize';
+        } 
+        // Controllo: Cliccato dentro l'immagine per Spostare?
+        else if (pos.x >= mapDx && pos.x <= mapDx + mapW && pos.y >= mapDy && pos.y <= mapDy + mapH) {
+            window.mapDragAction = 'move';
+        }
+
+        if (window.mapDragAction) {
+            window.mapStartParams = { dx: mapDx, dy: mapDy, scale: mapScale };
+            window.mapMouseStart = { x: pos.x, y: pos.y };
+            justFinishedAction = true;
+            return; // BLOCCO CRITICO: impedisce di far partire il tracciamento di disegni o laser
+        }
+    }
 
     // Righello: Se premi ALT, attiva la modalità righello
     if (event.altKey) {
@@ -282,6 +327,64 @@ canvas.addEventListener('mousedown', (event) => {
 });
 
 canvas.addEventListener('mousemove', (event) => {
+
+    // --- NUOVO: MODIFICA MAPPA (Trascinamento e Scala continui) ---
+    if (window.isEditingMap && window.mapDragAction) {
+        const pos = getWorldPos(event);
+        // --- PENNELLO NEBBIA IN TRASCINAMENTO ---
+        if (isMaster && window.fowEnabled && (window.keysDown['f'] || window.keysDown['g'])) {
+            const hex = pixelToHex(pos.x, pos.y);
+            const hexStr = `${hex.col},${hex.row}`;
+            
+            let changed = false;
+            // F = Svela (Aggiunge all'elenco dei visibili)
+            if (window.keysDown['f'] && !window.revealedHexes.has(hexStr)) {
+                window.revealedHexes.add(hexStr);
+                changed = true;
+            } 
+            // G = Nascondi (Rimuove dall'elenco dei visibili)
+            else if (window.keysDown['g'] && window.revealedHexes.has(hexStr)) {
+                window.revealedHexes.delete(hexStr);
+                changed = true;
+            }
+            
+            if (changed) {
+                render();
+                // Trasmette i dati ai giocatori a blocchi per non far laggare il server
+                if (!window.fowTimeout) {
+                    window.fowTimeout = setTimeout(() => {
+                        socket.emit('sync_fow_hexes', Array.from(window.revealedHexes));
+                        window.fowTimeout = null;
+                    }, 40);
+                }
+            }
+            justFinishedAction = true;
+            return; // Blocca il trascinamento della visuale
+        }
+        
+        const diffX = pos.x - window.mapMouseStart.x;
+        const diffY = pos.y - window.mapMouseStart.y;
+
+        if (window.mapDragAction === 'move') {
+            mapDx = window.mapStartParams.dx + diffX;
+            mapDy = window.mapStartParams.dy + diffY;
+            canvas.style.cursor = 'grabbing';
+        } else if (window.mapDragAction === 'resize') {
+            // Ridimensiona usando l'asse X come riferimento proporzionale
+            const newW = (bgImage.width * window.mapStartParams.scale) + diffX;
+            mapScale = newW / bgImage.width;
+            if (mapScale < 0.1) mapScale = 0.1; // Limite minimo
+            canvas.style.cursor = 'se-resize';
+        }
+        
+        // Aggiorna visivamente i numerini nel pannello a destra
+        if (document.getElementById('map-scale')) document.getElementById('map-scale').value = mapScale.toFixed(2);
+        if (document.getElementById('map-dx')) document.getElementById('map-dx').value = Math.round(mapDx);
+        if (document.getElementById('map-dy')) document.getElementById('map-dy').value = Math.round(mapDy);
+
+        render();
+        return; // BLOCCO CRITICO: impedisce alla telecamera (panning) di muoversi
+    }
     
     // Gestione Spostamento Telecamera
     if (isPanning) {
@@ -362,6 +465,17 @@ canvas.addEventListener('mousemove', (event) => {
 });
 
 canvas.addEventListener('mouseup', () => { 
+
+    // --- NUOVO: MODIFICA MAPPA (Salvataggio Rilascio) ---
+    if (window.mapDragAction) {
+        socket.emit('set_map', { url: currentMapUrl, scale: mapScale, dx: mapDx, dy: mapDy });
+        window.mapDragAction = null;
+        canvas.style.cursor = 'move';
+        justFinishedAction = true;
+        setTimeout(() => { justFinishedAction = false; }, 100);
+        return; // BLOCCO CRITICO
+    }
+
     // --- NUOVO: Rilascio Righello ---
     if (window.isRulerMode) {
         justFinishedAction = true;

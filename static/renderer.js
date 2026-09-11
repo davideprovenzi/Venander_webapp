@@ -441,7 +441,38 @@ function render() {
     
     // 1. Sfondo con offset e scaling
     if (bgImage && bgImage.complete) {
-        ctx.drawImage(bgImage, mapDx, mapDy, bgImage.width * mapScale, bgImage.height * mapScale);
+        const mapW = bgImage.width * mapScale;
+        const mapH = bgImage.height * mapScale;
+        ctx.drawImage(bgImage, mapDx, mapDy, mapW, mapH);
+        
+        // --- HUD MODIFICA MAPPA VISIVA ---
+        if (typeof isMaster !== 'undefined' && isMaster && window.isEditingMap) {
+            ctx.save();
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 4 / camera.zoom;
+            ctx.setLineDash([10 / camera.zoom, 10 / camera.zoom]);
+            ctx.strokeRect(mapDx, mapDy, mapW, mapH);
+            
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#f1c40f';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2 / camera.zoom;
+            const hSize = 15 / camera.zoom; // Dimensione quadratino ancoraggio
+            
+            // Quadratino in basso a destra (Ridimensionamento)
+            ctx.fillRect(mapDx + mapW - hSize, mapDy + mapH - hSize, hSize*2, hSize*2);
+            ctx.strokeRect(mapDx + mapW - hSize, mapDy + mapH - hSize, hSize*2, hSize*2);
+            
+            // Etichetta centrale
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(mapDx + mapW/2 - 60/camera.zoom, mapDy + mapH/2 - 15/camera.zoom, 120/camera.zoom, 30/camera.zoom);
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${14/camera.zoom}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("TRASCINA", mapDx + mapW/2, mapDy + mapH/2);
+            ctx.restore();
+        }
     }
 
     // 2. Griglia (Sotto i disegni)
