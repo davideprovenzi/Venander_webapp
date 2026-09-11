@@ -145,25 +145,24 @@ function drawTokens() {
                 ctx.fillStyle = '#f39c12';
                 ctx.fillText(`Passi: ${steps}`, centerX, centerY - radius - 15);
 
-                /// --- NUOVO: Mostra i PA a TUTTI durante il combattimento ---
+                //// --- NUOVO: Mostra i Frame di Movimento ---
                 if (combatState.is_active) {
-                    // Se non c'è un valore salvato, mostra 15 di default
-                    let paToShow = window.playersPa[char.id];
-                    if (paToShow === undefined) paToShow = 15;
+                    let framesToShow = window.playersPa[char.id];
+                    if (framesToShow === undefined) framesToShow = 120;
                     
-                    const paText = `PA: ${paToShow}/15`;
+                    const frameText = `Mov: ${framesToShow}/120f`;
                     ctx.font = 'bold 14px Arial';
                     ctx.lineWidth = 3;
                     ctx.strokeStyle = '#000000';
-                    ctx.strokeText(paText, centerX, centerY - radius - 35);
+                    ctx.strokeText(frameText, centerX, centerY - radius - 35);
                     
-                    // Colore dinamico: Verde, Arancione (sotto i 10), Rosso (sotto i 5)
-                    let paColor = '#2ecc71';
-                    if (paToShow < 5) paColor = '#e74c3c';
-                    else if (paToShow < 10) paColor = '#f39c12';
+                    // Colore dinamico: Verde, Arancione (sotto 60), Rosso (sotto 25)
+                    let frameColor = '#2ecc71';
+                    if (framesToShow < 25) frameColor = '#e74c3c';
+                    else if (framesToShow < 60) frameColor = '#f39c12';
                     
-                    ctx.fillStyle = paColor;
-                    ctx.fillText(paText, centerX, centerY - radius - 35);
+                    ctx.fillStyle = frameColor;
+                    ctx.fillText(frameText, centerX, centerY - radius - 35);
                 }
             }
         }

@@ -62,7 +62,7 @@ let isLaserDrawing = false;
 
 let currentRole = 'player';
 
-window.currentPaMov = 15;
+window.currentPaMov = 120;
 window.pendingMove = null;
 window.playersPa = {}; // Salva i PA di tutti i personaggi
 window.hoveredHex = null; // Memorizza dove si trova il mouse
@@ -680,42 +680,35 @@ document.getElementById('icon-file-input')?.addEventListener('change', function(
 // ==========================================
 document.querySelectorAll('.move-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        const costPer5m = parseInt(e.target.getAttribute('data-cost'));
+        const framesPerStep = parseInt(e.target.getAttribute('data-cost'));
         const modeName = e.target.getAttribute('data-name');
-        const dist = window.pendingMove.dist;
+        const dist = window.pendingMove.dist; // Equivale ai "passi" (esagoni)
         
-        // Calcolo PA richiesti (0 se marcia, altrimenti formula ogni 5m arrotondata per eccesso)
-        let requiredPa = (costPer5m === 0) ? 0 : Math.ceil((dist / 5) * costPer5m);
+        // Calcolo esatto dei frame necessari (Passi x Costo del singolo passo)
+        let requiredFrames = dist * framesPerStep;
         
-        if (requiredPa > window.currentPaMov) {
-            alert(`Azione Impossibile! Servono ${requiredPa} PA, ma ne hai solo ${window.currentPaMov}.\nScegli un'andatura più lenta o clicca più vicino.`);
+        // Controlla la memoria (riutilizziamo la variabile currentPaMov come contenitore frame)
+        if (requiredFrames > window.currentPaMov) {
+            alert(`Azione Impossibile! Servono ${requiredFrames} Frame, ma ne hai solo ${window.currentPaMov} a disposizione per muoverti.`);
             return;
         }
         
-        // 1. Scala i PA e chiudi la modale
-        window.currentPaMov -= requiredPa;
-        window.playersPa[window.pendingMove.charId] = window.currentPaMov; // Aggiorna per te stesso
-        document.getElementById('ui-pa-mov').innerText = window.currentPaMov;
+        window.currentPaMov -= requiredFrames;
+        window.playersPa[window.pendingMove.charId] = window.currentPaMov; 
+        
         document.getElementById('move-modal').style.display = 'none';
         
-        // --- NUOVO: Sincronizza i tuoi PA con gli altri giocatori ---
         socket.emit('sync_pa', { char_id: window.pendingMove.charId, pa: window.currentPaMov });
-        
-        // 2. Esegui il movimento sul server
         socket.emit('declare_move', { char_id: window.pendingMove.charId, target_x: window.pendingMove.x, target_y: window.pendingMove.y });
         
-        // 3. Invia il testo in chat
         const myChar = characters.find(c => c.id === window.pendingMove.charId);
-        const msg = `si sposta di <b>${dist}m</b> (${modeName}) spendendo <b>${requiredPa} PA</b>.`;
+        const msg = `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`;
         socket.emit('combat_msg', { name: myChar.name, message: msg });
         
-        // --- NUOVO: Sblocca la linea dopo aver confermato la mossa ---
         window.pendingMove = null; 
-        
-        render(); // Ridisegna la mappa pulita
+        render(); 
     });
 });
-
 
 // ==========================================
 // ELIMINAZIONE DISEGNO SELEZIONATO

@@ -191,7 +191,7 @@ def handle_toggle_combat():
                 "id": c.id, "name": c.name, "distance": dist,
                 "is_npc": c.role == "npc", "start_x": c.pos_x, "start_y": c.pos_y
             })
-            combat_state["players_pa"][str(c.id)] = 15 # Dà a tutti 15 PA
+            combat_state["players_pa"][str(c.id)] = 120 # Dà a tutti 120 frames
         
         # Ordina l'array dal più vicino (distanza minore) al più lontano
         turn_order.sort(key=lambda x: x["distance"])
@@ -293,7 +293,7 @@ def handle_next_turn():
     else:
         combat_state["current_index"] = next_index
         next_char_id = combat_state["turn_order"][combat_state["current_index"]]["id"]
-        combat_state["players_pa"][str(next_char_id)] = 15 # Ripristina i 15 PA del nuovo giocatore
+        combat_state["players_pa"][str(next_char_id)] = 120 # Ripristina i 120 frame del nuovo giocatore
         next_char = db.session.get(Character, next_char_id)
         if next_char:
             combat_state["turn_order"][combat_state["current_index"]]["start_x"] = next_char.pos_x

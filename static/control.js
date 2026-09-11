@@ -74,7 +74,7 @@ canvas.addEventListener('click', (event) => {
                 return; // Ferma il codice, impedendo il movimento
             }
         }
-        
+
         const myChar = characters.find(c => c.id === currentCharacterId);
         let isMyTurn = false;
         
@@ -90,66 +90,60 @@ canvas.addEventListener('click', (event) => {
             
             // Salviamo le coordinate bersaglio e prepariamo il popup
             window.pendingMove = { x: gridX, y: gridY, dist: dist, charId: currentCharacterId };
-            document.getElementById('move-modal-text').innerText = `Distanza bersaglio: ${dist}m.\nScegli la tua andatura:`;
+            document.getElementById('move-modal-text').innerText = `Distanza bersaglio: ${dist} passi.\nScegli la tua andatura:`;
             
-            // --- NUOVO: Calcola il costo esatto e aggiorna i bottoni ---
+            // --- NUOVO: Calcola il costo esatto in FRAME e aggiorna i bottoni ---
             document.querySelectorAll('.move-btn').forEach(btn => {
-                const costPer5m = parseInt(btn.getAttribute('data-cost')) || 0;
+                const framesPerStep = parseInt(btn.getAttribute('data-cost')) || 0;
                 const modeName = btn.getAttribute('data-name') || "Movimento";
                 
-                // Calcolo PA richiesti per i metri effettivi
-                const requiredPa = (costPer5m === 0) ? 0 : Math.ceil((dist / 5) * costPer5m);
-                let currentPa = parseInt(window.currentPaMov) || 0;
+                // Calcolo Frame richiesti: Distanza (esagoni) x Costo del singolo passo
+                const requiredFrames = dist * framesPerStep;
+                
+                // Usiamo currentPaMov come contenitore per i 120 frame di movimento
+                let currentFrames = parseInt(window.currentPaMov) || 0;
 
                 // 1. Aggiorna il TESTO del bottone e la TRASPARENZA prima di cliccare
-                btn.innerText = `${modeName} (Spendi ${requiredPa} PA)`;
+                btn.innerText = `${modeName} (Costo: ${requiredFrames} Frame)`;
                 
-                if (requiredPa > currentPa) {
+                if (requiredFrames > currentFrames) {
                     btn.style.opacity = '0.3';
                     btn.style.cursor = 'not-allowed';
+                    btn.onclick = null; // Impedisce il click se non hai abbastanza frame
                 } else {
                     btn.style.opacity = '1';
                     btn.style.cursor = 'pointer';
-                }
 
-                // 2. Azione al CLICK (blindata contro i bug)
-                btn.onclick = () => {
-                    if (!window.pendingMove) return;
-                    
-                    if (requiredPa > currentPa) {
-                        alert(`Azione Impossibile! Servono ${requiredPa} PA, ma ne hai solo ${currentPa}.`);
-                        return;
-                    }
-                    
-                    // Scala i PA e aggiorna la memoria del browser
-                    currentPa -= requiredPa;
-                    window.currentPaMov = currentPa;
-                    window.playersPa[window.pendingMove.charId] = currentPa;
-                    
-                    // Aggiorna la grafica nel tracker
-                    const paMovUi = document.getElementById('ui-pa-mov');
-                    if (paMovUi) paMovUi.innerText = currentPa;
-                    
-                    // Chiudi la modale
-                    document.getElementById('move-modal').style.display = 'none';
-                    
-                    // Sincronizza i tuoi PA con gli altri giocatori sul server
-                    socket.emit('sync_pa', { char_id: window.pendingMove.charId, pa: currentPa });
-                    
-                    // Esegui il movimento effettivo
-                    socket.emit('declare_move', { char_id: window.pendingMove.charId, target_x: window.pendingMove.x, target_y: window.pendingMove.y });
-                    
-                    // Invia la dichiarazione in chat
-                    const myChar = characters.find(c => c.id === window.pendingMove.charId);
-                    if (myChar) {
-                        const msg = `si sposta di <b>${dist}m</b> (${modeName}) spendendo <b>${requiredPa} PA</b>.`;
-                        socket.emit('combat_msg', { name: myChar.name, message: msg });
-                    }
-                    
-                    // Azzera la memoria della mossa e ridisegna la mappa pulita
-                    window.pendingMove = null; 
-                    render(); 
-                };
+                    // 2. Azione al CLICK (blindata contro i bug)
+                    btn.onclick = () => {
+                        if (!window.pendingMove) return;
+                        
+                        // Scala i Frame e aggiorna la memoria del browser
+                        currentFrames -= requiredFrames;
+                        window.currentPaMov = currentFrames;
+                        window.playersPa[window.pendingMove.charId] = currentFrames;
+                        
+                        // Chiudi la modale
+                        document.getElementById('move-modal').style.display = 'none';
+                        
+                        // Sincronizza i tuoi frame con gli altri giocatori sul server
+                        socket.emit('sync_pa', { char_id: window.pendingMove.charId, pa: currentFrames });
+                        
+                        // Esegui il movimento effettivo
+                        socket.emit('declare_move', { char_id: window.pendingMove.charId, target_x: window.pendingMove.x, target_y: window.pendingMove.y });
+                        
+                        // Invia la dichiarazione in chat
+                        const myChar = characters.find(c => c.id === window.pendingMove.charId);
+                        if (myChar) {
+                            const msg = `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`;
+                            socket.emit('combat_msg', { name: myChar.name, message: msg });
+                        }
+                        
+                        // Azzera la memoria della mossa e ridisegna la mappa pulita
+                        window.pendingMove = null; 
+                        render(); 
+                    };
+                }
             });
 
             document.getElementById('move-modal').style.display = 'block';
