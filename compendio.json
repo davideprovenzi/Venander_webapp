@@ -1,2545 +1,604 @@
 {
-  "Forza": [
+  "Armature Sfygaa": [
     {
-      "name": "Predisposizione alla caratteristica (Forza)",
-      "cost": 1550,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
+      "name": "Elmo K100 VI",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Un elmo standard e affidabile della linea Sfygaa."
+    },
+    {
+      "name": "Guanti X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti protettivi leggeri ma resistenti."
+    },
+    {
+      "name": "Avambraccio X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni per gli avambracci, ideali per parare i colpi."
+    },
+    {
+      "name": "Pettorali X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Corazza spessa per la protezione del torso."
+    },
+    {
+      "name": "Stivali X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature blindate per affrontare ogni terreno."
+    },
+    {
+      "name": "Schiena X2",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Placca di rinforzo posteriore per evitare brutte sorprese."
+    },
+    {
+      "name": "Gambe",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni snodate per gli arti inferiori."
+    },
+    {
+      "name": "Cintura",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura tattica con altissima armonizzazione."
+    },
+    {
+      "name": "Spalla",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio singolo per deflettere i fendenti."
+    }
+  ],
+
+  "Gadget Sfygaa": [
+    {
+      "name": "Visore Ultrasonico PLUS",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><i>Grazie a uno speciale hardware merlinico permette di tramutare le onde sonore in immagini inviate direttamente al sistema nervoso! È così preciso che puoi vedere un nemico scoreggiare anche al buio.</i><br><b>Effetto:</b> Garantisce passivamente visione spaziale al 100% nel proprio campo visivo (nessun costo in PA)."
+    },
+    {
+      "name": "Nocche INOX",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Stavamo pensando a un gadget rivoluzionario... e sono nate le nocche in acciaio INOX. Così puoi dare cazzotti che fanno molto male.</i><br><b>Effetto:</b> Il danno senz'armi diventa 10 x Forza."
+    },
+    {
+      "name": "Nocche da Demolizione",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Per chi ama prendere a cazzotti i nemici, ma anche i muri in loro assenza.</i><br><b>Effetto:</b> L'esplosione infligge 15 x Forza (x3 contro muri leggeri). Cambiare la cartuccia esplosiva ha Velocità 60."
+    },
+    {
+      "name": "MicroREACTORball",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 110<br><i>Innovativa suola composta da miliardi di sfere in continua rotazione. Corri veloce come un giaguaro!</i><br><b>Effetto:</b> Aumenta la velocità di movimento con i piedi di 10."
+    },
+    {
+      "name": "MegaReattori Plantari",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 30 | <b>Armonizzazione:</b> 80<br><i>1, 2, 3 FUOCO! Lanciati nella mischia.</i><br><b>Effetto:</b> Al costo di 4 PA (modificabile da bonus) permette uno scatto di 4 metri a Velocità 90. Durante il tragitto si rimane targettabili."
+    },
+    {
+      "name": "Estensori Alari KK2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> x2 Spalle<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 110<br><i>Estendi te stesso! Estendi gli estensori, ed estendi i tuoi limiti!</i><br><b>Effetto:</b> Attivabile con 4 PA come tuta alare. A mezz'aria permette planate senza danni da caduta. Muoversi a mezz'aria costa metà PA e raddoppia la velocità."
+    },
+    {
+      "name": "Esoscheletro Schienale",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 150<br><i>Robusta macchina da collegare alla schiena per potenziare spalle e braccia. Per dare cazzottoni belli forti.</i><br><b>Effetto:</b> Quando acceso, conferisce +1 a Forza (valido solo per gli arti superiori).",
       "bonus": {"stat": "Forza", "val": 1}
     },
     {
-      "name": "Allenamento caratteristico (Forza)",
-      "cost": 2000,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Forza", "val": 1}
+      "name": "MiniReattori Bracciali",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 110<br><i>La Sfygaa non è brava con i nomi, ma quando si tratta di dare cazzotti SIAMO I NUMERI UNO!</i><br><b>Effetto:</b> Al costo di 2 PA, moltiplica per 1.75 la velocità di un'azione eseguita con il braccio."
     },
     {
-      "name": "Affinità alla caratteristica (Forza)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Forza)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Cariche migliorate",
-      "cost": 1200,
-      "desc": "È possibile effettuare cariche di 2 falcate più lunghe.",
-      "bonus": null
-    },
-    {
-      "name": "Cariche perfette",
-      "cost": 1200,
-      "desc": "È possibile effettuare cariche di 4 falcate più lunghe.",
-      "bonus": null,
-      "requires": "Cariche migliorate"
-    },
-    {
-      "name": "Fisico di ferro",
+      "name": "Centralina Sfygaa",
       "cost": 1500,
-      "desc": "Si riducono del 25% i danni alla stamina.",
-      "bonus": null
-    },
-    {
-      "name": "Fisico di ferro II",
-      "cost": 2000,
-      "desc": "Si riducono del 50% i danni alla stamina.",
-      "bonus": null,
-      "requires": "Fisico di ferro"
-    },
-    {
-      "name": "Ripresa",
-      "cost": 1000,
-      "desc": "È possibile effettuare una Ripresa, questa comporta il recupero di 5 di stamina ma fa saltare il turno.",
-      "bonus": null
-    },
-    {
-      "name": "Addestrato al dolore",
-      "cost": 2000,
-      "desc": "Si ottiene un bonus di 50 a salute e stamina.",
-      "bonus": null
-    },
-    {
-      "name": "Cavalcare",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Cavalcare II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Cavalcare"
-    },
-    {
-      "name": "Scalatore",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Scalatore II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Scalatore"
-    },
-    {
-      "name": "Correre",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Correre II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Correre"
-    },
-    {
-      "name": "Saltare",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Saltare II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Saltare"
-    },
-    {
-      "name": "Rompere",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Rompere II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Rompere"
-    },
-    {
-      "name": "Rapido e preciso",
-      "cost": 1000,
-      "desc": "Una volta tra un riposo e l'altro, è possibile ritentare un tiro di prova caratteristica su destrezza se lo si fallisce. Solo fuori dal combattimento.",
-      "bonus": null
-    }
-  ],
-
-  "Destrezza": [
-    {
-      "name": "Predisposizione alla caratteristica (Destrezza)",
-      "cost": 1550,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
+      "desc": "<b>Slot:</b> x2 Guanti<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 110<br><i>Il nostro capolavoro. Dà accesso a tutti i dispositivi Sfygaa.</i><br><b>Effetto:</b> Indossandole non si possono impugnare armi. Lanciare oggetti ha -5. Indossare 2 centraline sblocca la <b>POWER TUBO MODE</b>: Consumo PA triplicato, ma velocità di movimento raddoppiata (+ altri bonus cumulativi). Si ignora la gravità, +1 Forza, +1 Destrezza, e sblocca parate a Velocità 100 (anche contro proiettili).",
       "bonus": {"stat": "Destrezza", "val": 1}
     },
     {
-      "name": "Allenamento caratteristico (Destrezza)",
-      "cost": 2000,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Destrezza", "val": 1}
+      "name": "Dissipatore Tubomode",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Mai farsi esplodere il cuore per sbaglio.</i><br><b>Effetto:</b> Quando si attiva la Power Tubo Mode, riduce il consumo di PA (da x3 a x2)."
     },
     {
-      "name": "Affinità alla caratteristica (Destrezza)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Destrezza)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Agilità",
-      "cost": 2000,
-      "desc": "È possibile spendere PAD per effettuare salti, corse e scalate.",
-      "bonus": null
-    },
-    {
-      "name": "Piedi felpati",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove di furtività.",
-      "bonus": null
-    },
-    {
-      "name": "Piedi felpati II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove di furtività.",
-      "bonus": null,
-      "requires": "Piedi felpati"
-    },
-    {
-      "name": "Borseggiatore",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di +5 alle prove di rubare su nemici ignari della propria presenza.",
-      "bonus": null
-    },
-    {
-      "name": "Borseggiatore II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di +10 alle prove di rubare su nemici ignari della propria presenza e di +5 a tutte le prove di rubare.",
-      "bonus": null,
-      "requires": "Borseggiatore"
-    },
-    {
-      "name": "Schivata agile",
-      "cost": 1200,
-      "desc": "Si ottiene +2 alle schivate.",
-      "bonus": null
-    },
-    {
-      "name": "Schivata agile II",
-      "cost": 1500,
-      "desc": "Si ottiene +3 alle schivate.",
-      "bonus": null,
-      "requires": "Schivata agile"
-    },
-    {
-      "name": "Manualità aerea",
-      "cost": 1200,
-      "desc": "Permette di effettuare azioni in salto o in caduta libera.",
-      "bonus": null
-    },
-    {
-      "name": "Gioco di gambe",
-      "cost": 1500,
-      "desc": "È possibile effettuare un passo gratuito negli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Furtività",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Furtività II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Furtività"
-    },
-    {
-      "name": "Camuffarsi",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Camuffarsi II",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Camuffarsi"
-    },
-    {
-      "name": "Trasformista",
-      "cost": 1500,
-      "desc": "Bonus +10 alle prove di camuffare.",
-      "bonus": null,
-      "requires": "Camuffarsi II"
-    },
-    {
-      "name": "Acrobazia",
-      "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Acrobazia II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Acrobazia"
+      "name": "Neuro Velocizzatore di Istinto",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 110<br><i>Hanno ucciso l'uomo ragno e si sono scopati Lana Line.</i><br><b>Effetto:</b> Permette di effettuare schivate a Velocità 100."
     }
-],
-"Percezione": [
+  ],
+  "Armature Umbryll": [
     {
-      "name": "Predisposizione alla caratteristica (Percezione)",
-      "cost": 1550,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
-      "bonus": {"stat": "Percezione", "val": 1}
-    },
-    {
-      "name": "Allenamento caratteristico (Percezione)",
-      "cost": 2000,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Percezione", "val": 1}
-    },
-    {
-      "name": "Affinità alla caratteristica (Percezione)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Percezione)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Nervi d'acciaio",
-      "cost": 2000,
-      "desc": "Se durante il proprio turno si entra in una zona minacciata dal nemico è possibile effettuare una prova di percezione contro la furtività del nemico, se si vince la prova è possibile effettuare una frazione di turno prima che tocchi al nemico.",
-      "bonus": null
-    },
-    {
-      "name": "Ottima mira",
+      "name": "Elmo Umbryll",
       "cost": 1000,
-      "desc": "Ogni 5 metri si ignora 1 metro di malus distanza nel tiro per colpire.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Elmo tattico avanzato della linea Umbryll."
     },
     {
-      "name": "Scova impostori",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 3 quando si prova a scovare camuffamenti, trappole o persone nascoste.",
-      "bonus": null
-    },
-    {
-      "name": "Occhio del balistico",
+      "name": "Guanti Umbryll",
       "cost": 1500,
-      "desc": "È possibile percepire il passaggio di proiettili e la traiettoria di questi; se si minaccia una zona durante un combattimento, se un proiettile vi passa attraverso è possibile effettuare una frazione di turno.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti di precisione per l'uso di gadget."
     },
     {
-      "name": "Percepire veleni",
+      "name": "Avambraccio Umbryll",
       "cost": 1500,
-      "desc": "Si percepisce se la sostanza è velenosa o no solo stando a pochi cm dalla sostanza in questione.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Supporto leggero per avambracci."
     },
     {
-      "name": "Ti tengo d'occhio!",
+      "name": "Pettorali Umbryll",
       "cost": 1500,
-      "desc": "È possibile selezionare un nemico, si può spendere un numero di PA Percezione a piacere per turno (una volta selezionati non è più possibile variare il numero), si ottiene un bonus di +1 per ogni PA speso per turno sui tiri per le schivate e le parate contro il nemico selezionato. Non è possibile selezionare lo stesso nemico bersagliato l'ultima volta.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Corazza stealth resistente."
+    },
+    {
+      "name": "Stivali Umbryll",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature silenziose e agili."
+    },
+    {
+      "name": "Schiena Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Placca dorsale con alloggiamenti per centraline."
+    },
+    {
+      "name": "Gambe Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni flessibili per le gambe."
+    },
+    {
+      "name": "Cintura Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura tattica ad altissima armonizzazione, ideale per Trinket."
+    },
+    {
+      "name": "Spalla Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio snodato per il minimo ingombro."
     }
   ],
 
-  "Arguzia": [
+  "Gadget Umbryll": [
     {
-      "name": "Predisposizione alla caratteristica (Arguzia)",
-      "cost": 1550,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
-      "bonus": {"stat": "Arguzia", "val": 1}
-    },
-    {
-      "name": "Allenamento caratteristico (Arguzia)",
-      "cost": 2000,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Arguzia", "val": 1}
-    },
-    {
-      "name": "Affinità alla caratteristica (Arguzia)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Arguzia)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Diplomazia",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Diplomazia II",
+      "name": "Centralina Umbryll",
       "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Diplomazia"
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><i>Il cuore del sistema.</i><br><b>Effetto:</b> Permette l'utilizzo e l'alimentazione dei gadget speciali della marca Umbryll."
     },
     {
-      "name": "Raggirare",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Raggirare II",
+      "name": "Mimesi Statica",
       "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Raggirare"
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><b>Requisiti:</b> Centralina Umbryll<br><i>Scompari nell'ambiente circostante.</i><br><b>Effetto:</b> Quando si resta immobili, si entra in mimesi avanzata (passiva, nessun costo). Garantisce +15 alle prove di furtività se i nemici sono ignari, altrimenti +6."
     },
     {
-      "name": "Ingegneria",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Ingegneria II",
+      "name": "Mimesi Dinamica",
       "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Ingegneria"
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><b>Requisiti:</b> Centralina Umbryll<br><i>霧が私の歩幅を覆うだろう (La nebbia coprirà i miei passi).</i><br><b>Effetto:</b> Attiva una mimesi in movimento. Costo: 2 PAV per ogni metro percorso."
     },
     {
-      "name": "Memorizzare",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
+      "name": "Trinket Filo di Chakra Negativo",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>蜘蛛は巣を編む (Il ragno tesse la sua tela).</i><br><b>Effetto:</b> Dispositivo che tiene max 10 trinket. 2 trinket creano il primo filo invisibile. Se un bersaglio lo attraversa, riceve una carica di Chakra Negativo."
     },
     {
-      "name": "Memorizzare II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Memorizzare"
+      "name": "Marionetta di Chakra Negativo",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>彼らは中国人が食べるものを私たちに食べさせたいのです... (Ci vogliono far mangiare quello che mangiano i cinesi...).</i><br><b>Effetto:</b> Permette il controllo remoto degli arti di un nemico con almeno una carica negativa. Equivale a una manovra speciale. Ogni carica di chakra negativo conferisce +1 alla manovra. Costo: 2 PAV per tentativo. Se fallisce, l'arto non si muove ma il nemico resta sotto controllo."
     },
     {
-      "name": "Medicina",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
+      "name": "Drag Down Chakra Negativo",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>Vivi nel vento e non sarai mai spazzato via.</i><br><b>Effetto:</b> Velocità 30. Infligge una spinta verso il basso (manovra di sbilanciare) a tutti i nemici con carica negativa. Costo: 2 PAV per nemico. Ogni carica di chakra negativo aggiunge +1 alla manovra."
     },
     {
-      "name": "Medicina II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Medicina"
+      "name": "Trinket Bomba",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>Tutti credono che i luscati siano creature subdole... Sumimasen!</i><br><b>Effetto:</b> Contiene 10 trinket attivabili a distanza. Velocità di attivazione/detonazione: 30 (lascia un turno di risposta). Costo: 5 PAV a bomba. Danno: 20 HP adiacente, 10 HP a 1 metro."
+    },
+    {
+      "name": "Trinket Yin e Yang ☯",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>Equilibrio letale.</i><br><b>Effetto:</b> Contiene 15 trinket lanciabili. <b>Yin:</b> Danno pari a 8 x Destrezza (+5 danni per carica negativa del bersaglio). Aggiunge carica negativa. <b>Yang:</b> Si attacca e garantisce carica positiva. Ogni colpo a segno permette un secondo tiro per colpire."
+    },
+    {
+      "name": "Scattatori Positivi",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Dominati, e dominerai il nemico.</i><br><b>Effetto:</b> Al costo di 5 PAV, permette uno scatto (Velocità 80) verso un bersaglio con carica Positiva entro 10m. Può essere concatenato a un attacco. Se il bersaglio ha più cariche positive, riceve uno scudo di 15 HP per carica (dura 3 turni)."
+    },
+    {
+      "name": "Trinket Spy 𓂀",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>L'occhio onniveggente.</i><br><b>Effetto:</b> Contiene 25 trinket microtelecamere. Trasmettono immagini a un qualsiasi display scelto dall'utilizzatore."
+    },
+    {
+      "name": "Display Umbryll",
+      "cost": 150,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 10<br><i>Schermo tattico portatile.</i><br><b>Effetto:</b> Display da polso, ideale per interfacciarsi con telecamere e sistemi informatici."
+    },
+    {
+      "name": "Trinket Campo di Non Belligeranza",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>Pace imposta.</i><br><b>Effetto:</b> Contiene 5 trinket. Genera un campo di 3 metri in cui i bersagli acquisiscono carica Neutra. Finché si ha carica Positiva, non si possono infliggere né subire danni da soggetti con carica Neutra."
+    },
+    {
+      "name": "Potenziatore di Istinto Oculare",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo Frontale<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Riflessi aumentati artificialmente.</i><br><b>Effetto:</b> Permette di effettuare parate a Velocità 100. Parare a mani nude dimezza il danno subito."
+    },
+    {
+      "name": "Regolatore di Traiettorie Riportate",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Potenziatore Oculare, Centralina Umbryll<br><b>Effetto:</b> Impugnando una lama, dopo aver parato un proiettile (o oggetto lanciato), è possibile deviarlo al costo di 3 PAV verso un nemico nell'arco di 180° frontale (richiede tiro per colpire)."
+    },
+    {
+      "name": "Clone di Ombra Proiettato",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>L'ombra più grande rimarrà sempre dentro di te.</i><br><b>Effetto:</b> Rimanendo immobili è possibile generare un clone olografico proiettato nel proprio campo visivo (Passiva gratuita)."
+    },
+    {
+      "name": "Mimesi Personale",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Petto<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Il ladro di volti.</i><br><b>Effetto:</b> Bersagliando un nemico con carica Positiva, se ne rubano aspetto e movenze. Costo: 5 PAV. Velocità di trasformazione: 10."
+    },
+    {
+      "name": "Mimesi Vocale",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Elmo frontale<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>鼓動を聞いて、孤独感が和らぐ (Ascolto il battito e la solitudine si attenua).</i><br><b>Effetto:</b> Bersagliando un nemico con carica Positiva, se ne ruba la voce. Costo: 5 PAV. Velocità di trasformazione: 10."
     }
   ],
 
-  "Volontà": [
+  "Oggettistica Umbryll": [
     {
-      "name": "Predisposizione alla caratteristica (Volontà)",
-      "cost": 1550,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
-      "bonus": {"stat": "Volontà", "val": 1}
-    },
+      "name": "Ricarica Trinket Umbryll",
+      "cost": 5,
+      "desc": "<b>Tipo:</b> Consumabile<br><b>Effetto:</b> Oggetto rettangolare a clip in grado di attaccarsi a qualsiasi superficie. Inserito nell'apposito gadget, ne acquisisce gli effetti specifici. Applicazione manuale: Velocità 30. Lancio: equivalente a un tiro a distanza."
+    }
+  ],
+  "Armature Crappterra": [
     {
-      "name": "Allenamento caratteristico (Volontà)",
-      "cost": 2000,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Volontà", "val": 1}
-    },
-    {
-      "name": "Affinità alla caratteristica (Volontà)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Volontà)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Mente di ferro",
-      "cost": 1500,
-      "desc": "Si riducono del 25% i danni alla concentrazione.",
-      "bonus": null
-    },
-    {
-      "name": "Mente di ferro II",
-      "cost": 2000,
-      "desc": "Si riducono del 50% i danni alla concentrazione.",
-      "bonus": null,
-      "requires": "Mente di ferro"
-    },
-    {
-      "name": "Impartire ordini",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Impartire ordini II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Impartire ordini"
-    },
-    {
-      "name": "Intimidire",
-      "cost": 1200,
-      "desc": "Si ottiene un bonus di 2 alle prove in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Intimidire II",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 4 alle prove in questione.",
-      "bonus": null,
-      "requires": "Intimidire"
+      "name": "Nessuna armatura Crappterra",
+      "cost": 0,
+      "desc": "<i>Al momento non sono stati trovati dati su corazze di questa marca.</i>"
     }
   ],
 
-  "Spirito": [
+  "Gadget Crappterra": [
     {
-      "name": "Predisposizione alla caratteristica (Spirito)",
-      "cost": 1550,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
-      "bonus": {"stat": "Spirito", "val": 1}
-    },
-    {
-      "name": "Allenamento caratteristico (Spirito)",
-      "cost": 2000,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Spirito", "val": 1}
-    },
-    {
-      "name": "Affinità alla caratteristica (Spirito)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Spirito)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Volontà interiore",
-      "cost": 1000,
-      "desc": "È possibile spendere PAS al posto dei PAV, ogni 2 PA si spende un PAS extra.",
-      "bonus": null
-    },
-    {
-      "name": "Volontà interiore II",
+      "name": "Centralina CRAPPTERRA",
       "cost": 1500,
-      "desc": "Quando si utilizzano i PAS al posto dei PAV, i costi sono standard.",
-      "bonus": null,
-      "requires": "Volontà interiore"
+      "desc": "<b>Slot:</b> Petto<br><b>Peso:</b> 200 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 100<br><i>L'obiettivo è essere resistente e inviolabile. È massiccia e montata sul petto.</i><br><b>Effetto:</b> Necessaria per utilizzare equipaggiamenti avanzati. Compatibile SOLO con gadget CRAPPTERRA."
     },
     {
-      "name": "Riserva di potere nascosta",
+      "name": "Caricatore da spalla per NukeBULLET",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Installa 3 NukeBULLET nella spalla. Ricaricare il gadget costa 2 PAA a proiettile con Velocità 20."
+    },
+    {
+      "name": "Canna Flessibile NEFT-ARM",
+      "cost": 250,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Collega la spalla al guanto per interconnettere i gadget. Per funzionare, il braccio deve rimanere completamente teso."
+    },
+    {
+      "name": "Guanti NukeBULLET",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Requisiti:</b> Centralina CRAPPTERRA, Canna NEFT-ARM, Caricatore NukeBULLET<br><i>\"Ai nostri tempi bastava un pugno. Oggi gli abbiamo aggiunto una piccola testata nucleare.\" 😆</i><br><b>Effetto:</b> Esplode i NukeBULLET dal palmo. Cono d'azione di 6m. I primi 3m infliggono 10xArguzia danni, gli altri 3m infliggono 4xArguzia. A contatto ravvicinato (palmo sul bersaglio): Danno x5. Velocità di detonazione: 20."
+    },
+    {
+      "name": "Caricatore da spalla per NOT ORBITAL LASER",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Installa 3 fusibili NOT ORBITAL LASER nella spalla. Ricarica: 2 PAA a proiettile, Velocità 20."
+    },
+    {
+      "name": "Guanti NOT ORBITAL LASER",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Requisiti:</b> Centralina CRAPPTERRA, Canna NEFT-ARM, Caricatore NOT ORBITAL LASER<br><b>Effetto:</b> Espelle un potente laser rettilineo per 1 km (effettua danni solo nei primi 50m). Primi 10m: 20xArguzia danni (danno dimezzato ogni 10m successivi). Contro muri/oggetti non refrattari: Danno x15 (passa attraverso se supera gli HP del muro). Velocità d'espulsione: 90 (Preceduta da riscaldamento a Velocità 50). Inutile su superfici riflettenti (devia di 120°)."
+    },
+    {
+      "name": "Caricatore da spalla per MC HUMMER",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Installa 15 detonatori MC HUMMER nella spalla. Ricarica: 2 PAA a proiettile, Velocità 20."
+    },
+    {
+      "name": "Guanti MC HUMMER",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Requisiti:</b> Centralina CRAPPTERRA, Canna NEFT-ARM, Caricatore MC HUMMER<br><b>Effetto:</b> Colpendo un nemico senz'armi, innesca un impatto devastante che infligge 10 x Forza x Arguzia danni."
+    },
+    {
+      "name": "Propulsore 1L Carburante",
       "cost": 1000,
-      "desc": "È possibile effettuare azioni spendendo 2 PA in meno al costo di 2 PAS.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Effetto:</b> Al costo di 3 PAA e 1L di carburante, effettua una carica di 8m. Se colpisce un nemico, innesca Manovra: Spingere automatica (trascina il bersaglio per tutta la carica). A fine carica il nemico è spinto via per (Metri percorsi + [1m x Forza]). Contro i muri: 150 danni x ogni metro mancante alla fine della carica (li sfonda senza fermarsi se supera gli HP)."
     },
     {
-      "name": "Riserva di potere nascosta II",
-      "cost": 1200,
-      "desc": "È possibile effettuare azioni spendendo 4 PA in meno al costo di 4 PAS.",
-      "bonus": null,
-      "requires": "Riserva di potere nascosta"
-    },
-    {
-      "name": "Occhio dell'anima",
-      "cost": 2000,
-      "desc": "È possibile effettuare prove di percezione mistica per rilevare auree o tracce mistiche invisibili all'occhio umano.",
-      "bonus": null
-    },
-    {
-      "name": "Occhio dell'anima II",
+      "name": "Guanto MegaShield",
       "cost": 1000,
-      "desc": "Si ottiene un bonus di 2 alle percezioni mistiche.",
-      "bonus": null,
-      "requires": "Occhio dell'anima"
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Effetto:</b> Genera uno scudo cinetico a 180° frontali contro i proiettili in arrivo. Non blocca i proiettili in uscita. Resiste a 1000 HP di danno. Costo attivazione: 6 PAA. Costo mantenimento (se fermi): 0 PAA. Costo movimento con scudo: 6 PAA. Se distrutto (o dopo 2 ore), può essere ricreato."
+    },
+    {
+      "name": "Sterminatrice 11!!",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Effetto:</b> Mini-arma a ripetizione (Caricatore da 50 proiettili). Danno: 8xPercezione. Attivazione raffica: 3 PAA, Velocità 50. Ogni colpo costa 2 PAP. Il primo colpo ha Malus -8, ogni colpo successivo aggiunge -2 di Malus. Rinnovare la raffica il turno successivo costa 3 PAA, resetta i malus e cambia la Velocità d'attivazione a 85 (se non si rinnova si perde il bonus velocità)."
+    },
+    {
+      "name": "Caricatore per Sterminatrice",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 200 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 150<br><b>Effetto:</b> Attacco per spalla contenente 500 proiettili per la Sterminatrice 11!!. I colpi si inseriscono automaticamente nell'arma."
+    },
+    {
+      "name": "Verricello di traino per veicoli pesanti",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Pettorale<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Spara un arpione dal petto (Range max: 10m). Danno impatto: 10xPercezione. Collega il nemico, impedendogli di allontanarsi oltre il range max e permettendo manovre di sbilanciamento/traino. Al costo di 5 PAA attiva in automatico (senza usare gli arti) una Manovra: Trainare. Il nemico deve superare una prova di Forza vs CD [10+Forza Utilizzatore]. Ogni prova fallita riduce il range max di 3m avvicinandolo."
+    }
+  ],
+  "Armature MEDMAD": [
+    {
+      "name": "Elmo MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Elmo medico tattico di base."
+    },
+    {
+      "name": "Guanti MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti sterili per interventi rapidi in campo."
+    },
+    {
+      "name": "Avambraccio MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni leggere per braccia."
+    },
+    {
+      "name": "Pettorali MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Robusta piastra toracica protettiva."
+    },
+    {
+      "name": "Stivali MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature progettate per terreni impervi."
+    },
+    {
+      "name": "Schiena MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Supporto dorsale, ideale per agganciare valigette."
+    },
+    {
+      "name": "Gambe MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Tutori corazzati per arti inferiori."
+    },
+    {
+      "name": "Cintura MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura medica ad altissima armonizzazione."
+    },
+    {
+      "name": "Spalla MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio medico compatto."
     }
   ],
 
-  "Virtù": [
+  "Gadget MEDMAD": [
     {
-      "name": "Predisposizione alla caratteristica (Virtù)",
-      "cost": 1750,
-      "desc": "Si incrementa di 1 la caratteristica massima in questione.",
-      "bonus": {"stat": "Virtù", "val": 1}
+      "name": "Guanto Stetoscopico",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 20<br><b>Effetto:</b> Aumento percezione mediante tatto. Permette di auscultare il battito cardiaco. Appoggiandolo su superfici percepisce vibrazioni, passi o suoni oltre un muro. Abilità passiva senza costo in PA."
     },
     {
-      "name": "Allenamento caratteristico (Virtù)",
-      "cost": 2200,
-      "desc": "Dopo 24 ore di allenamento si aumenta di 1 la caratteristica in questione.",
-      "bonus": {"stat": "Virtù", "val": 1}
-    },
-    {
-      "name": "Affinità alla caratteristica (Virtù)",
-      "cost": 1200,
-      "desc": "Aumenta di 1 il valore di m-pa della caratteristica in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Abbandono della caratteristica (Virtù)",
-      "cost": 1300,
-      "desc": "È possibile sacrificare una m-pa di una caratteristica per avere un m-pa in più in una caratteristica a scelta.",
-      "bonus": null
-    },
-    {
-      "name": "Incremento rigenerativo",
+      "name": "Centralina MEDMAD",
       "cost": 1500,
-      "desc": "Aumenta la capacità rigenerativa standard a 1.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100<br><i>Il fulcro diagnostico.</i><br><b>Effetto:</b> Centralina necessaria per utilizzare e comunicare con gli equipaggiamenti e visori medici MEDMAD."
     },
     {
-      "name": "Incremento rigenerativo II",
-      "cost": 1700,
-      "desc": "Aumenta la capacità rigenerativa standard a 2.",
-      "bonus": null,
-      "requires": "Incremento rigenerativo"
+      "name": "Visore Medicale Standard",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>Un occhio clinico oggi non basta più.</i><br><b>Effetto:</b> Mostra a schermo parametri vitali (battito, temperatura, respirazione). Richiede una prova su D20 per l'esatta interpretazione clinica dei dati."
     },
     {
-      "name": "Buona stella",
-      "cost": 1500,
-      "desc": "Si ottiene un bonus di 2 a tutte le prove su cercare.",
-      "bonus": null
+      "name": "Visore Medicale Cardiaco",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>All'inizio l'eccessivo range era un difetto... lo abbiamo lasciato così.</i><br><b>Effetto:</b> Rileva e mostra il battito cardiaco degli esseri viventi anche attraverso muri e ostacoli."
     },
     {
-      "name": "Buona stella II",
-      "cost": 1700,
-      "desc": "Si ottiene un bonus di 3 a tutte le prove su cercare.",
-      "bonus": null,
-      "requires": "Buona stella"
+      "name": "Visore Medicale Tossinometrico",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>Riconoscere una tossina è vitale.</i><br><b>Effetto:</b> Registra e rileva tossine, virus o sostanze nocive a schermo (sia dentro corpi/oggetti, sia disperse nell'aria)."
     },
     {
-      "name": "Riposo virtuoso",
-      "cost": 1500,
-      "desc": "Con 8 ore di sonno in un letto al riparo si recupera automaticamente 10 di salute, stamina e concentrazione in più.",
-      "bonus": null
+      "name": "Valigia MEDMAD Light",
+      "cost": 150,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 50<br><i>Il nostro tratto distintivo.</i><br><b>Effetto:</b> Contiene fino a 3 kit medici. Aprire la valigetta ed estrarre un kit ha Velocità 40."
     },
     {
-      "name": "Riposo virtuoso II",
-      "cost": 1500,
-      "desc": "Con 8 ore di sonno in un letto al riparo si recupera automaticamente 20 di salute, stamina e concentrazione in più.",
-      "bonus": null,
-      "requires": "Riposo virtuoso"
+      "name": "Valigia MEDMAD Medium",
+      "cost": 200,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 50<br><i>Per interventi prolungati.</i><br><b>Effetto:</b> Contiene fino a 5 kit medici. Aprire la valigetta ed estrarre un kit ha Velocità 40."
     },
     {
-      "name": "Riposo virtuoso III",
-      "cost": 1500,
-      "desc": "Con 8 ore di sonno in un letto al riparo si recupera automaticamente 30 di salute, stamina e concentrazione in più.",
-      "bonus": null,
-      "requires": "Riposo virtuoso II"
+      "name": "Valigia MEDMAD Heavy",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>Un ospedale da campo portatile.</i><br><b>Effetto:</b> Contiene fino a 8 kit medici. Aprire la valigetta ed estrarre un kit ha Velocità 40."
+    },
+    {
+      "name": "Defibrillatore da Campo",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>NON VA USATO COME ARMA! (O forse sì?)</i><br><b>Effetto:</b> Contiene 5 munizioni ricaricabili da fonti elettriche. Effettua una scarica da 2000V x 30A (210J)."
+    },
+    {
+      "name": "Guanto Piastra Defibrillatore",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD, Defibrillatore da campo<br><i>Attenzione: non confondere con il guanto per le analisi della prostata.</i><br><b>Effetto:</b> <b>Uso medico:</b> Scarica su un soggetto incosciente, richiede D20 per rianimazione (Costo: 5 PAA, Velocità pari al tiro per colpire). <b>Uso arma:</b> Colpo senz'armi elettrificato. Dà +5 al tiro per colpire e annulla parate a mani nude/armi conduttive. Infligge 8 x Arguzia danni. (Inefficace sui Nergi)."
+    },
+    {
+      "name": "Stivali Isolanti da Campo",
+      "cost": 150,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>La sicurezza sul lavoro è tutto.</i><br><b>Effetto:</b> Isolanti al 99%. Rendono immuni alle scariche elettriche (equipara ai Nergi)."
+    },
+    {
+      "name": "Maschera Antigas MEDMAD",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Effetto:</b> Garantisce immunità a gas e polveri disperse nell'ambiente. Segnala a schermo eventuali gas non supportati dai filtri."
+    },
+    {
+      "name": "Emettitore di Gas",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Pettorale<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>NON CARICARLO CON TOSSINE (Anche se funzionerebbe...).</i><br><b>Effetto:</b> Nebulizza sostanze in una nube 2x2. Mantenere la nube costa 4 PAA a turno. Si dirada dopo 2 turni dalla fine del mantenimento."
     }
   ],
 
-  "Spade lunghe": [
+  "Oggettistica MEDMAD": [
     {
-      "name": "Cadetto (Spade lunghe)",
+      "name": "Kit Mega Trauma",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Il ghiaccio secco è superato.</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione (prima che ritocchi a chi lo estrae), pena svanimento dell'effetto merlinico. Ferma emorragie e ripara temporaneamente le ossa. Restituisce 40 HP + (5 HP x Arguzia dell'utilizzatore)."
+    },
+    {
+      "name": "Kit Tossine",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Giuramento di Ipocrite...</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione. Contiene una carica di tossine. Attivarlo su una persona costa PA e richiede Tiro per Colpire. Attivarlo su un'arma la rende avvelenata per 48 ore."
+    },
+    {
+      "name": "Kit Ancora Portatile",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Salva migliaia di vite.</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione. Attivazione istantanea (Velocità 100) per ancorare/congelare sul posto l'utilizzatore."
+    },
+    {
+      "name": "Kit'è Murt",
+      "cost": 50,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Quando si dice che i morti non parlano...</i><br><b>Effetto:</b> Mini-obitorio portatile, riutilizzabile. Costo: 10 PAA. Richiede una prova su D20. Se riesce, svela ora e causa del decesso (e ulteriori informazioni a discrezione del risultato)."
+    },
+    {
+      "name": "Kit Antibalistico per Protezione",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Per operare in mezzo a una sparatoria.</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione. Al costo di 8 PAA crea uno scudo a 360° intorno all'attivatore. Protegge da un massimo di 5 proiettili in entrata."
+    }
+  ],
+  "Armature Torbtech": [
+    {
+      "name": "Nessun dato disponibile",
+      "cost": 0,
+      "desc": "<i>Al momento il catalogo corazze Torbtech è in aggiornamento.</i>"
+    }
+  ],
+  "Gadget Torbtech": [
+    {
+      "name": "Nessun dato disponibile",
+      "cost": 0,
+      "desc": "<i>I laboratori Torbtech ci stanno lavorando...</i>"
+    }
+  ],
+  "Oggettistica Torbtech": [
+    {
+      "name": "Nessun dato disponibile",
+      "cost": 0,
+      "desc": "<i>Rifornimenti in arrivo.</i>"
+    }
+  ],
+  "Armature Mesmer": [
+    {
+      "name": "Elmo Mesmer",
       "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Casco di base per l'interfaccia con i sistemi visivi Mesmer."
     },
     {
-      "name": "Esperto (Spade lunghe)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Spade lunghe)"
-    },
-    {
-      "name": "Specializzato (Spade lunghe)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Spade lunghe)"
-    },
-    {
-      "name": "Maestro (Spade lunghe)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Spade lunghe)"
-    },
-    {
-      "name": "Supremo (Spade lunghe)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Spade lunghe)"
-    },
-    {
-      "name": "Estrazione rapida (Spade lunghe)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Estrazione con Attacco! (Spade lunghe)",
-      "cost": 1000,
-      "desc": "È possibile estrarre l'arma ed eseguire subito un attacco, questo a patto che l'arma in questione sia facilmente accessibile e non riposta in zaino o sotto a vesti.",
-      "bonus": null,
-      "requires": "Estrazione rapida (Spade lunghe)"
-    },
-    {
-      "name": "Perry (Spade lunghe)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Spade lunghe)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Spade lunghe)"
-    },
-    {
-      "name": "Perry perfetto (Spade lunghe)",
-      "cost": 2500,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Spade lunghe)"
-    },
-    {
-      "name": "Colpo rapido (Spade lunghe)",
+      "name": "Guanti Mesmer",
       "cost": 1500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti ultra-leggeri per manipolazione rapida dei gadget."
     },
     {
-      "name": "Taglio perfetto (Spade lunghe)",
-      "cost": 1000,
-      "desc": "Si ignora il 20% della Riduzione Danni da Taglio del nemico.",
-      "bonus": null
-    },
-    {
-      "name": "Taglio perfetto II (Spade lunghe)",
+      "name": "Avambraccio Mesmer",
       "cost": 1500,
-      "desc": "Si ignora il 40% della Riduzione Danni da Taglio del nemico.",
-      "bonus": null,
-      "requires": "Taglio perfetto (Spade lunghe)"
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni flessibili e leggere per le braccia."
     },
     {
-      "name": "Parata molto rapida (Spade lunghe)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
+      "name": "Pettorali Mesmer",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Corazza toracica standard, ottima base per gli accumulatori."
     },
     {
-      "name": "Parata Fulminea (Spade lunghe)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Spade lunghe)"
+      "name": "Stivali Mesmer",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature tattiche per il movimento silenzioso."
     },
     {
-      "name": "Spazzata (Spade lunghe)",
+      "name": "Schiena Mesmer",
       "cost": 1000,
-      "desc": "È possibile eseguire un colpo a 180 gradi di fronte a se, questo equivale ad attaccare uno per volta i nemici. Se uno dei nemici para il colpo blocca anche i colpi successivi. Il costo in PA equivale a quello di un normale attacco + il 50% di un normale attacco per ogni nemico dopo il primo.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Placca di supporto posteriore."
+    },
+    {
+      "name": "Gambe Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Coperture articolate per gli arti inferiori."
+    },
+    {
+      "name": "Cintura Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura modulare ad altissima armonizzazione, indispensabile per il vasto arsenale di granate Mesmer."
+    },
+    {
+      "name": "Spalla Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio minimalista."
     }
   ],
 
-  "Lame corte": [
+  "Gadget Mesmer": [
     {
-      "name": "Cadetto (Lame corte)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Lame corte)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Lame corte)"
-    },
-    {
-      "name": "Specializzato (Lame corte)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Lame corte)"
-    },
-    {
-      "name": "Maestro (Lame corte)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Lame corte)"
-    },
-    {
-      "name": "Supremo (Lame corte)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Lame corte)"
-    },
-    {
-      "name": "Estrazione rapida (Lame corte)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità veloce.",
-      "bonus": null
-    },
-    {
-      "name": "Estrazione con Attacco! (Lame corte)",
-      "cost": 1000,
-      "desc": "È possibile estrarre l'arma ed eseguire subito un attacco, questo a patto che l'arma in questione sia facilmente accessibile e non riposta in zaino o sotto a vesti.",
-      "bonus": null,
-      "requires": "Estrazione rapida (Lame corte)"
-    },
-    {
-      "name": "Lancio migliorato (Lame corte)",
-      "cost": 1000,
-      "desc": "-3 ai malus per i tiri per colpire con i coltelli da lancio.",
-      "bonus": null
-    },
-    {
-      "name": "Perry (Lame corte)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Lame corte)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Lame corte)"
-    },
-    {
-      "name": "Perry perfetto (Lame corte)",
-      "cost": 2500,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Lame corte)"
-    },
-    {
-      "name": "Colpo rapido (Lame corte)",
-      "cost": 1000,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Taglio perfetto (Lame corte)",
+      "name": "Centralina MESMER",
       "cost": 1500,
-      "desc": "Si ignora il 20% della Riduzione Danni da Taglio del nemico.",
-      "bonus": null
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100<br><i>Dopo infiniti studi l'abbiamo integrata nell'elmo: funzionale, poco visibile e molto bella d'estetica.</i><br><b>Effetto:</b> Necessaria per utilizzare gli equipaggiamenti avanzati. Compatibile SOLO con gadget MESMER."
     },
     {
-      "name": "Taglio perfetto II (Lame corte)",
-      "cost": 2000,
-      "desc": "Si ignora il 40% della Riduzione Danni da Taglio del nemico.",
-      "bonus": null,
-      "requires": "Taglio perfetto (Lame corte)"
+      "name": "Granata PXICOclone",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Cintura (Attacco Granata)<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80<br><i>Tu e il tuo esercito siete pronti a combattere!? Ah, non hai un esercito? Niente paura.</i><br><b>Effetto:</b> Crea un clone autonomo nel punto di impatto. Il clone ha 50 HP e infligge 0 danni, ma raccoglie informazioni in tempo reale visibili sul DISPLAY MESMER. Costo lancio: 5 PA. Costo morte del clone: 5 PAV."
     },
     {
-      "name": "Parata molto rapida (Lame corte)",
+      "name": "Levitogranata Xll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura (Attacco Granata)<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80<br><i>Vuoi raggiungere qualsiasi risorsa? Pensa al contrario!</i><br><b>Effetto:</b> Si attacca a qualsiasi oggetto e permette di muoverlo (max 15kg, entro un arco di 15m). Costo: 1 PAV ogni 2m (Velocità 30) oppure 2 PAV al metro per movimenti veloci (Velocità 60)."
+    },
+    {
+      "name": "DISPLAY MESMER",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 50<br><i>Le informazioni sono la cosa più importante. Accedi direttamente dal tuo campo visivo.</i><br><b>Effetto:</b> Tutte le informazioni raccolte dall'armatura e dai cloni PXICO sono visibili a schermo in tempo reale."
+    },
+    {
+      "name": "Stivali a Sospensione Magnetica",
       "cost": 1500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 150<br><i>Maledetta Fa=μsN!</i><br><b>Effetto:</b> Riduce il malus movimento di 1, non attiva trappole legate al peso. Aumenta la velocità di movimento di 10, azzera il rumore dei passi e permette di usare i PAV per muoversi."
     },
     {
-      "name": "Parata Fulminea (Lame corte)",
-      "cost": 2500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Lame corte)"
+      "name": "Drappo AntiS/T",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 100<br><i>Un tessuto che piega lo spazio-tempo. Lascia stare come funziona, è complicato...</i><br><b>Effetto:</b> Teletrasporto istantaneo (Velocità 100) fino a 8 metri (Costo: 1 PAV al metro). Durante il salto si è invisibili e intangibili. Usabile 1 volta ogni 24h (usarlo una seconda volta rompe il dispositivo)."
+    },
+    {
+      "name": "Granata PXICOinvisibile",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Cintura (Attacco Granata)<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80<br><i>Crea una cortina di fumo invisibile: dall'esterno si vede esattamente ciò che c'era prima.</i><br><b>Effetto:</b> Area 4x4. Chi è all'interno è invisibile. Tutto ciò che viene spostato dall'esterno risulta immobile. Costo lancio: 2 PA + 5 PAV."
+    },
+    {
+      "name": "Strumento di Mimesi Corporale",
+      "cost": 250,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 20<br><i>Perché andare in giro con armi e gadget in bella vista?</i><br><b>Effetto:</b> Mimesi passiva. Rende invisibile fino a 10kg di equipaggiamento addosso (la regola è che torna visibile se si muove). Non può nascondere armi in uso o componenti fissi delle armature."
+    },
+    {
+      "name": "Smaterializzatore",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 150<br><b>Requisiti:</b> Centralina MESMER<br><i>Alza la mano e guarda quei pezzettini di metallo sparire prima di colpirti!</i><br><b>Effetto:</b> A mano libera alzata (Azione base Velocità 60), annichilisce tutti i proiettili (max 100g l'uno) in un cono frontale di 120°. Costo: 2 PAV per il primo proiettile smaterializzato; i successivi nello stesso turno sono gratuiti."
+    },
+    {
+      "name": "Accumulatore Cinetico",
+      "cost": 250,
+      "desc": "<b>Slot:</b> Petto<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 80<br><b>Requisiti:</b> Centralina MESMER, Smaterializzatore<br><i>DA-OGGI-SEI-INARRESTABILE!!! Dacci i tuoi soldi.</i><br><b>Effetto:</b> Ogni singolo proiettile smaterializzato dal guanto genera e accumula 1 Carica Energetica."
+    },
+    {
+      "name": "Emettitore Cinetico",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 110<br><b>Requisiti:</b> Accumulatore Cinetico<br><i>Stavolta è vero, te lo giuro.</i><br><b>Effetto:</b> Emette un'onda di energia cinetica a cono (120° per 3m). Danno: 5 x [Cariche Energetiche] x Volontà. Il danno si riduce in base alle coperture nemiche. Se usato a contatto diretto (palmo sul bersaglio): Danno x2."
     }
   ],
 
-  "Lance e Alabarde": [
-    {
-      "name": "Cadetto (Lance e Alabarde)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Lance e Alabarde)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Lance e Alabarde)"
-    },
-    {
-      "name": "Specializzato (Lance e Alabarde)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Lance e Alabarde)"
-    },
-    {
-      "name": "Maestro (Lance e Alabarde)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Lance e Alabarde)"
-    },
-    {
-      "name": "Supremo (Lance e Alabarde)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Lance e Alabarde)"
-    },
-    {
-      "name": "Estrazione rapida (Lance e Alabarde)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Lancio migliorato (Lance e Alabarde)",
-      "cost": 2000,
-      "desc": "Elimina i malus di -5 quando si lancia l'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Perry (Lance e Alabarde)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Lance e Alabarde)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Lance e Alabarde)"
-    },
-    {
-      "name": "Perry perfetto (Lance e Alabarde)",
-      "cost": 2500,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Lance e Alabarde)"
-    },
-    {
-      "name": "Colpo rapido (Lance e Alabarde)",
-      "cost": 1500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Lance e Alabarde)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Lance e Alabarde)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Lance e Alabarde)"
-    },
-    {
-      "name": "Spazzata (Lance e Alabarde)",
-      "cost": 1000,
-      "desc": "È possibile eseguire un colpo a 180 gradi di fronte a se, questo equivale ad attaccare uno per volta i nemici. Se uno dei nemici para il colpo blocca anche i colpi successivi. Il costo in PA equivale a quello di un normale attacco + il 50% di un normale attacco per ogni nemico dopo il primo.",
-      "bonus": null
-    }
-  ],
-  "Spadone": [
-    {
-      "name": "Cadetto (Spadone)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Spadone)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Spadone)"
-    },
-    {
-      "name": "Specializzato (Spadone)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Spadone)"
-    },
-    {
-      "name": "Maestro (Spadone)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Spadone)"
-    },
-    {
-      "name": "Supremo (Spadone)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Spadone)"
-    },
-    {
-      "name": "Estrazione rapida (Spadone)",
-      "cost": 2500,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Sospensione (Spadone)",
-      "cost": 2000,
-      "desc": "Quando si colpisce un nemico con un montante, se questo va a segno il nemico è da considerarsi in sospensione a 1 metro di altezza + 30cm x valore di forza dell'utilizzatore.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo rapido (Spadone)",
-      "cost": 2500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo poderoso (Spadone)",
-      "cost": 1000,
-      "desc": "È possibile utilizzare il triplo dei punti azione per effettuare un attacco che faccia il 200% dei danni.",
-      "bonus": null
-    },
-    {
-      "name": "Taglio perfetto (Spadone)",
-      "cost": 1500,
-      "desc": "Si ignora il 20% della Riduzione Danni da Taglio del nemico.",
-      "bonus": null
-    },
-    {
-      "name": "Taglio perfetto II (Spadone)",
-      "cost": 2000,
-      "desc": "Si ignora il 40% della Riduzione Danni da Taglio del nemico.",
-      "bonus": null,
-      "requires": "Taglio perfetto (Spadone)"
-    },
-    {
-      "name": "Parata molto rapida (Spadone)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Spadone)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Spadone)"
-    },
-    {
-      "name": "Spazzata (Spadone)",
-      "cost": 1000,
-      "desc": "È possibile eseguire un colpo a 180 gradi di fronte a se, questo equivale ad attaccare uno per volta i nemici. Se uno dei nemici para il colpo blocca anche i colpi successivi. Il costo in PA equivale a quello di un normale attacco + il 50% di un normale attacco per ogni nemico dopo il primo.",
-      "bonus": null
-    }
-  ],
-
-  "Mazza pesante": [
-    {
-      "name": "Cadetto (Mazza pesante)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Mazza pesante)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Mazza pesante)"
-    },
-    {
-      "name": "Specializzato (Mazza pesante)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Mazza pesante)"
-    },
-    {
-      "name": "Maestro (Mazza pesante)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Mazza pesante)"
-    },
-    {
-      "name": "Supremo (Mazza pesante)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Mazza pesante)"
-    },
-    {
-      "name": "Estrazione rapida (Mazza pesante)",
-      "cost": 2000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Estrazione con Attacco! (Mazza pesante)",
-      "cost": 1000,
-      "desc": "È possibile estrarre l'arma ed eseguire subito un attacco, questo a patto che l'arma in questione sia facilmente accessibile e non riposta in zaino o sotto a vesti.",
-      "bonus": null,
-      "requires": "Estrazione rapida (Mazza pesante)"
-    },
-    {
-      "name": "Lancio migliorato (Mazza pesante)",
-      "cost": 2000,
-      "desc": "Elimina i malus di -5 quando si lancia l'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Perry (Mazza pesante)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Mazza pesante)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Mazza pesante)"
-    },
-    {
-      "name": "Perry perfetto (Mazza pesante)",
-      "cost": 2500,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Mazza pesante)"
-    },
-    {
-      "name": "Colpo rapido (Mazza pesante)",
-      "cost": 2500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Mazza pesante)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Mazza pesante)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Mazza pesante)"
-    }
-  ],
-
-  "Mazza grande": [
-    {
-      "name": "Cadetto (Mazza grande)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Mazza grande)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Mazza grande)"
-    },
-    {
-      "name": "Specializzato (Mazza grande)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Mazza grande)"
-    },
-    {
-      "name": "Maestro (Mazza grande)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Mazza grande)"
-    },
-    {
-      "name": "Supremo (Mazza grande)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Mazza grande)"
-    },
-    {
-      "name": "Estrazione rapida (Mazza grande)",
-      "cost": 2500,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Sospensione (Mazza grande)",
-      "cost": 2000,
-      "desc": "Quando si colpisce un nemico con un montante, se questo va a segno il nemico è da considerarsi in sospensione a 1 metro di altezza + 30cm x valore di forza dell'utilizzatore.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo rapido (Mazza grande)",
-      "cost": 2500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo poderoso (Mazza grande)",
-      "cost": 1000,
-      "desc": "È possibile utilizzare il triplo dei punti azione per effettuare un attacco che faccia il 200% dei danni.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Mazza grande)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Mazza grande)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Mazza grande)"
-    },
-    {
-      "name": "Spazzata (Mazza grande)",
-      "cost": 1000,
-      "desc": "È possibile eseguire un colpo a 180 gradi di fronte a se, questo equivale ad attaccare uno per volta i nemici. Se uno dei nemici para il colpo blocca anche i colpi successivi. Il costo in PA equivale a quello di un normale attacco + il 50% di un normale attacco per ogni nemico dopo il primo.",
-      "bonus": null
-    }
-  ],
-  "Ascia pesante": [
-    {
-      "name": "Cadetto (Ascia pesante)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Ascia pesante)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Ascia pesante)"
-    },
-    {
-      "name": "Specializzato (Ascia pesante)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Ascia pesante)"
-    },
-    {
-      "name": "Maestro (Ascia pesante)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Ascia pesante)"
-    },
-    {
-      "name": "Supremo (Ascia pesante)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Ascia pesante)"
-    },
-    {
-      "name": "Estrazione rapida (Ascia pesante)",
-      "cost": 2000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Estrazione con Attacco! (Ascia pesante)",
-      "cost": 1000,
-      "desc": "È possibile estrarre l'arma ed eseguire subito un attacco, questo a patto che l'arma in questione sia facilmente accessibile e non riposta in zaino o sotto a vesti.",
-      "bonus": null,
-      "requires": "Estrazione rapida (Ascia pesante)"
-    },
-    {
-      "name": "Lancio migliorato (Ascia pesante)",
-      "cost": 2000,
-      "desc": "Elimina i malus di -5 quando si lancia l'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Perry (Ascia pesante)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Ascia pesante)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Ascia pesante)"
-    },
-    {
-      "name": "Perry perfetto (Ascia pesante)",
-      "cost": 2500,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Ascia pesante)"
-    },
-    {
-      "name": "Colpo rapido (Ascia pesante)",
-      "cost": 2500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Ascia pesante)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Ascia pesante)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Ascia pesante)"
-    }
-  ],
-
-  "Ascia grande": [
-    {
-      "name": "Cadetto (Ascia grande)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Ascia grande)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Ascia grande)"
-    },
-    {
-      "name": "Specializzato (Ascia grande)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Ascia grande)"
-    },
-    {
-      "name": "Maestro (Ascia grande)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Ascia grande)"
-    },
-    {
-      "name": "Supremo (Ascia grande)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Ascia grande)"
-    },
-    {
-      "name": "Estrazione rapida (Ascia grande)",
-      "cost": 2000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Sospensione (Ascia grande)",
-      "cost": 2000,
-      "desc": "Quando si colpisce un nemico con un montante, se questo va a segno il nemico è da considerarsi in sospensione a 1 metro di altezza + 30cm x valore di forza dell'utilizzatore.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo rapido (Ascia grande)",
-      "cost": 2500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo poderoso (Ascia grande)",
-      "cost": 1000,
-      "desc": "È possibile utilizzare il triplo dei punti azione per effettuare un attacco che faccia il 200% dei danni.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Ascia grande)",
-      "cost": 1500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Ascia grande)",
-      "cost": 2500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Ascia grande)"
-    },
-    {
-      "name": "Spazzata (Ascia grande)",
-      "cost": 1000,
-      "desc": "È possibile eseguire un colpo a 180 gradi di fronte a se, questo equivale ad attaccare uno per volta i nemici. Se uno dei nemici para il colpo blocca anche i colpi successivi. Il costo in PA equivale a quello di un normale attacco + il 50% di un normale attacco per ogni nemico dopo il primo.",
-      "bonus": null
-    }
-  ],
-
-  "Fruste": [
-    {
-      "name": "Cadetto (Fruste)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Fruste)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Fruste)"
-    },
-    {
-      "name": "Specializzato (Fruste)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Fruste)"
-    },
-    {
-      "name": "Maestro (Fruste)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Fruste)"
-    },
-    {
-      "name": "Supremo (Fruste)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Fruste)"
-    },
-    {
-      "name": "Estrazione rapida (Fruste)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Estrazione con Attacco! (Fruste)",
-      "cost": 1000,
-      "desc": "È possibile estrarre l'arma ed eseguire subito un attacco, questo a patto che l'arma in questione sia facilmente accessibile e non riposta in zaino o sotto a vesti.",
-      "bonus": null,
-      "requires": "Estrazione rapida (Fruste)"
-    },
-    {
-      "name": "Colpo rapido (Fruste)",
-      "cost": 1000,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Frusta a 5 dita",
-      "cost": 1500,
-      "desc": "È possibile effettuare manovre di sbilanciare, disarmare, immobilizzare con la propria frusta. È inoltre possibile raccogliere oggetti, tirare leve o attivare marchingegni. I movimenti di frusta sono da considerarsi alla stessa velocità dei propri colpi.",
-      "bonus": null
-    },
-    {
-      "name": "Frusta a 6 dita",
-      "cost": 1500,
-      "desc": "È possibile effettuare manovre di sbilanciare, disarmare, immobilizzare con la propria frusta e si ottiene anche un bonus di 3. È inoltre possibile raccogliere oggetti, tirare leve o attivare marchingegni. Questi movimenti sono da considerarsi molto rapidi.",
-      "bonus": null,
-      "requires": "Frusta a 5 dita"
-    },
-    {
-      "name": "Colpi Fulminei",
-      "cost": 2000,
-      "desc": "È possibile effettuare attacchi con la frusta molto rapidi.",
-      "bonus": null
-    },
-    {
-      "name": "Colpi veramente Fulminei",
-      "cost": 2500,
-      "desc": "È possibile effettuare attacchi con la frusta fulminei.",
-      "bonus": null,
-      "requires": "Colpi Fulminei"
-    },
-    {
-      "name": "Parata molto rapida (Fruste)",
-      "cost": 1500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Fruste)",
-      "cost": 2500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Fruste)"
-    }
-  ],
-
-  "Bastoni da guerra": [
-    {
-      "name": "Cadetto (Bastoni da guerra)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Bastoni da guerra)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Bastoni da guerra)"
-    },
-    {
-      "name": "Specializzato (Bastoni da guerra)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Bastoni da guerra)"
-    },
-    {
-      "name": "Maestro (Bastoni da guerra)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Bastoni da guerra)"
-    },
-    {
-      "name": "Supremo (Bastoni da guerra)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Bastoni da guerra)"
-    },
-    {
-      "name": "Estrazione rapida (Bastoni da guerra)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Perry (Bastoni da guerra)",
-      "cost": 1000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Bastoni da guerra)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Bastoni da guerra)"
-    },
-    {
-      "name": "Perry perfetto (Bastoni da guerra)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Bastoni da guerra)"
-    },
-    {
-      "name": "Colpo poderoso (Bastoni da guerra)",
-      "cost": 2500,
-      "desc": "È possibile utilizzare il triplo dei punti azione per effettuare un attacco che faccia il 200% dei danni.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo rapido (Bastoni da guerra)",
-      "cost": 1500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Bastoni da guerra)",
-      "cost": 1000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Bastoni da guerra)",
-      "cost": 1500,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Bastoni da guerra)"
-    }
-  ],
-  "Stocchi": [
-    {
-      "name": "Cadetto (Stocchi)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Stocchi)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Stocchi)"
-    },
-    {
-      "name": "Specializzato (Stocchi)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Stocchi)"
-    },
-    {
-      "name": "Maestro (Stocchi)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Stocchi)"
-    },
-    {
-      "name": "Supremo (Stocchi)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Stocchi)"
-    },
-    {
-      "name": "Estrazione rapida (Stocchi)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Perry (Stocchi)",
-      "cost": 1000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 50% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null
-    },
-    {
-      "name": "Perry migliorato (Stocchi)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 70% del danno e ha un malus di 5 al tiro per colpire, questo colpo al costo di un normale attacco.",
-      "bonus": null,
-      "requires": "Perry (Stocchi)"
-    },
-    {
-      "name": "Perry perfetto (Stocchi)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null,
-      "requires": "Perry migliorato (Stocchi)"
-    },
-    {
-      "name": "Colpo rapido (Stocchi)",
-      "cost": 2500,
-      "desc": "Permette di velocizzare di uno step la velocità degli attacchi dell'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Stocchi)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Stocchi)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Stocchi)"
-    },
-    {
-      "name": "Spezza corazze (Stocchi)",
-      "cost": 1000,
-      "desc": "Utilizzando 3 PA in più rispetto a un normale attacco è possibile effettuare un colpo che ignori il 50% dell'armatura del nemico.",
-      "bonus": null
-    },
-    {
-      "name": "Guardia alta (Stocchi)",
-      "cost": 1000,
-      "desc": "È possibile durante un turno di risposta effettuare sia un tiro per difendersi, sia uno per attaccare.",
-      "bonus": null
-    }
-  ],
-
-  "Scudo piccolo": [
-    {
-      "name": "Cadetto (Scudo piccolo)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Scudo piccolo)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Scudo piccolo)"
-    },
-    {
-      "name": "Specializzato (Scudo piccolo)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Scudo piccolo)"
-    },
-    {
-      "name": "Maestro (Scudo piccolo)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Scudo piccolo)"
-    },
-    {
-      "name": "Supremo (Scudo piccolo)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Scudo piccolo)"
-    },
-    {
-      "name": "Estrazione rapida (Scudo piccolo)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Lancio migliorato (Scudo piccolo)",
-      "cost": 1000,
-      "desc": "Elimina i malus di -5 quando si lancia l'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Perry perfetto (Scudo piccolo)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Scudo piccolo)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Scudo piccolo)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Scudo piccolo)"
-    },
-    {
-      "name": "Scudo alzato (Scudo piccolo)",
-      "cost": 1000,
-      "desc": "È possibile muoversi con lo scudo alzato senza rischiare di cadere e senza malus movimento aggiuntivo. Con lo scudo alzato si alza di 2 la classe di tiro avversaria e il corpo è coperto al 15%.",
-      "bonus": null
-    }
-  ],
-
-  "Scudo medio": [
-    {
-      "name": "Cadetto (Scudo medio)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Scudo medio)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Scudo medio)"
-    },
-    {
-      "name": "Specializzato (Scudo medio)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Scudo medio)"
-    },
-    {
-      "name": "Maestro (Scudo medio)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Scudo medio)"
-    },
-    {
-      "name": "Supremo (Scudo medio)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Scudo medio)"
-    },
-    {
-      "name": "Estrazione rapida (Scudo medio)",
-      "cost": 2000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Lancio migliorato (Scudo medio)",
-      "cost": 2000,
-      "desc": "Elimina i malus di -5 quando si lancia l'arma in questione.",
-      "bonus": null
-    },
-    {
-      "name": "Perry perfetto (Scudo medio)",
-      "cost": 2000,
-      "desc": "Dopo una parata che ha avuto successo è possibile effettuare un attacco veloce al nemico, questo effettua il 100% del danno, questo colpo è gratuito.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Scudo medio)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Scudo medio)",
-      "cost": 2000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Scudo medio)"
-    },
-    {
-      "name": "Scudo alzato (Scudo medio)",
-      "cost": 1000,
-      "desc": "È possibile muoversi con lo scudo alzato senza rischiare di cadere e senza malus movimento aggiuntivo. Con lo scudo alzato si alza di 4 la classe di tiro avversaria e il corpo è coperto al 35%.",
-      "bonus": null
-    }
-  ],
-
-  "Scudo a torre": [
-    {
-      "name": "Cadetto (Scudo a torre)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Scudo a torre)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Scudo a torre)"
-    },
-    {
-      "name": "Specializzato (Scudo a torre)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Scudo a torre)"
-    },
-    {
-      "name": "Maestro (Scudo a torre)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Scudo a torre)"
-    },
-    {
-      "name": "Supremo (Scudo a torre)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Scudo a torre)"
-    },
-    {
-      "name": "Estrazione rapida (Scudo a torre)",
-      "cost": 2500,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Sospensione (Scudo a torre)",
-      "cost": 2000,
-      "desc": "Quando si colpisce un nemico con un montante è possibile mandarlo in sospensione ovvero lanciarlo in aria, perderà il turno successivo e cadrà prono.",
-      "bonus": null
-    },
-    {
-      "name": "Parata molto rapida (Scudo a torre)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 5.",
-      "bonus": null
-    },
-    {
-      "name": "Parata Fulminea (Scudo a torre)",
-      "cost": 3000,
-      "desc": "È possibile effettuare una parata molto rapida con l'arma in questione. Questa parata ha un malus di 8.",
-      "bonus": null,
-      "requires": "Parata molto rapida (Scudo a torre)"
-    },
-    {
-      "name": "Scudo alzato (Scudo a torre)",
-      "cost": 1000,
-      "desc": "È possibile muoversi con lo scudo alzato senza rischiare di cadere e senza malus movimento aggiuntivo. Con lo scudo alzato si alza di 6 la classe di tiro avversaria e il corpo è coperto al 65%.",
-      "bonus": null
-    }
-  ],
-
-  "Pistole semplici": [
-    {
-      "name": "Cadetto (Pistole semplici)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Pistole semplici)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Pistole semplici)"
-    },
-    {
-      "name": "Specializzato (Pistole semplici)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Pistole semplici)"
-    },
-    {
-      "name": "Maestro (Pistole semplici)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Pistole semplici)"
-    },
-    {
-      "name": "Supremo (Pistole semplici)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Pistole semplici)"
-    },
-    {
-      "name": "Estrazione rapida (Pistole semplici)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica rapida (Pistole semplici)",
-      "cost": 1000,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica senza saltare il turno, questa ricarica costa 2PA in più rispetto ad un ricarica tradizionale.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica lesta (Pistole semplici)",
-      "cost": 1500,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica tradizionale gratuitamente senza pagare PA o una ricarica rapida al solo costo della ricarica rapida.",
-      "bonus": null,
-      "requires": "Ricarica rapida (Pistole semplici)"
-    },
-    {
-      "name": "Colpo in corsa (Pistole semplici)",
-      "cost": 1000,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Pistole semplici)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Sempre in coppia (Pistole semplici)",
-      "cost": 1500,
-      "desc": "È possibile effettuare un colpo contemporaneo gratuito con l'arma in questione dopo aver effettuato un colpo con un altra arma. Se l'arma che ha effettuato il primo colpo è un'arma corpo a corpo è impossibile mirare durante il colpo, per tanto si ha un malus di 7.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo aereo (Pistole semplici)",
-      "cost": 1000,
-      "desc": "Finché si è in sospensione e si spara a un bersaglio a terra non si consumano PA.",
-      "bonus": null
-    }
-  ],
-  "Revolver": [
-    {
-      "name": "Cadetto (Revolver)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Revolver)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Revolver)"
-    },
-    {
-      "name": "Specializzato (Revolver)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Revolver)"
-    },
-    {
-      "name": "Maestro (Revolver)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Revolver)"
-    },
-    {
-      "name": "Supremo (Revolver)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Revolver)"
-    },
-    {
-      "name": "Estrazione rapida (Revolver)",
-      "cost": 1000,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica rapida (Revolver)",
-      "cost": 1000,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica senza saltare il turno, questa ricarica costa 3PA in più rispetto ad un altra ricarica.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica lesta (Revolver)",
-      "cost": 1500,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica tradizionale gratuitamente senza pagare PA o una ricarica rapida al solo costo della ricarica rapida.",
-      "bonus": null,
-      "requires": "Ricarica rapida (Revolver)"
-    },
-    {
-      "name": "Colpo in corsa (Revolver)",
-      "cost": 1000,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Revolver)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Sempre in coppia (Revolver)",
-      "cost": 1500,
-      "desc": "È possibile effettuare un colpo contemporaneo gratuito con l'arma in questione dopo aver effettuato un colpo con un altra arma. Se l'arma che ha effettuato il primo colpo è un'arma corpo a corpo è impossibile mirare durante il colpo, per tanto si ha un malus di 7.",
-      "bonus": null
-    },
-    {
-      "name": "Urto sospensione (Revolver)",
-      "cost": 1000,
-      "desc": "Colpire un nemico in sospensione ne prolunga la permanenza in tale stato per 1 turno.",
-      "bonus": null
-    },
-    {
-      "name": "Urto sospensione II (Revolver)",
-      "cost": 1500,
-      "desc": "Se si colpisce un nemico in sospensione è possibile tentare un secondo attacco a quest'ultimo prima della fine del turno con malus +8.",
-      "bonus": null,
-      "requires": "Urto sospensione (Revolver)"
-    },
-    {
-      "name": "Sparo aereo (Revolver)",
-      "cost": 1000,
-      "desc": "Finché si è in sospensione e si spara a un bersaglio a terra non si consumano PA.",
-      "bonus": null
-    }
-  ],
-
-  "Fucili a pompa": [
-    {
-      "name": "Cadetto (Fucili a pompa)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Fucili a pompa)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Fucili a pompa)"
-    },
-    {
-      "name": "Specializzato (Fucili a pompa)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Fucili a pompa)"
-    },
-    {
-      "name": "Maestro (Fucili a pompa)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Fucili a pompa)"
-    },
-    {
-      "name": "Supremo (Fucili a pompa)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Fucili a pompa)"
-    },
-    {
-      "name": "Estrazione rapida (Fucili a pompa)",
-      "cost": 1300,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica rapida (Fucili a pompa)",
-      "cost": 1000,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica senza saltare il turno, questa ricarica costa 3PA in più rispetto ad un altra ricarica.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica lesta (Fucili a pompa)",
-      "cost": 1500,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica tradizionale gratuitamente senza pagare PA o una ricarica rapida al solo costo della ricarica rapida.",
-      "bonus": null,
-      "requires": "Ricarica rapida (Fucili a pompa)"
-    },
-    {
-      "name": "Colpo in corsa (Fucili a pompa)",
-      "cost": 1000,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Fucili a pompa)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    }
-  ],
-
-  "Fucili automatici": [
-    {
-      "name": "Cadetto (Fucili automatici)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Fucili automatici)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Fucili automatici)"
-    },
-    {
-      "name": "Specializzato (Fucili automatici)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Fucili automatici)"
-    },
-    {
-      "name": "Maestro (Fucili automatici)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Fucili automatici)"
-    },
-    {
-      "name": "Supremo (Fucili automatici)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Fucili automatici)"
-    },
-    {
-      "name": "Estrazione rapida (Fucili automatici)",
-      "cost": 1300,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica rapida (Fucili automatici)",
-      "cost": 1000,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica senza saltare il turno, questa ricarica costa 3PA in più rispetto ad un altra ricarica.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica lesta (Fucili automatici)",
-      "cost": 1500,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica tradizionale gratuitamente senza pagare PA o una ricarica rapida al solo costo della ricarica rapida.",
-      "bonus": null,
-      "requires": "Ricarica rapida (Fucili automatici)"
-    },
-    {
-      "name": "Colpo in corsa (Fucili automatici)",
-      "cost": 1000,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Fucili automatici)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    }
-  ],
-
-  "Fucili a colpo singolo": [
-    {
-      "name": "Cadetto (Fucili a colpo singolo)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Fucili a colpo singolo)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Fucili a colpo singolo)"
-    },
-    {
-      "name": "Specializzato (Fucili a colpo singolo)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Fucili a colpo singolo)"
-    },
-    {
-      "name": "Maestro (Fucili a colpo singolo)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Fucili a colpo singolo)"
-    },
-    {
-      "name": "Supremo (Fucili a colpo singolo)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Fucili a colpo singolo)"
-    },
-    {
-      "name": "Estrazione rapida (Fucili a colpo singolo)",
-      "cost": 1600,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica rapida (Fucili a colpo singolo)",
-      "cost": 1600,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica senza saltare il turno, questa ricarica costa 3PA in più rispetto ad un altra ricarica.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica lesta (Fucili a colpo singolo)",
-      "cost": 2000,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica tradizionale gratuitamente senza pagare PA o una ricarica rapida al solo costo della ricarica rapida.",
-      "bonus": null,
-      "requires": "Ricarica rapida (Fucili a colpo singolo)"
-    },
-    {
-      "name": "Colpo in corsa (Fucili a colpo singolo)",
-      "cost": 1000,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Fucili a colpo singolo)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Cecchino",
-      "cost": 1500,
-      "desc": "Al costo di 10 PAP è possibile mettersi in posizione da cecchino in uno stato di sensi aumentati, si ha un bonus di +5 a percezione per le prove, -5 alle classi di tiro e -10 a tutti i malus circostanza.",
-      "bonus": null
-    },
-    {
-      "name": "Mira Letale I",
-      "cost": 1500,
-      "desc": "Il critico inflitto dal fucile aggiunge il 50% dei danni.",
-      "bonus": null,
-      "requires": "Cecchino"
-    },
-    {
-      "name": "Mira Letale II",
-      "cost": 2000,
-      "desc": "Il critico inflitto dal fucile aggiunge il 75% dei danni.",
-      "bonus": null,
-      "requires": "Mira Letale I"
-    },
-    {
-      "name": "Mira Letale III",
-      "cost": 2500,
-      "desc": "Il critico inflitto dal fucile aggiunge il 100% dei danni.",
-      "bonus": null,
-      "requires": "Mira Letale II"
-    },
-    {
-      "name": "Mira Letale IV",
-      "cost": 3000,
-      "desc": "Il critico inflitto dal fucile aggiunge il 150% dei danni.",
-      "bonus": null,
-      "requires": "Mira Letale III"
-    }
-  ],
-  "Attrezzature belliche esplosive": [
-    {
-      "name": "Cadetto (Attrezzature belliche esplosive)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Attrezzature belliche esplosive)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Attrezzature belliche esplosive)"
-    },
-    {
-      "name": "Specializzato (Attrezzature belliche esplosive)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Attrezzature belliche esplosive)"
-    },
-    {
-      "name": "Maestro (Attrezzature belliche esplosive)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Attrezzature belliche esplosive)"
-    },
-    {
-      "name": "Supremo (Attrezzature belliche esplosive)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Attrezzature belliche esplosive)"
-    },
-    {
-      "name": "Estrazione rapida (Attrezzature belliche esplosive)",
-      "cost": 1700,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo in corsa (Attrezzature belliche esplosive)",
-      "cost": 1500,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    }
-  ],
-
-  "Balestra": [
-    {
-      "name": "Cadetto (Balestra)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Balestra)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Balestra)"
-    },
-    {
-      "name": "Specializzato (Balestra)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Balestra)"
-    },
-    {
-      "name": "Maestro (Balestra)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Balestra)"
-    },
-    {
-      "name": "Supremo (Balestra)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Balestra)"
-    },
-    {
-      "name": "Ricarica rapida (Balestra)",
-      "cost": 1500,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica senza saltare il turno, questa ricarica costa 3PA in più rispetto ad un altra ricarica.",
-      "bonus": null
-    },
-    {
-      "name": "Ricarica lesta (Balestra)",
-      "cost": 2000,
-      "desc": "Se si hanno proiettili o caricatori negli agganci è possibile effettuare una ricarica tradizionale gratuitamente senza pagare PA o una ricarica rapida al solo costo della ricarica rapida.",
-      "bonus": null,
-      "requires": "Ricarica rapida (Balestra)"
-    },
-    {
-      "name": "Colpo in corsa (Balestra)",
-      "cost": 1500,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Balestra)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Cecchino (Balestra)",
-      "cost": 2000,
-      "desc": "Al costo di 10 PAP è possibile mettersi in posizione da cecchino in uno stato di sensi aumentati, si ha un bonus di +5 a percezione per le prove, -5 alle classi di tiro e -10 a tutti i malus circostanza.",
-      "bonus": null
-    }
-  ],
-
-  "Arco lungo": [
-    {
-      "name": "Cadetto (Arco lungo)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Arco lungo)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Arco lungo)"
-    },
-    {
-      "name": "Specializzato (Arco lungo)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Arco lungo)"
-    },
-    {
-      "name": "Maestro (Arco lungo)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Arco lungo)"
-    },
-    {
-      "name": "Supremo (Arco lungo)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Arco lungo)"
-    },
-    {
-      "name": "Estrazione rapida (Arco lungo)",
-      "cost": 1600,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo in corsa (Arco lungo)",
-      "cost": 1500,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Arco lungo)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Cecchino (Arco lungo)",
-      "cost": 2000,
-      "desc": "Al costo di 10 PAP è possibile mettersi in posizione da cecchino in uno stato di sensi aumentati, si ha un bonus di +5 a percezione per le prove, -5 alle classi di tiro e -10 a tutti i malus circostanza.",
-      "bonus": null
-    },
-    {
-      "name": "Mira Letale I (Arco lungo)",
-      "cost": 1500,
-      "desc": "Il critico inflitto dall'arco aggiunge il 50% dei danni.",
-      "bonus": null,
-      "requires": "Cecchino (Arco lungo)"
-    },
-    {
-      "name": "Mira Letale II (Arco lungo)",
-      "cost": 2000,
-      "desc": "Il critico inflitto dall'arco aggiunge il 75% dei danni.",
-      "bonus": null,
-      "requires": "Mira Letale I (Arco lungo)"
-    },
-    {
-      "name": "Mira Letale III (Arco lungo)",
-      "cost": 2500,
-      "desc": "Il critico inflitto dall'arco aggiunge il 100% dei danni.",
-      "bonus": null,
-      "requires": "Mira Letale II (Arco lungo)"
-    },
-    {
-      "name": "Mira Letale IV (Arco lungo)",
-      "cost": 3000,
-      "desc": "Il critico inflitto dall'arco aggiunge il 150% dei danni.",
-      "bonus": null,
-      "requires": "Mira Letale III (Arco lungo)"
-    }
-  ],
-
-  "Arco corto": [
-    {
-      "name": "Cadetto (Arco corto)",
-      "cost": 1000,
-      "desc": "Si è capaci di utilizzare l'arma in questione senza malus e senza la possibilità di ferirsi. Una volta vinto il tiro per colpire è possibile tirare un D4 come dado combo.",
-      "bonus": null
-    },
-    {
-      "name": "Esperto (Arco corto)",
-      "cost": 2000,
-      "desc": "Si è esperti nell'uso dell'arma in questione +2 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D6 come dado combo.",
-      "bonus": null,
-      "requires": "Cadetto (Arco corto)"
-    },
-    {
-      "name": "Specializzato (Arco corto)",
-      "cost": 3000,
-      "desc": "Si è specializzati nell'uso dell'arma in questione +3 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D8 come dado combo.",
-      "bonus": null,
-      "requires": "Esperto (Arco corto)"
-    },
-    {
-      "name": "Maestro (Arco corto)",
-      "cost": 4000,
-      "desc": "Si è maestri nell'uso dell'arma in questione +4 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D10 come dado combo.",
-      "bonus": null,
-      "requires": "Specializzato (Arco corto)"
-    },
-    {
-      "name": "Supremo (Arco corto)",
-      "cost": 5000,
-      "desc": "Si fa un utilizzo supremo nell'uso dell'arma in questione +5 al tiro per colpire e per parare. Una volta vinto il tiro per colpire è possibile tirare un D12 come dado combo.",
-      "bonus": null,
-      "requires": "Maestro (Arco corto)"
-    },
-    {
-      "name": "Estrazione rapida (Arco corto)",
-      "cost": 1200,
-      "desc": "Permette l'estrazione dell'arma in questione come azione a velocità normale.",
-      "bonus": null
-    },
-    {
-      "name": "Colpo in corsa (Arco corto)",
-      "cost": 1500,
-      "desc": "I malus dovuti agli spari in movimento vengono ridotti a 3.",
-      "bonus": null
-    },
-    {
-      "name": "Sparo molto rapido (Arco corto)",
-      "cost": 1500,
-      "desc": "È possibile prendere la mira e sparare a velocità molto rapida anche durante gli scontri.",
-      "bonus": null
-    },
-    {
-      "name": "Cecchino (Arco corto)",
-      "cost": 2000,
-      "desc": "Al costo di 10 PAP è possibile mettersi in posizione da cecchino in uno stato di sensi aumentati, si ha un bonus di +5 a percezione per le prove, -5 alle classi di tiro e -10 a tutti i malus circostanza.",
-      "bonus": null
+  "Oggettistica Mesmer": [
+    {
+      "name": "Granata Marca MESMER",
+      "cost": 10,
+      "desc": "<b>Tipo:</b> Consumabile<br><b>Effetto:</b> Granata base economica e programmabile. Si aggancia agli attacchi della cintura e si converte automaticamente nel tipo di granata speciale selezionata (es. PXICOclone, Levitogranata, ecc.)."
     }
   ]
 }

@@ -145,11 +145,23 @@ function populatePlayerSheetUI(myChar) {
             if (canEdit) {
                 controlsHtml = `
                     <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
-                        <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 4px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
+                       <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
                             <option value="">-- Assegna --</option>
-                            <option value="mano_dx">Mano Destra</option>
-                            <option value="mano_sx">Mano Sinistra</option>
-                            <option value="rimuovi">Rimuovi (Svuota slot)</option>
+                            <option value="visore">Visore</option>
+                            <option value="elmo">Elmo</option>
+                            <option value="schiena">Schiena</option>
+                            <option value="spalla_dx">Spalla Dx</option>
+                            <option value="spalla_sx">Spalla Sx</option>
+                            <option value="petto">Pettorali</option>
+                            <option value="avambr_dx">Avambraccio Dx</option>
+                            <option value="avambr_sx">Avambraccio Sx</option>
+                            <option value="cintura">Cintura</option>
+                            <option value="guanti">Guanti</option>
+                            <option value="gambe">Gambe</option>
+                            <option value="stivali">Stivali</option>
+                            <option value="mano_dx">Arma Dx</option>
+                            <option value="mano_sx">Arma Sx</option>
+                            <option value="rimuovi">Rimuovi</option>
                         </select>
                         <button onclick="window.removeWeaponItem(${myChar.id}, ${index})" style="padding: 4px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">🗑️</button>
                     </div>
@@ -243,9 +255,20 @@ function populatePlayerSheetUI(myChar) {
                     <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
                         <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
                             <option value="">-- Assegna --</option>
-                            <option value="armatura">Armatura</option>
-                            <option value="mano_dx">Mano Dx</option>
-                            <option value="mano_sx">Mano Sx</option>
+                            <option value="visore">Visore</option>
+                            <option value="elmo">Elmo</option>
+                            <option value="schiena">Schiena</option>
+                            <option value="spalla_dx">Spalla Dx</option>
+                            <option value="spalla_sx">Spalla Sx</option>
+                            <option value="petto">Pettorali</option>
+                            <option value="avambr_dx">Avambraccio Dx</option>
+                            <option value="avambr_sx">Avambraccio Sx</option>
+                            <option value="cintura">Cintura</option>
+                            <option value="guanti">Guanti</option>
+                            <option value="gambe">Gambe</option>
+                            <option value="stivali">Stivali</option>
+                            <option value="mano_dx">Arma Dx</option>
+                            <option value="mano_sx">Arma Sx</option>
                             <option value="rimuovi">Rimuovi</option>
                         </select>
                         <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, -1)" style="padding: 2px 8px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">-</button>
@@ -334,17 +357,49 @@ function populatePlayerSheetUI(myChar) {
             li.style.borderRadius = '5px';
             li.style.padding = '8px';
             
-            let controlsHtml = '';
+           let controlsHtml = '';
             if (canEdit) {
+                // 1. Cerca la parola "Slot:" nella descrizione dell'oggetto
+                const slotMatch = item.desc.match(/Slot:(?:<\/b>)?\s*([^<\n]+)/i);
+                let selectHtml = '';
+                
+                // 2. Se l'oggetto ha uno slot, crea la tendina filtrata
+                if (slotMatch) {
+                    const s = slotMatch[1].trim().toLowerCase();
+                    let options = '<option value="">-- Assegna --</option>';
+                    
+                    if (s.includes('elmo') && !s.includes('laterale') && !s.includes('superiore') && !s.includes('frontale')) options += '<option value="elmo">Elmo</option>';
+                    if (s.includes('visore') || s.includes('laterale') || s.includes('superiore') || s.includes('frontale')) options += '<option value="visore">Visore/Elmo Lat.</option>';
+                    if (s.includes('schiena') || s.includes('valigetta')) options += '<option value="schiena">Schiena</option>';
+                    if (s.includes('spall')) options += '<option value="spalla_dx">Spalla Dx</option><option value="spalla_sx">Spalla Sx</option>';
+                    if (s.includes('pett')) options += '<option value="petto">Pettorali</option>';
+                    if (s.includes('avambr')) options += '<option value="avambr_dx">Avambr. Dx</option><option value="avambr_sx">Avambr. Sx</option>';
+                    if (s.includes('cintura')) options += '<option value="cintura">Cintura</option>';
+                    if (s.includes('guant')) options += '<option value="guanti">Guanti</option>';
+                    if (s.includes('gamb')) options += '<option value="gambe">Gambe</option>';
+                    if (s.includes('stival')) options += '<option value="stivali">Stivali</option>';
+                    if (s.includes('mano') || s.includes('arma')) options += '<option value="mano_dx">Arma Dx</option><option value="mano_sx">Arma Sx</option>';
+                    
+                    // Fallback: se ha uno slot non riconosciuto dai filtri standard, permette l'impugnatura manuale
+                    if (options === '<option value="">-- Assegna --</option>') {
+                        options += '<option value="mano_dx">Mano Dx</option><option value="mano_sx">Mano Sx</option>';
+                    }
+
+                    selectHtml = `<select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">${options}</select>`;
+                }
+
+                // 3. Genera l'HTML (se selectHtml è vuoto, mostra solo i bottoni +/- e Cestino)
                 controlsHtml = `
-                    <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px;">
-                        <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, -1)" style="padding: 2px 8px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">-</button>
-                        <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, 1)" style="padding: 2px 8px; background: #2ecc71; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">+</button>
-                        <button onclick="window.removeBackpackItem(${myChar.id}, ${index})" style="padding: 2px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: auto;">🗑️ Rimuovi</button>
+                    <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
+                        ${selectHtml}
+                        <div style="display: flex; gap: 3px; margin-left: ${selectHtml ? '5px' : '0'};">
+                            <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, -1)" style="padding: 2px 8px; background: #e74c3c; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">-</button>
+                            <button onclick="window.updateBackpackItem(${myChar.id}, ${index}, 1)" style="padding: 2px 8px; background: #2ecc71; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight:bold;">+</button>
+                        </div>
+                        <button onclick="window.removeBackpackItem(${myChar.id}, ${index})" style="padding: 2px 8px; background: #7f8c8d; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: auto;">🗑️</button>
                     </div>
                 `;
             }
-
             li.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
                     <strong style="color: #2c3e50; font-size: 15px;">${item.name}</strong>
@@ -390,11 +445,23 @@ function populatePlayerSheetUI(myChar) {
     }
 
     const shopAvail = document.getElementById('ui-shop-available');
-    const shopPurchased = document.getElementById('ui-shop-purchased');
     const statsSubtabsContainer = document.getElementById('stats-subtabs-container');
-    
-    if (!shopAvail || !shopPurchased) return;
+    if (!shopAvail || !statsSubtabsContainer) return;
 
+    // Crea il contenitore per i Tipi di Armatura (se non esiste)
+    let armorTypeContainer = document.getElementById('armor-type-container');
+    if (!armorTypeContainer) {
+        armorTypeContainer = document.createElement('div');
+        armorTypeContainer.id = 'armor-type-container';
+        armorTypeContainer.style.display = 'flex';
+        armorTypeContainer.style.flexWrap = 'wrap';
+        armorTypeContainer.style.gap = '5px';
+        armorTypeContainer.style.marginBottom = '10px';
+        // Lo inseriamo PRIMA dei brand, per rispettare l'ordine: Categoria -> Tipo -> Brand
+        statsSubtabsContainer.parentNode.insertBefore(armorTypeContainer, statsSubtabsContainer);
+    }
+
+    // 1. GESTIONE CATEGORIE (Armature, Gadget, Oggettistica)
     document.querySelectorAll('.shop-tab-btn').forEach(btn => {
         const tabName = btn.getAttribute('data-tab');
         if (tabName === currentShopTab) { btn.style.background = '#8e44ad'; btn.style.color = 'white'; } 
@@ -402,79 +469,112 @@ function populatePlayerSheetUI(myChar) {
         btn.onclick = () => { currentShopTab = tabName; populatePlayerSheetUI(myChar); };
     });
 
-    const statCategories = ["Forza", "Destrezza", "Percezione", "Arguzia", "Volontà", "Spirito", "Virtù"];
-    const allCategories = Object.keys(globalCompendio);
-    const weaponCategories = allCategories.filter(cat => !statCategories.includes(cat) && Array.isArray(globalCompendio[cat]));
-
-    if (statsSubtabsContainer) {
-        statsSubtabsContainer.innerHTML = '';
-        if (currentShopTab === 'Statistiche' || currentShopTab === 'Armi') {
-            statsSubtabsContainer.style.display = 'flex';
-            let currentList = currentShopTab === 'Statistiche' ? statCategories : weaponCategories;
-            let currentActiveSubTab = currentShopTab === 'Statistiche' ? currentStatSubTab : currentWeaponSubTab;
-
-            if (!currentActiveSubTab || !currentList.includes(currentActiveSubTab)) {
-                currentActiveSubTab = currentList[0] || "";
-                if (currentShopTab === 'Statistiche') currentStatSubTab = currentActiveSubTab;
-                else currentWeaponSubTab = currentActiveSubTab;
-            }
-
-            currentList.forEach(subName => {
-                const subBtn = document.createElement('button');
-                subBtn.innerText = subName;
-                subBtn.style.padding = '4px 8px'; subBtn.style.fontSize = '12px'; subBtn.style.cursor = 'pointer'; subBtn.style.fontWeight = 'bold'; subBtn.style.borderRadius = '3px'; subBtn.style.border = '1px solid #8e44ad';
-                if (subName === currentActiveSubTab) { subBtn.style.background = '#8e44ad'; subBtn.style.color = 'white'; } 
-                else { subBtn.style.background = 'white'; subBtn.style.color = '#8e44ad'; }
-                subBtn.onclick = () => { if (currentShopTab === 'Statistiche') currentStatSubTab = subName; else currentWeaponSubTab = subName; populatePlayerSheetUI(myChar); };
-                statsSubtabsContainer.appendChild(subBtn);
-            });
-        } else statsSubtabsContainer.style.display = 'none';
+    // 2. GESTIONE TIPI ARMATURA (Visibile solo se si è nel tab Armature)
+    armorTypeContainer.innerHTML = '';
+    if (currentShopTab === 'Armature') {
+        armorTypeContainer.style.display = 'flex';
+        armorTypes.forEach(type => {
+            const typeBtn = document.createElement('button');
+            typeBtn.innerText = type;
+            typeBtn.style.padding = '3px 8px'; typeBtn.style.fontSize = '11px'; typeBtn.style.cursor = 'pointer'; typeBtn.style.borderRadius = '4px'; typeBtn.style.border = '1px dashed #3498db';
+            if (type === currentArmorType) { typeBtn.style.background = '#3498db'; typeBtn.style.color = 'white'; } 
+            else { typeBtn.style.background = 'white'; typeBtn.style.color = '#3498db'; }
+            typeBtn.onclick = () => { currentArmorType = type; populatePlayerSheetUI(myChar); };
+            armorTypeContainer.appendChild(typeBtn);
+        });
+    } else {
+        armorTypeContainer.style.display = 'none';
     }
 
+    // 3. GESTIONE MARCHE (Brand)
+    statsSubtabsContainer.innerHTML = '';
+    allBrands.forEach(brandName => {
+        const subBtn = document.createElement('button');
+        subBtn.innerText = brandName;
+        subBtn.style.padding = '4px 8px'; subBtn.style.fontSize = '12px'; subBtn.style.cursor = 'pointer'; subBtn.style.fontWeight = 'bold'; subBtn.style.borderRadius = '3px'; subBtn.style.border = '1px solid #8e44ad';
+        if (brandName === currentBrandSubTab) { subBtn.style.background = '#8e44ad'; subBtn.style.color = 'white'; } 
+        else { subBtn.style.background = 'white'; subBtn.style.color = '#8e44ad'; }
+        subBtn.onclick = () => { currentBrandSubTab = brandName; populatePlayerSheetUI(myChar); };
+        statsSubtabsContainer.appendChild(subBtn);
+    });
+
+    // 4. ESTRAZIONE E FILTRAGGIO INCROCIATO
     let shopItemsToShow = [];
-    if (currentShopTab === 'Statistiche' && currentStatSubTab) { if (globalCompendio[currentStatSubTab]) shopItemsToShow = globalCompendio[currentStatSubTab]; } 
-    else if (currentShopTab === 'Armi' && currentWeaponSubTab) { if (globalCompendio[currentWeaponSubTab]) shopItemsToShow = globalCompendio[currentWeaponSubTab]; } 
-    else if (currentShopTab === 'Personalizzati') shopItemsToShow = myChar.shop || [];
-
-    shopAvail.innerHTML = ''; shopPurchased.innerHTML = '';
-    if (shopItemsToShow.length > 0) {
-        let availCount = 0; let purchasedCount = 0;
-        shopItemsToShow.forEach(item => {
-            const hasSkill = myChar.skills && myChar.skills.includes(item.name);
-            const li = document.createElement('li');
-            li.style.padding = '12px'; li.style.border = '1px solid #ccc'; li.style.borderRadius = '8px'; li.style.display = 'flex'; li.style.flexDirection = 'column'; li.style.justifyContent = 'space-between'; li.style.width = 'calc(50% - 20px)'; li.style.boxSizing = 'border-box';
-            const bonusText = item.bonus ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px;">Bonus: +${item.bonus.val} ${item.bonus.stat}</span>` : "";
-
-            if (hasSkill) {
-                li.style.background = '#f5f5f5'; li.style.borderColor = '#e0e0e0'; li.style.boxShadow = 'none';
-                li.innerHTML = `<div style="opacity: 0.6;"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#7f8c8d; line-height:1.2;">${item.name}</strong></div><p style="font-size:13px; color:#95a5a6; margin:0 0 12px 0; line-height:1.4;">${item.desc || "Nessuna descrizione."}</p>${bonusText.replace('#27ae60', '#95a5a6')}</div><div style="background:#bdc3c7; color:white; padding:8px; border-radius:4px; text-align:center; font-weight:bold; font-size:13px;">Acquistata ✓</div>`;
-                shopPurchased.appendChild(li); purchasedCount++;
-            } else {
-                li.style.background = '#fff'; li.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
-                li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${item.cost} XP</span></div><p style="font-size:13px; color:#555; margin:0 0 12px 0; line-height:1.4;">${item.desc || "Nessuna descrizione."}</p>${bonusText}</div>`;
-                const btn = document.createElement('button');
-                btn.style.padding = '8px'; btn.style.borderRadius = '4px'; btn.style.fontWeight = 'bold'; btn.style.width = '100%'; btn.style.border = 'none';
-                if (isMaster) {
-                    btn.innerText = 'Solo Visualizzazione'; btn.style.background = '#bdc3c7'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.disabled = true;
-                } else {
-                    const hasRequirement = !item.requires || (myChar.skills && myChar.skills.includes(item.requires));
-                    if (!hasRequirement) {
-                        btn.innerText = `Richiede: ${item.requires}`; btn.style.background = '#bdc3c7'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.disabled = true;
-                    } else {
-                        btn.innerText = 'Acquista Abilità'; btn.style.background = '#8e44ad'; btn.style.color = '#fff';
-                        const canAfford = myChar.xp >= item.cost;
-                        btn.style.cursor = canAfford ? 'pointer' : 'not-allowed'; btn.style.opacity = canAfford ? '1' : '0.5';
-                        if (canAfford) {
-                            btn.onclick = () => { if (confirm(`Vuoi davvero spendere ${item.cost} XP per acquistare "${item.name}"?`)) socket.emit('buy_skill', { char_id: myChar.id, skill_name: item.name, cost: item.cost, stat_bonus: item.bonus }); };
-                        }
-                    }
-                }
-                li.appendChild(btn); shopAvail.appendChild(li); availCount++;
+    
+    // Seleziona gli oggetti in base al brand (o tutti i brand fusi insieme)
+    if (currentBrandSubTab === 'Tutti') {
+        allBrands.forEach(b => {
+            if (b !== 'Tutti' && globalCompendio[`${currentShopTab} ${b}`]) {
+                shopItemsToShow = shopItemsToShow.concat(globalCompendio[`${currentShopTab} ${b}`]);
             }
         });
-        if (availCount === 0) shopAvail.innerHTML = `<li style="color:#7f8c8d; font-size:13px;"><em>Nessun elemento acquistabile in questa categoria.</em></li>`;
-        if (purchasedCount === 0) shopPurchased.innerHTML = `<li style="color:#7f8c8d; font-size:13px;"><em>Nessun elemento acquistato in questa categoria.</em></li>`;
-    } else shopAvail.innerHTML = `<li><em>Questa sottocategoria del negozio al momento è vuota.</em></li>`;
+    } else {
+        const compendioKey = `${currentShopTab} ${currentBrandSubTab}`;
+        if (globalCompendio[compendioKey]) {
+            shopItemsToShow = globalCompendio[compendioKey];
+        }
+    }
+
+    // Filtra in base al tipo di armatura (es. Elmo) se richiesto
+    if (currentShopTab === 'Armature' && currentArmorType !== 'Tutti') {
+        shopItemsToShow = shopItemsToShow.filter(item => {
+            return item.desc && item.desc.includes(`Slot:</b> ${currentArmorType}`);
+        });
+    }
+
+    // 5. Disegno degli Oggetti Acquistabili
+    shopAvail.innerHTML = '';
+    if (shopItemsToShow.length > 0) {
+        let availCount = 0;
+        shopItemsToShow.forEach(item => {
+            const li = document.createElement('li');
+            li.style.padding = '12px'; li.style.border = '1px solid #ccc'; li.style.borderRadius = '8px'; li.style.display = 'flex'; li.style.flexDirection = 'column'; li.style.justifyContent = 'space-between'; li.style.width = 'calc(50% - 20px)'; li.style.boxSizing = 'border-box';
+            li.style.background = '#fff'; li.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
+            
+            // Controlla quanti ne possiede già nello zaino
+            let ownedQty = 0;
+            (myChar.backpack || []).forEach(b => {
+                if (b.name === item.name) ownedQty += (b.qty || 1);
+            });
+            const ownedText = ownedQty > 0 ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px; font-weight:bold;">Nello Zaino: x${ownedQty}</span>` : "";
+
+            li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${item.cost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 12px 0; line-height:1.4;">${item.desc || "Nessuna descrizione."}</p>${ownedText}</div>`;
+            
+            const btn = document.createElement('button');
+            btn.style.padding = '8px'; btn.style.borderRadius = '4px'; btn.style.fontWeight = 'bold'; btn.style.width = '100%'; btn.style.border = 'none'; btn.style.marginTop = '10px';
+            
+            if (isMaster) {
+                btn.innerText = 'Solo Visualizzazione'; btn.style.background = '#bdc3c7'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.disabled = true;
+            } else {
+                btn.innerText = 'Acquista (Invia allo Zaino)'; btn.style.background = '#8e44ad'; btn.style.color = '#fff';
+                const canAfford = myChar.xp >= item.cost;
+                btn.style.cursor = canAfford ? 'pointer' : 'not-allowed'; btn.style.opacity = canAfford ? '1' : '0.5';
+                
+                if (canAfford) {
+                    btn.onclick = () => { 
+                        if (confirm(`Vuoi spendere ${item.cost} € per acquistare "${item.name}"?`)) {
+                            // 1. Deducce il costo (invia importo negativo all'aggiornamento soldi/XP)
+                            socket.emit('update_xp', { char_id: myChar.id, amount: -item.cost });
+                            
+                            // 2. Aggiunge l'oggetto direttamente nello zaino
+                            const bp = myChar.backpack || [];
+                            const existingIndex = bp.findIndex(b => b.name === item.name);
+                            if (existingIndex !== -1) {
+                                bp[existingIndex].qty = (bp[existingIndex].qty || 1) + 1;
+                            } else {
+                                bp.push({ name: item.name, desc: item.desc, qty: 1, img: item.img || "" });
+                            }
+                            socket.emit('update_character_sheet', { char_id: myChar.id, backpack: bp });
+                        }
+                    };
+                }
+            }
+            li.appendChild(btn); shopAvail.appendChild(li); availCount++;
+        });
+        if (availCount === 0) shopAvail.innerHTML = `<li style="color:#7f8c8d; font-size:13px;"><em>Nessun elemento acquistabile.</em></li>`;
+    } else {
+        shopAvail.innerHTML = `<li><em>Questa categoria del catalogo al momento è in aggiornamento.</em></li>`;
+    }
 }
 
 // ==========================================
@@ -496,7 +596,6 @@ document.getElementById('btn-view-sheet')?.addEventListener('click', () => {
 // ==========================================
 // MODIFICA SCHEDA MASTER
 // ==========================================
-// MODIFICA SCHEDA MASTER (Apertura)
 document.getElementById('btn-edit-sheet')?.addEventListener('click', () => {
     let targetId = selectedCharacterId || (parseInt(userSelect?.value) > 0 ? parseInt(userSelect?.value) : null);
     if (!targetId) { alert("Prima seleziona un personaggio!"); return; }
@@ -697,12 +796,26 @@ document.getElementById('custom-dice')?.addEventListener('keypress', (e) => {
 // COMPENDIO SHOP (LOGICA)
 // ==========================================
 let globalCompendio = {};
-let currentShopTab = 'Statistiche'; 
-let currentStatSubTab = ''; 
-let currentWeaponSubTab = ''; 
+let currentShopTab = 'Armature'; 
+let currentBrandSubTab = 'Tutti'; // Di default mostra tutto
+let currentArmorType = 'Tutti';   // NUOVO: Filtro parte del corpo
 
+const allBrands = ['Tutti', 'Sfygaa', 'Umbryll', 'Crappterra', 'MEDMAD', 'Torbtech', 'Mesmer'];
+const armorTypes = ['Tutti', 'Elmo', 'Spalla', 'Pettorali', 'Schiena', 'Avambraccio', 'Guanti', 'Cintura', 'Gambe', 'Stivali'];
+
+// Popolamento dinamico delle categorie Master all'arrivo dei dati
 socket.on('compendio_data', (data) => {
     globalCompendio = data || {};
+    
+    // Aggiorna la tendina del Master con le nuove categorie
+    const catSelect = document.getElementById('compendio-category');
+    if (catSelect) {
+        catSelect.innerHTML = '<option value="">-- Seleziona Categoria --</option>';
+        Object.keys(globalCompendio).forEach(key => {
+            catSelect.innerHTML += `<option value="${key}">${key}</option>`;
+        });
+    }
+
     const currentViewedId = parseInt(userSelect?.value);
     if (sheetModal && sheetModal.style.display === 'flex' && !isNaN(currentViewedId)) {
         const char = characters.find(c => c.id === currentViewedId);
@@ -710,6 +823,7 @@ socket.on('compendio_data', (data) => {
     }
 });
 
+// Aggiunta manuale dallo Shop Master allo Zaino del Giocatore
 document.getElementById('compendio-category')?.addEventListener('change', (event) => {
     const cat = event.target.value;
     const listContainer = document.getElementById('compendio-list');
@@ -718,17 +832,27 @@ document.getElementById('compendio-category')?.addEventListener('change', (event
         listContainer.innerHTML = `<em style="color:#777; font-size:13px; text-align:center; padding:10px;">Seleziona una categoria valida.</em>`;
         return;
     }
-    globalCompendio[cat].forEach(skill => {
+    globalCompendio[cat].forEach(item => {
         const row = document.createElement('div');
         row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems = 'center'; row.style.padding = '5px'; row.style.borderBottom = '1px solid #eee'; row.style.fontSize = '13px';
-        const bonusLabel = skill.bonus ? ` [+${skill.bonus.val} ${skill.bonus.stat}]` : "";
-        row.innerHTML = `<div><strong>${skill.name}</strong> (${skill.cost} XP) ${bonusLabel}<br><span style="color:#666; font-size:11px;">${skill.desc || ''}</span></div>`;
+        row.innerHTML = `<div><strong>${item.name}</strong> (${item.cost} €)<br><span style="color:#666; font-size:11px;">${item.desc || ''}</span></div>`;
         const addBtn = document.createElement('button');
-        addBtn.innerText = '+ Assegna'; addBtn.style.background = '#27ae60'; addBtn.style.color = 'white'; addBtn.style.border = 'none'; addBtn.style.padding = '4px 8px'; addBtn.style.borderRadius = '3px'; addBtn.style.cursor = 'pointer'; addBtn.style.fontWeight = 'bold';
+        addBtn.innerText = '+ Metti in Zaino'; addBtn.style.background = '#27ae60'; addBtn.style.color = 'white'; addBtn.style.border = 'none'; addBtn.style.padding = '4px 8px'; addBtn.style.borderRadius = '3px'; addBtn.style.cursor = 'pointer'; addBtn.style.fontWeight = 'bold';
+        
         addBtn.onclick = () => {
-            if (!selectedCharacterId) { alert("Seleziona prima un personaggio."); return; }
-            socket.emit('add_skill_to_shop', { char_id: selectedCharacterId, skill: skill });
-            addBtn.innerText = 'Aggiunta ✓'; addBtn.style.background = '#7f8c8d'; addBtn.disabled = true;
+            if (!selectedCharacterId) { alert("Seleziona prima un personaggio sulla mappa."); return; }
+            const char = characters.find(c => c.id === selectedCharacterId);
+            if (char) {
+                const bp = char.backpack || [];
+                const existingIndex = bp.findIndex(b => b.name === item.name);
+                if (existingIndex !== -1) {
+                    bp[existingIndex].qty = (bp[existingIndex].qty || 1) + 1;
+                } else {
+                    bp.push({ name: item.name, desc: item.desc, qty: 1, img: item.img || "" });
+                }
+                socket.emit('update_character_sheet', { char_id: selectedCharacterId, backpack: bp });
+                addBtn.innerText = 'Aggiunto ✓'; addBtn.style.background = '#7f8c8d'; addBtn.disabled = true;
+            }
         };
         row.appendChild(addBtn);
         listContainer.appendChild(row);
@@ -1013,59 +1137,140 @@ window.updateEquippedPanel = function(char) {
     }
     panel.style.display = 'block';
 
-    const equipped = char.stats?.equipped || { mano_dx: null, mano_sx: null, armatura: null };
-    const slots = [
-        { id: 'slot-armatura', data: equipped.armatura, icon: '🛡️', label: 'Armatura' },
-        { id: 'slot-mano-dx', data: equipped.mano_dx, icon: '🗡️', label: 'Mano Dx' },
-        { id: 'slot-mano-sx', data: equipped.mano_sx, icon: '🗡️', label: 'Mano Sx' }
-    ];
+    const equipped = char.stats?.equipped || {};
+    
+    // Lista completa delle chiavi di equipaggiamento
+    const slotKeys = ['visore', 'elmo', 'schiena', 'spalla_dx', 'petto', 'spalla_sx', 'avambr_dx', 'cintura', 'avambr_sx', 'guanti', 'gambe', 'mano_dx', 'stivali', 'mano_sx'];
 
-    slots.forEach(s => {
-        const el = document.getElementById(s.id);
+    // Testi in filigrana per gli slot vuoti
+    const defaultSlotText = {
+        'visore': 'VISORE', 'elmo': 'ELMO', 'schiena': 'SCHIENA', 
+        'spalla_dx': 'SPALLA DX', 'petto': 'PETTO', 'spalla_sx': 'SPALLA SX', 
+        'avambr_dx': 'AVAMBR. DX', 'cintura': 'CINTURA', 'avambr_sx': 'AVAMBR. SX', 
+        'guanti': 'GUANTI', 'mano_dx': 'ARMA DX', 
+        'gambe': 'GAMBE', 'mano_sx': 'ARMA SX', 'stivali': 'STIVALI'
+    };
+
+    slotKeys.forEach(key => {
+        const el = document.getElementById(`slot-${key}`);
         if (!el) return;
-        const itemName = s.data ? s.data.name : 'Vuoto';
-        const itemDesc = s.data ? s.data.desc : 'Nessun oggetto assegnato a questo slot.';
+        
+        const itemData = equipped[key];
+        const nameEl = el.querySelector('.doll-name');
+        const iconEl = el.querySelector('.doll-icon');
+        
+        if (itemData) {
+            nameEl.innerText = itemData.name;
+            nameEl.style.color = '#f1c40f';
+            el.classList.add('filled');
+            
+            if (itemData.img) {
+                iconEl.style.backgroundImage = `url('${itemData.img}')`;
+                iconEl.innerHTML = '';
+            } else {
+                iconEl.style.backgroundImage = 'none';
+                iconEl.innerHTML = `<span style="color: #f1c40f; font-size: 10px; opacity: 0.5;">[DATA]</span>`;
+            }
+        } else {
+            // Quando lo slot è vuoto, la label in basso dice "Vuoto" e al centro compare il nome della parte del corpo
+            nameEl.innerText = 'Vuoto';
+            nameEl.style.color = '#7f8c8d';
+            el.classList.remove('filled');
+            iconEl.style.backgroundImage = 'none';
+            
+            // --- NUOVO: Testo olografico al centro dello slot ---
+            iconEl.innerHTML = `<span style="font-size: 10px; font-weight: bold; letter-spacing: 1px; color: rgba(52, 152, 219, 0.4); text-transform: uppercase;">${defaultSlotText[key]}</span>`;
+        }
 
-        el.innerHTML = `${s.icon} ${s.label}:<br><span style="color: ${s.data ? '#f1c40f' : '#bdc3c7'}">${itemName}</span>`;
-
+        // Riassegna eventi Tooltip per sicurezza
         const newEl = el.cloneNode(true);
         el.parentNode.replaceChild(newEl, el);
 
         newEl.addEventListener('mouseenter', (e) => {
+            if (!itemData) return; // Non mostra il tooltip se vuoto
             const tt = document.getElementById('equip-tooltip');
-            document.getElementById('tt-name').innerText = itemName;
-            document.getElementById('tt-desc').innerText = itemDesc;
+            document.getElementById('tt-name').innerText = itemData.name;
+            document.getElementById('tt-desc').innerHTML = itemData.desc; // Supporta i tag HTML del compendio
             tt.style.display = 'block';
             tt.style.left = (e.pageX + 15) + 'px';
             tt.style.top = (e.pageY - 15) + 'px';
         });
         newEl.addEventListener('mousemove', (e) => {
+            if (!itemData) return;
             document.getElementById('equip-tooltip').style.left = (e.pageX + 15) + 'px';
             document.getElementById('equip-tooltip').style.top = (e.pageY - 15) + 'px';
         });
-        newEl.addEventListener('mouseleave', () => {
+       newEl.addEventListener('mouseleave', () => {
             document.getElementById('equip-tooltip').style.display = 'none';
         });
-    });
-};
 
+        // --- NUOVO: Clicca per disequipaggiare ---
+        newEl.addEventListener('click', () => {
+            if (itemData) {
+                if (confirm(`Vuoi rimettere "${itemData.name}" nello zaino?`)) {
+                    document.getElementById('equip-tooltip').style.display = 'none';
+                    window.unequipFromSlot(char.id, key);
+                }
+            }
+        });
+    });
+}
 window.equipItem = function(charId, itemName, itemDesc, slot) {
     if (!slot) return;
     const char = characters.find(c => c.id === charId);
     if (!char) return;
 
     let stats = char.stats || {};
-    if (!stats.equipped) stats.equipped = { mano_dx: null, mano_sx: null, armatura: null };
+    if (!stats.equipped) stats.equipped = {};
+    let bp = char.backpack || [];
 
     if (slot === 'rimuovi') {
+        // Se usi il comando rimuovi, sposta nello zaino
         for (let k in stats.equipped) {
             if (stats.equipped[k] && stats.equipped[k].name === itemName) {
+                const existing = bp.find(b => b.name === stats.equipped[k].name);
+                if (existing) existing.qty = (existing.qty || 1) + 1;
+                else bp.push(stats.equipped[k]);
                 stats.equipped[k] = null;
             }
         }
     } else {
-        stats.equipped[slot] = { name: itemName, desc: itemDesc };
+        // 1. Rimuovi l'oggetto dallo Zaino
+        const bpIndex = bp.findIndex(b => b.name === itemName);
+        let itemImg = "";
+        if (bpIndex !== -1) {
+            itemImg = bp[bpIndex].img || "";
+            if (bp[bpIndex].qty > 1) bp[bpIndex].qty -= 1;
+            else bp.splice(bpIndex, 1); // Rimuove se è l'ultimo
+        }
+
+        // 2. Se lo slot è già occupato, rimetti il vecchio oggetto nello Zaino
+        if (stats.equipped[slot]) {
+            const oldItem = stats.equipped[slot];
+            const existing = bp.find(b => b.name === oldItem.name);
+            if (existing) existing.qty = (existing.qty || 1) + 1;
+            else bp.push({ name: oldItem.name, desc: oldItem.desc, qty: 1, img: oldItem.img || "" });
+        }
+
+        // 3. Equipaggia il nuovo
+        stats.equipped[slot] = { name: itemName, desc: itemDesc, qty: 1, img: itemImg };
     }
 
-    socket.emit('update_character_sheet', { char_id: charId, stats: stats });
+    socket.emit('update_character_sheet', { char_id: charId, stats: stats, backpack: bp });
+};
+
+// Funzione globale per disequipaggiare cliccando sull'HUD
+window.unequipFromSlot = function(charId, slotKey) {
+    const char = characters.find(c => c.id === charId);
+    if (!char || !char.stats?.equipped || !char.stats.equipped[slotKey]) return;
+    
+    const item = char.stats.equipped[slotKey];
+    let bp = char.backpack || [];
+    
+    const existing = bp.find(b => b.name === item.name);
+    if (existing) existing.qty = (existing.qty || 1) + 1;
+    else bp.push(item);
+    
+    char.stats.equipped[slotKey] = null;
+    socket.emit('update_character_sheet', { char_id: charId, stats: char.stats, backpack: bp });
 };

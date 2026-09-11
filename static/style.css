@@ -420,28 +420,111 @@ canvas {
     text-overflow: ellipsis;
 }
 
-.finestra-drag {
-  position: absolute;
-  top: 50px;
-  left: 50px;
-  z-index: 9999; /* Lo mantiene sempre in primo piano */
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  width: 300px;
+
+/* ==========================================
+   PAPER DOLL HUD (IMAGE-BASED)
+   ========================================== */
+.paper-doll-layout {
+    display: grid;
+    grid-template-columns: 75px 85px 75px; 
+    grid-template-rows: repeat(5, 65px);
+    gap: 8px;
+    justify-content: center;
+    /* Mappatura Anatomica Sdoppiata */
+    grid-template-areas:
+        "visore     elmo      schiena"
+        "spalla_dx  petto     spalla_sx"
+        "avambr_dx  cintura   avambr_sx"
+        "guanti     gambe     ."
+        "mano_dx    stivali   mano_sx";
+    position: relative;
+    padding: 10px 0;
+    
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 350'%3E%3Cg fill='none' stroke='%233498db' stroke-width='2' opacity='0.25'%3E%3Ccircle cx='100' cy='35' r='18'/%3E%3Cpath d='M65 75 L135 75 L145 130 L115 170 L85 170 L55 130 Z'/%3E%3Cpath d='M50 85 L20 160 L15 220'/%3E%3Cpath d='M150 85 L180 160 L185 220'/%3E%3Cpath d='M85 170 L75 260 L65 320'/%3E%3Cpath d='M115 170 L125 260 L135 320'/%3E%3Cline x1='100' y1='75' x2='100' y2='170'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-#finestra-header {
-  padding: 10px;
-  cursor: move; /* Cambia il cursore per indicare che è trascinabile */
-  background-color: #f1f1f1;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  font-weight: bold;
-  user-select: none; /* Evita di evidenziare il testo durante il trascinamento */
+/* Aggiorna l'assegnazione delle celle aggiungendo i Destro/Sinistro */
+#slot-visore    { grid-area: visore; }
+#slot-elmo      { grid-area: elmo; }
+#slot-schiena   { grid-area: schiena; }
+#slot-spalla_dx { grid-area: spalla_dx; }
+#slot-petto     { grid-area: petto; }
+#slot-spalla_sx { grid-area: spalla_sx; }
+#slot-avambr_dx { grid-area: avambr_dx; }
+#slot-cintura   { grid-area: cintura; }
+#slot-avambr_sx { grid-area: avambr_sx; }
+#slot-guanti    { grid-area: guanti; }
+#slot-gambe     { grid-area: gambe; }
+#slot-mano_dx   { grid-area: mano_dx; }
+#slot-stivali   { grid-area: stivali; }
+#slot-mano_sx   { grid-area: mano_sx; }
+
+/* Stile Olografico dei Riquadri */
+.doll-slot {
+    background: rgba(10, 15, 25, 0.7);
+    border: 1px solid rgba(52, 152, 219, 0.3);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    height: 60px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
 }
 
-.finestra-content {
-  padding: 15px;
+/* Griglia millimetrata di sfondo quando lo slot è vuoto */
+.doll-slot::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(52, 152, 219, 0.05) 2px, rgba(52, 152, 219, 0.05) 4px);
+    z-index: 0;
+}
+
+.doll-slot:hover {
+    border-color: #3498db;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.6), inset 0 0 10px rgba(0,0,0,0.8);
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.doll-slot.filled {
+    border-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.05);
+}
+
+.doll-icon {
+    width: 100%;
+    height: 40px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.doll-name {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7f8c8d;
+    z-index: 1;
+    margin-top: 2px;
+    background: rgba(0,0,0,0.8);
+    width: 100%;
+    text-align: center;
+    border-radius: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
