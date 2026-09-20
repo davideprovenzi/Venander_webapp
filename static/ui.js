@@ -251,9 +251,11 @@ function populatePlayerSheetUI(myChar) {
                             <option value="avambr_dx">Avambraccio Dx</option>
                             <option value="avambr_sx">Avambraccio Sx</option>
                             <option value="cintura">Cintura</option>
-                            <option value="guanti">Guanti</option>
+                            <option value="guanto_dx">Guanto Dx</option>
+                            <option value="guanto_sx">Guanto Sx</option>
                             <option value="gambe">Gambe</option>
-                            <option value="stivali">Stivali</option>
+                            <option value="stivale_dx">Stivale Dx</option>
+                            <option value="stivale_sx">Stivale Sx</option>
                             <option value="mano_dx">Arma Dx</option>
                             <option value="mano_sx">Arma Sx</option>
                             <option value="rimuovi">Rimuovi</option>
@@ -362,11 +364,11 @@ function populatePlayerSheetUI(myChar) {
                     if (s.includes('pett')) options += '<option value="petto">Pettorali</option>';
                     if (s.includes('avambr')) options += '<option value="avambr_dx">Avambr. Dx</option><option value="avambr_sx">Avambr. Sx</option>';
                     if (s.includes('cintura')) options += '<option value="cintura">Cintura</option>';
-                    if (s.includes('guant')) options += '<option value="guanti">Guanti</option>';
-                    if (s.includes('gamb')) options += '<option value="gambe">Gambe</option>';
-                    if (s.includes('stival')) options += '<option value="stivali">Stivali</option>';
+                    if (s.includes('guant')) { options += '<option value="guanto_dx">Guanto Dx</option><option value="guanto_sx">Guanto Sx</option>';}
+                    if (s.includes('gamb')) { options += '<option value="gambe">Gambe</option>'; }
+                    if (s.includes('stival')) { options += '<option value="stivale_dx">Stivale Dx</option><option value="stivale_sx">Stivale Sx</option>';}
                     if (s.includes('mano') || s.includes('arma')) options += '<option value="mano_dx">Arma Dx</option><option value="mano_sx">Arma Sx</option>';
-                    
+                                        
                     // Fallback: se ha uno slot non riconosciuto dai filtri standard, permette l'impugnatura manuale
                     if (options === '<option value="">-- Assegna --</option>') {
                         options += '<option value="mano_dx">Mano Dx</option><option value="mano_sx">Mano Sx</option>';
@@ -1161,15 +1163,31 @@ window.updateEquippedPanel = function(char) {
     const equipped = char.stats?.equipped || {};
     
     // Lista completa delle chiavi di equipaggiamento
-    const slotKeys = ['visore', 'elmo', 'schiena', 'spalla_dx', 'petto', 'spalla_sx', 'avambr_dx', 'cintura', 'avambr_sx', 'guanti', 'gambe', 'mano_dx', 'stivali', 'mano_sx'];
-
+    const slotKeys = [
+        'visore',
+        'elmo',
+        'schiena',
+        'spalla_dx',
+        'petto',
+        'spalla_sx',
+        'avambr_dx',
+        'cintura',
+        'avambr_sx',
+        'guanto_dx',
+        'gambe',
+        'guanto_sx',
+        'mano_dx',
+        'mano_sx',
+        'stivale_dx',
+        'stivale_sx'
+    ];
     // Testi in filigrana per gli slot vuoti
     const defaultSlotText = {
         'visore': 'VISORE', 'elmo': 'ELMO', 'schiena': 'SCHIENA', 
         'spalla_dx': 'SPALLA DX', 'petto': 'PETTO', 'spalla_sx': 'SPALLA SX', 
         'avambr_dx': 'AVAMBR. DX', 'cintura': 'CINTURA', 'avambr_sx': 'AVAMBR. SX', 
-        'guanti': 'GUANTI', 'mano_dx': 'ARMA DX', 
-        'gambe': 'GAMBE', 'mano_sx': 'ARMA SX', 'stivali': 'STIVALI'
+        'guanto_dx': 'GUANTO DX', 'gambe': 'GAMBE', 'guanto_sx': 'GUANTO SX', 'mano_dx': 'ARMA DX', 
+        'mano_sx': 'ARMA SX', 'stivale_dx': 'STIVALE DX', 'stivale_sx': 'STIVALE SX'
     };
 
     // Emoji Placeholder
@@ -1177,15 +1195,29 @@ window.updateEquippedPanel = function(char) {
         'visore': '🥽', 'elmo': '🪖', 'schiena': '🎒', 
         'spalla_dx': '🦾', 'petto': '🦺', 'spalla_sx': '🦾', 
         'avambr_dx': '🛡️', 'cintura': '🥋', 'avambr_sx': '🛡️', 
-        'guanti': '🧤', 'mano_dx': '🗡️', 
-        'gambe': '👖', 'mano_sx': '🗡️', 'stivali': '🥾'
+        'guanto_dx': '🧤', 'mano_dx': '🗡️', 
+        'gambe': '👖', 'guanto_sx': '🧤', 'mano_sx': '🗡️', 'stivale_dx': '🥾', 'stivale_sx': '🥾'
+    };
+
+    // Compatibilità con i vecchi salvataggi.
+    // I vecchi "guanti" vengono visualizzati come guanto destro.
+    // I vecchi "stivali" vengono visualizzati come stivale destro.
+    const legacySlotAliases = {
+        guanto_dx: 'guanti',
+        stivale_dx: 'stivali'
     };
 
     slotKeys.forEach(key => {
         const el = document.getElementById(`slot-${key}`);
         if (!el) return;
-        
-        const itemData = equipped[key];
+
+        const legacyKey = legacySlotAliases[key];
+
+        const actualSlotKey = equipped[key]
+            ? key
+            : (legacyKey && equipped[legacyKey] ? legacyKey : key);
+
+        const itemData = equipped[actualSlotKey];
         const nameEl = el.querySelector('.doll-name');
         const iconEl = el.querySelector('.doll-icon');
         
@@ -1261,10 +1293,10 @@ window.updateEquippedPanel = function(char) {
         });
 
         newEl.addEventListener('click', () => {
-            if (itemData) {
+            if (itemData) {``
                 if (confirm(`Vuoi rimettere "${itemData.name}" nello zaino?`)) {
                     document.getElementById('equip-tooltip').style.display = 'none';
-                    window.unequipFromSlot(char.id, key);
+                    window.unequipFromSlot(char.id, actualSlotKey);
                 }
             }
         });
@@ -1277,6 +1309,17 @@ window.equipItem = function(charId, itemName, itemDesc, slot, itemType = 'backpa
 
     let stats = char.stats || {};
     if (!stats.equipped) stats.equipped = {};
+    // Converte automaticamente i vecchi slot nel nuovo formato.
+    if (stats.equipped.guanti && !stats.equipped.guanto_dx) {
+        stats.equipped.guanto_dx = stats.equipped.guanti;
+        stats.equipped.guanti = null;
+    }
+
+    if (stats.equipped.stivali && !stats.equipped.stivale_dx) {
+        stats.equipped.stivale_dx = stats.equipped.stivali;
+        stats.equipped.stivali = null;
+    }
+    
     let bp = char.backpack || [];
     let wp = char.weapons || []; // Prende anche le armi
 
