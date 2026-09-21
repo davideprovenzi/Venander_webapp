@@ -1,0 +1,604 @@
+{
+  "Armature Sfygaa": [
+    {
+      "name": "Elmo K100 VI",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Un elmo standard e affidabile della linea Sfygaa."
+    },
+    {
+      "name": "Guanti X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti protettivi leggeri ma resistenti."
+    },
+    {
+      "name": "Avambraccio X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni per gli avambracci, ideali per parare i colpi."
+    },
+    {
+      "name": "Pettorali X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Corazza spessa per la protezione del torso."
+    },
+    {
+      "name": "Stivali X2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature blindate per affrontare ogni terreno."
+    },
+    {
+      "name": "Schiena X2",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Placca di rinforzo posteriore per evitare brutte sorprese."
+    },
+    {
+      "name": "Gambe",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni snodate per gli arti inferiori."
+    },
+    {
+      "name": "Cintura",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura tattica con altissima armonizzazione."
+    },
+    {
+      "name": "Spalla",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio singolo per deflettere i fendenti."
+    }
+  ],
+
+  "Gadget Sfygaa": [
+    {
+      "name": "Visore Ultrasonico PLUS",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><i>Grazie a uno speciale hardware merlinico permette di tramutare le onde sonore in immagini inviate direttamente al sistema nervoso! È così preciso che puoi vedere un nemico scoreggiare anche al buio.</i><br><b>Effetto:</b> Garantisce passivamente visione spaziale al 100% nel proprio campo visivo (nessun costo in PA)."
+    },
+    {
+      "name": "Nocche INOX",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Stavamo pensando a un gadget rivoluzionario... e sono nate le nocche in acciaio INOX. Così puoi dare cazzotti che fanno molto male.</i><br><b>Effetto:</b> Il danno senz'armi diventa 10 x Forza."
+    },
+    {
+      "name": "Nocche da Demolizione",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Per chi ama prendere a cazzotti i nemici, ma anche i muri in loro assenza.</i><br><b>Effetto:</b> L'esplosione infligge 15 x Forza (x3 contro muri leggeri). Cambiare la cartuccia esplosiva ha Velocità 60."
+    },
+    {
+      "name": "MicroREACTORball",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 110<br><i>Innovativa suola composta da miliardi di sfere in continua rotazione. Corri veloce come un giaguaro!</i><br><b>Effetto:</b> Aumenta la velocità di movimento con i piedi di 10."
+    },
+    {
+      "name": "MegaReattori Plantari",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 30 | <b>Armonizzazione:</b> 80<br><i>1, 2, 3 FUOCO! Lanciati nella mischia.</i><br><b>Effetto:</b> Al costo di 4 PA (modificabile da bonus) permette uno scatto di 4 metri a Velocità 90. Durante il tragitto si rimane targettabili."
+    },
+    {
+      "name": "Estensori Alari KK2",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> x2 Spalle<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 110<br><i>Estendi te stesso! Estendi gli estensori, ed estendi i tuoi limiti!</i><br><b>Effetto:</b> Attivabile con 4 PA come tuta alare. A mezz'aria permette planate senza danni da caduta. Muoversi a mezz'aria costa metà PA e raddoppia la velocità."
+    },
+    {
+      "name": "Esoscheletro Schienale",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 150<br><i>Robusta macchina da collegare alla schiena per potenziare spalle e braccia. Per dare cazzottoni belli forti.</i><br><b>Effetto:</b> Quando acceso, conferisce +1 a Forza (valido solo per gli arti superiori).",
+      "bonus": {"stat": "Forza", "val": 1}
+    },
+    {
+      "name": "MiniReattori Bracciali",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 110<br><i>La Sfygaa non è brava con i nomi, ma quando si tratta di dare cazzotti SIAMO I NUMERI UNO!</i><br><b>Effetto:</b> Al costo di 2 PA, moltiplica per 1.75 la velocità di un'azione eseguita con il braccio."
+    },
+    {
+      "name": "Centralina Sfygaa",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> x2 Guanti<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 110<br><i>Il nostro capolavoro. Dà accesso a tutti i dispositivi Sfygaa.</i><br><b>Effetto:</b> Indossandole non si possono impugnare armi. Lanciare oggetti ha -5. Indossare 2 centraline sblocca la <b>POWER TUBO MODE</b>: Consumo PA triplicato, ma velocità di movimento raddoppiata (+ altri bonus cumulativi). Si ignora la gravità, +1 Forza, +1 Destrezza, e sblocca parate a Velocità 100 (anche contro proiettili).",
+      "bonus": {"stat": "Destrezza", "val": 1}
+    },
+    {
+      "name": "Dissipatore Tubomode",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Mai farsi esplodere il cuore per sbaglio.</i><br><b>Effetto:</b> Quando si attiva la Power Tubo Mode, riduce il consumo di PA (da x3 a x2)."
+    },
+    {
+      "name": "Neuro Velocizzatore di Istinto",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 110<br><i>Hanno ucciso l'uomo ragno e si sono scopati Lana Line.</i><br><b>Effetto:</b> Permette di effettuare schivate a Velocità 100."
+    }
+  ],
+  "Armature Umbryll": [
+    {
+      "name": "Elmo Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Elmo tattico avanzato della linea Umbryll."
+    },
+    {
+      "name": "Guanti Umbryll",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti di precisione per l'uso di gadget."
+    },
+    {
+      "name": "Avambraccio Umbryll",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Supporto leggero per avambracci."
+    },
+    {
+      "name": "Pettorali Umbryll",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Corazza stealth resistente."
+    },
+    {
+      "name": "Stivali Umbryll",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature silenziose e agili."
+    },
+    {
+      "name": "Schiena Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Placca dorsale con alloggiamenti per centraline."
+    },
+    {
+      "name": "Gambe Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni flessibili per le gambe."
+    },
+    {
+      "name": "Cintura Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura tattica ad altissima armonizzazione, ideale per Trinket."
+    },
+    {
+      "name": "Spalla Umbryll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio snodato per il minimo ingombro."
+    }
+  ],
+
+  "Gadget Umbryll": [
+    {
+      "name": "Centralina Umbryll",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><i>Il cuore del sistema.</i><br><b>Effetto:</b> Permette l'utilizzo e l'alimentazione dei gadget speciali della marca Umbryll."
+    },
+    {
+      "name": "Mimesi Statica",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><b>Requisiti:</b> Centralina Umbryll<br><i>Scompari nell'ambiente circostante.</i><br><b>Effetto:</b> Quando si resta immobili, si entra in mimesi avanzata (passiva, nessun costo). Garantisce +15 alle prove di furtività se i nemici sono ignari, altrimenti +6."
+    },
+    {
+      "name": "Mimesi Dinamica",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110<br><b>Requisiti:</b> Centralina Umbryll<br><i>霧が私の歩幅を覆うだろう (La nebbia coprirà i miei passi).</i><br><b>Effetto:</b> Attiva una mimesi in movimento. Costo: 2 PAV per ogni metro percorso."
+    },
+    {
+      "name": "Trinket Filo di Chakra Negativo",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>蜘蛛は巣を編む (Il ragno tesse la sua tela).</i><br><b>Effetto:</b> Dispositivo che tiene max 10 trinket. 2 trinket creano il primo filo invisibile. Se un bersaglio lo attraversa, riceve una carica di Chakra Negativo."
+    },
+    {
+      "name": "Marionetta di Chakra Negativo",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>彼らは中国人が食べるものを私たちに食べさせたいのです... (Ci vogliono far mangiare quello che mangiano i cinesi...).</i><br><b>Effetto:</b> Permette il controllo remoto degli arti di un nemico con almeno una carica negativa. Equivale a una manovra speciale. Ogni carica di chakra negativo conferisce +1 alla manovra. Costo: 2 PAV per tentativo. Se fallisce, l'arto non si muove ma il nemico resta sotto controllo."
+    },
+    {
+      "name": "Drag Down Chakra Negativo",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>Vivi nel vento e non sarai mai spazzato via.</i><br><b>Effetto:</b> Velocità 30. Infligge una spinta verso il basso (manovra di sbilanciare) a tutti i nemici con carica negativa. Costo: 2 PAV per nemico. Ogni carica di chakra negativo aggiunge +1 alla manovra."
+    },
+    {
+      "name": "Trinket Bomba",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>Tutti credono che i luscati siano creature subdole... Sumimasen!</i><br><b>Effetto:</b> Contiene 10 trinket attivabili a distanza. Velocità di attivazione/detonazione: 30 (lascia un turno di risposta). Costo: 5 PAV a bomba. Danno: 20 HP adiacente, 10 HP a 1 metro."
+    },
+    {
+      "name": "Trinket Yin e Yang ☯",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>Equilibrio letale.</i><br><b>Effetto:</b> Contiene 15 trinket lanciabili. <b>Yin:</b> Danno pari a 8 x Destrezza (+5 danni per carica negativa del bersaglio). Aggiunge carica negativa. <b>Yang:</b> Si attacca e garantisce carica positiva. Ogni colpo a segno permette un secondo tiro per colpire."
+    },
+    {
+      "name": "Scattatori Positivi",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Dominati, e dominerai il nemico.</i><br><b>Effetto:</b> Al costo di 5 PAV, permette uno scatto (Velocità 80) verso un bersaglio con carica Positiva entro 10m. Può essere concatenato a un attacco. Se il bersaglio ha più cariche positive, riceve uno scudo di 15 HP per carica (dura 3 turni)."
+    },
+    {
+      "name": "Trinket Spy 𓂀",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>L'occhio onniveggente.</i><br><b>Effetto:</b> Contiene 25 trinket microtelecamere. Trasmettono immagini a un qualsiasi display scelto dall'utilizzatore."
+    },
+    {
+      "name": "Display Umbryll",
+      "cost": 150,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 10<br><i>Schermo tattico portatile.</i><br><b>Effetto:</b> Display da polso, ideale per interfacciarsi con telecamere e sistemi informatici."
+    },
+    {
+      "name": "Trinket Campo di Non Belligeranza",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>Pace imposta.</i><br><b>Effetto:</b> Contiene 5 trinket. Genera un campo di 3 metri in cui i bersagli acquisiscono carica Neutra. Finché si ha carica Positiva, non si possono infliggere né subire danni da soggetti con carica Neutra."
+    },
+    {
+      "name": "Potenziatore di Istinto Oculare",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo Frontale<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Riflessi aumentati artificialmente.</i><br><b>Effetto:</b> Permette di effettuare parate a Velocità 100. Parare a mani nude dimezza il danno subito."
+    },
+    {
+      "name": "Regolatore di Traiettorie Riportate",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Potenziatore Oculare, Centralina Umbryll<br><b>Effetto:</b> Impugnando una lama, dopo aver parato un proiettile (o oggetto lanciato), è possibile deviarlo al costo di 3 PAV verso un nemico nell'arco di 180° frontale (richiede tiro per colpire)."
+    },
+    {
+      "name": "Clone di Ombra Proiettato",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>L'ombra più grande rimarrà sempre dentro di te.</i><br><b>Effetto:</b> Rimanendo immobili è possibile generare un clone olografico proiettato nel proprio campo visivo (Passiva gratuita)."
+    },
+    {
+      "name": "Mimesi Personale",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Petto<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 80<br><i>Il ladro di volti.</i><br><b>Effetto:</b> Bersagliando un nemico con carica Positiva, se ne rubano aspetto e movenze. Costo: 5 PAV. Velocità di trasformazione: 10."
+    },
+    {
+      "name": "Mimesi Vocale",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Elmo frontale<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>鼓動を聞いて、孤独感が和らぐ (Ascolto il battito e la solitudine si attenua).</i><br><b>Effetto:</b> Bersagliando un nemico con carica Positiva, se ne ruba la voce. Costo: 5 PAV. Velocità di trasformazione: 10."
+    }
+  ],
+
+  "Oggettistica Umbryll": [
+    {
+      "name": "Ricarica Trinket Umbryll",
+      "cost": 5,
+      "desc": "<b>Tipo:</b> Consumabile<br><b>Effetto:</b> Oggetto rettangolare a clip in grado di attaccarsi a qualsiasi superficie. Inserito nell'apposito gadget, ne acquisisce gli effetti specifici. Applicazione manuale: Velocità 30. Lancio: equivalente a un tiro a distanza."
+    }
+  ],
+  "Armature Crappterra": [
+    {
+      "name": "Nessuna armatura Crappterra",
+      "cost": 0,
+      "desc": "<i>Al momento non sono stati trovati dati su corazze di questa marca.</i>"
+    }
+  ],
+
+  "Gadget Crappterra": [
+    {
+      "name": "Centralina CRAPPTERRA",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Petto<br><b>Peso:</b> 200 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 100<br><i>L'obiettivo è essere resistente e inviolabile. È massiccia e montata sul petto.</i><br><b>Effetto:</b> Necessaria per utilizzare equipaggiamenti avanzati. Compatibile SOLO con gadget CRAPPTERRA."
+    },
+    {
+      "name": "Caricatore da spalla per NukeBULLET",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Installa 3 NukeBULLET nella spalla. Ricaricare il gadget costa 2 PAA a proiettile con Velocità 20."
+    },
+    {
+      "name": "Canna Flessibile NEFT-ARM",
+      "cost": 250,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Collega la spalla al guanto per interconnettere i gadget. Per funzionare, il braccio deve rimanere completamente teso."
+    },
+    {
+      "name": "Guanti NukeBULLET",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Requisiti:</b> Centralina CRAPPTERRA, Canna NEFT-ARM, Caricatore NukeBULLET<br><i>\"Ai nostri tempi bastava un pugno. Oggi gli abbiamo aggiunto una piccola testata nucleare.\" 😆</i><br><b>Effetto:</b> Esplode i NukeBULLET dal palmo. Cono d'azione di 6m. I primi 3m infliggono 10xArguzia danni, gli altri 3m infliggono 4xArguzia. A contatto ravvicinato (palmo sul bersaglio): Danno x5. Velocità di detonazione: 20."
+    },
+    {
+      "name": "Caricatore da spalla per NOT ORBITAL LASER",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Installa 3 fusibili NOT ORBITAL LASER nella spalla. Ricarica: 2 PAA a proiettile, Velocità 20."
+    },
+    {
+      "name": "Guanti NOT ORBITAL LASER",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Requisiti:</b> Centralina CRAPPTERRA, Canna NEFT-ARM, Caricatore NOT ORBITAL LASER<br><b>Effetto:</b> Espelle un potente laser rettilineo per 1 km (effettua danni solo nei primi 50m). Primi 10m: 20xArguzia danni (danno dimezzato ogni 10m successivi). Contro muri/oggetti non refrattari: Danno x15 (passa attraverso se supera gli HP del muro). Velocità d'espulsione: 90 (Preceduta da riscaldamento a Velocità 50). Inutile su superfici riflettenti (devia di 120°)."
+    },
+    {
+      "name": "Caricatore da spalla per MC HUMMER",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Installa 15 detonatori MC HUMMER nella spalla. Ricarica: 2 PAA a proiettile, Velocità 20."
+    },
+    {
+      "name": "Guanti MC HUMMER",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Requisiti:</b> Centralina CRAPPTERRA, Canna NEFT-ARM, Caricatore MC HUMMER<br><b>Effetto:</b> Colpendo un nemico senz'armi, innesca un impatto devastante che infligge 10 x Forza x Arguzia danni."
+    },
+    {
+      "name": "Propulsore 1L Carburante",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Effetto:</b> Al costo di 3 PAA e 1L di carburante, effettua una carica di 8m. Se colpisce un nemico, innesca Manovra: Spingere automatica (trascina il bersaglio per tutta la carica). A fine carica il nemico è spinto via per (Metri percorsi + [1m x Forza]). Contro i muri: 150 danni x ogni metro mancante alla fine della carica (li sfonda senza fermarsi se supera gli HP)."
+    },
+    {
+      "name": "Guanto MegaShield",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Effetto:</b> Genera uno scudo cinetico a 180° frontali contro i proiettili in arrivo. Non blocca i proiettili in uscita. Resiste a 1000 HP di danno. Costo attivazione: 6 PAA. Costo mantenimento (se fermi): 0 PAA. Costo movimento con scudo: 6 PAA. Se distrutto (o dopo 2 ore), può essere ricreato."
+    },
+    {
+      "name": "Sterminatrice 11!!",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 200<br><b>Effetto:</b> Mini-arma a ripetizione (Caricatore da 50 proiettili). Danno: 8xPercezione. Attivazione raffica: 3 PAA, Velocità 50. Ogni colpo costa 2 PAP. Il primo colpo ha Malus -8, ogni colpo successivo aggiunge -2 di Malus. Rinnovare la raffica il turno successivo costa 3 PAA, resetta i malus e cambia la Velocità d'attivazione a 85 (se non si rinnova si perde il bonus velocità)."
+    },
+    {
+      "name": "Caricatore per Sterminatrice",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 200 | <b>Armonizzazione:</b> 110 | <b>Vita:</b> 150<br><b>Effetto:</b> Attacco per spalla contenente 500 proiettili per la Sterminatrice 11!!. I colpi si inseriscono automaticamente nell'arma."
+    },
+    {
+      "name": "Verricello di traino per veicoli pesanti",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Pettorale<br><b>Peso:</b> 150 | <b>Armonizzazione:</b> 80 | <b>Vita:</b> 150<br><b>Effetto:</b> Spara un arpione dal petto (Range max: 10m). Danno impatto: 10xPercezione. Collega il nemico, impedendogli di allontanarsi oltre il range max e permettendo manovre di sbilanciamento/traino. Al costo di 5 PAA attiva in automatico (senza usare gli arti) una Manovra: Trainare. Il nemico deve superare una prova di Forza vs CD [10+Forza Utilizzatore]. Ogni prova fallita riduce il range max di 3m avvicinandolo."
+    }
+  ],
+  "Armature MEDMAD": [
+    {
+      "name": "Elmo MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Elmo medico tattico di base."
+    },
+    {
+      "name": "Guanti MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti sterili per interventi rapidi in campo."
+    },
+    {
+      "name": "Avambraccio MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni leggere per braccia."
+    },
+    {
+      "name": "Pettorali MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Robusta piastra toracica protettiva."
+    },
+    {
+      "name": "Stivali MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature progettate per terreni impervi."
+    },
+    {
+      "name": "Schiena MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Supporto dorsale, ideale per agganciare valigette."
+    },
+    {
+      "name": "Gambe MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Tutori corazzati per arti inferiori."
+    },
+    {
+      "name": "Cintura MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura medica ad altissima armonizzazione."
+    },
+    {
+      "name": "Spalla MEDMAD",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio medico compatto."
+    }
+  ],
+
+  "Gadget MEDMAD": [
+    {
+      "name": "Guanto Stetoscopico",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 20<br><b>Effetto:</b> Aumento percezione mediante tatto. Permette di auscultare il battito cardiaco. Appoggiandolo su superfici percepisce vibrazioni, passi o suoni oltre un muro. Abilità passiva senza costo in PA."
+    },
+    {
+      "name": "Centralina MEDMAD",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100<br><i>Il fulcro diagnostico.</i><br><b>Effetto:</b> Centralina necessaria per utilizzare e comunicare con gli equipaggiamenti e visori medici MEDMAD."
+    },
+    {
+      "name": "Visore Medicale Standard",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>Un occhio clinico oggi non basta più.</i><br><b>Effetto:</b> Mostra a schermo parametri vitali (battito, temperatura, respirazione). Richiede una prova su D20 per l'esatta interpretazione clinica dei dati."
+    },
+    {
+      "name": "Visore Medicale Cardiaco",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>All'inizio l'eccessivo range era un difetto... lo abbiamo lasciato così.</i><br><b>Effetto:</b> Rileva e mostra il battito cardiaco degli esseri viventi anche attraverso muri e ostacoli."
+    },
+    {
+      "name": "Visore Medicale Tossinometrico",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>Riconoscere una tossina è vitale.</i><br><b>Effetto:</b> Registra e rileva tossine, virus o sostanze nocive a schermo (sia dentro corpi/oggetti, sia disperse nell'aria)."
+    },
+    {
+      "name": "Valigia MEDMAD Light",
+      "cost": 150,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 40 | <b>Armonizzazione:</b> 50<br><i>Il nostro tratto distintivo.</i><br><b>Effetto:</b> Contiene fino a 3 kit medici. Aprire la valigetta ed estrarre un kit ha Velocità 40."
+    },
+    {
+      "name": "Valigia MEDMAD Medium",
+      "cost": 200,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 50<br><i>Per interventi prolungati.</i><br><b>Effetto:</b> Contiene fino a 5 kit medici. Aprire la valigetta ed estrarre un kit ha Velocità 40."
+    },
+    {
+      "name": "Valigia MEDMAD Heavy",
+      "cost": 300,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 100 | <b>Armonizzazione:</b> 50<br><i>Un ospedale da campo portatile.</i><br><b>Effetto:</b> Contiene fino a 8 kit medici. Aprire la valigetta ed estrarre un kit ha Velocità 40."
+    },
+    {
+      "name": "Defibrillatore da Campo",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 60 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD<br><i>NON VA USATO COME ARMA! (O forse sì?)</i><br><b>Effetto:</b> Contiene 5 munizioni ricaricabili da fonti elettriche. Effettua una scarica da 2000V x 30A (210J)."
+    },
+    {
+      "name": "Guanto Piastra Defibrillatore",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Requisiti:</b> Centralina MEDMAD, Defibrillatore da campo<br><i>Attenzione: non confondere con il guanto per le analisi della prostata.</i><br><b>Effetto:</b> <b>Uso medico:</b> Scarica su un soggetto incosciente, richiede D20 per rianimazione (Costo: 5 PAA, Velocità pari al tiro per colpire). <b>Uso arma:</b> Colpo senz'armi elettrificato. Dà +5 al tiro per colpire e annulla parate a mani nude/armi conduttive. Infligge 8 x Arguzia danni. (Inefficace sui Nergi)."
+    },
+    {
+      "name": "Stivali Isolanti da Campo",
+      "cost": 150,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>La sicurezza sul lavoro è tutto.</i><br><b>Effetto:</b> Isolanti al 99%. Rendono immuni alle scariche elettriche (equipara ai Nergi)."
+    },
+    {
+      "name": "Maschera Antigas MEDMAD",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><b>Effetto:</b> Garantisce immunità a gas e polveri disperse nell'ambiente. Segnala a schermo eventuali gas non supportati dai filtri."
+    },
+    {
+      "name": "Emettitore di Gas",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Pettorale<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 30<br><i>NON CARICARLO CON TOSSINE (Anche se funzionerebbe...).</i><br><b>Effetto:</b> Nebulizza sostanze in una nube 2x2. Mantenere la nube costa 4 PAA a turno. Si dirada dopo 2 turni dalla fine del mantenimento."
+    }
+  ],
+
+  "Oggettistica MEDMAD": [
+    {
+      "name": "Kit Mega Trauma",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Il ghiaccio secco è superato.</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione (prima che ritocchi a chi lo estrae), pena svanimento dell'effetto merlinico. Ferma emorragie e ripara temporaneamente le ossa. Restituisce 40 HP + (5 HP x Arguzia dell'utilizzatore)."
+    },
+    {
+      "name": "Kit Tossine",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Giuramento di Ipocrite...</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione. Contiene una carica di tossine. Attivarlo su una persona costa PA e richiede Tiro per Colpire. Attivarlo su un'arma la rende avvelenata per 48 ore."
+    },
+    {
+      "name": "Kit Ancora Portatile",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Salva migliaia di vite.</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione. Attivazione istantanea (Velocità 100) per ancorare/congelare sul posto l'utilizzatore."
+    },
+    {
+      "name": "Kit'è Murt",
+      "cost": 50,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Quando si dice che i morti non parlano...</i><br><b>Effetto:</b> Mini-obitorio portatile, riutilizzabile. Costo: 10 PAA. Richiede una prova su D20. Se riesce, svela ora e causa del decesso (e ulteriori informazioni a discrezione del risultato)."
+    },
+    {
+      "name": "Kit Antibalistico per Protezione",
+      "cost": 15,
+      "desc": "<b>Slot:</b> Valigetta MEDMAD<br><i>Per operare in mezzo a una sparatoria.</i><br><b>Effetto:</b> Va usato nello stesso turno dell'estrazione. Al costo di 8 PAA crea uno scudo a 360° intorno all'attivatore. Protegge da un massimo di 5 proiettili in entrata."
+    }
+  ],
+  "Armature Torbtech": [
+    {
+      "name": "Nessun dato disponibile",
+      "cost": 0,
+      "desc": "<i>Al momento il catalogo corazze Torbtech è in aggiornamento.</i>"
+    }
+  ],
+  "Gadget Torbtech": [
+    {
+      "name": "Nessun dato disponibile",
+      "cost": 0,
+      "desc": "<i>I laboratori Torbtech ci stanno lavorando...</i>"
+    }
+  ],
+  "Oggettistica Torbtech": [
+    {
+      "name": "Nessun dato disponibile",
+      "cost": 0,
+      "desc": "<i>Rifornimenti in arrivo.</i>"
+    }
+  ],
+  "Armature Mesmer": [
+    {
+      "name": "Elmo Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Elmo<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Casco di base per l'interfaccia con i sistemi visivi Mesmer."
+    },
+    {
+      "name": "Guanti Mesmer",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Guanti<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Guanti ultra-leggeri per manipolazione rapida dei gadget."
+    },
+    {
+      "name": "Avambraccio Mesmer",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Avambraccio<br><b>Peso:</b> 25 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Protezioni flessibili e leggere per le braccia."
+    },
+    {
+      "name": "Pettorali Mesmer",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Pettorali<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 35<br>Corazza toracica standard, ottima base per gli accumulatori."
+    },
+    {
+      "name": "Stivali Mesmer",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Stivali<br><b>Peso:</b> 250 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Calzature tattiche per il movimento silenzioso."
+    },
+    {
+      "name": "Schiena Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Schiena<br><b>Peso:</b> 500 | <b>Armonizzazione:</b> 200 | <b>Vita:</b> 25<br>Placca di supporto posteriore."
+    },
+    {
+      "name": "Gambe Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Gambe<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 10<br>Coperture articolate per gli arti inferiori."
+    },
+    {
+      "name": "Cintura Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 400 | <b>Vita:</b> 5<br>Cintura modulare ad altissima armonizzazione, indispensabile per il vasto arsenale di granate Mesmer."
+    },
+    {
+      "name": "Spalla Mesmer",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 15 | <b>Armonizzazione:</b> 100 | <b>Vita:</b> 5<br>Spallaccio minimalista."
+    }
+  ],
+
+  "Gadget Mesmer": [
+    {
+      "name": "Centralina MESMER",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Elmo superiore<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 100<br><i>Dopo infiniti studi l'abbiamo integrata nell'elmo: funzionale, poco visibile e molto bella d'estetica.</i><br><b>Effetto:</b> Necessaria per utilizzare gli equipaggiamenti avanzati. Compatibile SOLO con gadget MESMER."
+    },
+    {
+      "name": "Granata PXICOclone",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Cintura (Attacco Granata)<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80<br><i>Tu e il tuo esercito siete pronti a combattere!? Ah, non hai un esercito? Niente paura.</i><br><b>Effetto:</b> Crea un clone autonomo nel punto di impatto. Il clone ha 50 HP e infligge 0 danni, ma raccoglie informazioni in tempo reale visibili sul DISPLAY MESMER. Costo lancio: 5 PA. Costo morte del clone: 5 PAV."
+    },
+    {
+      "name": "Levitogranata Xll",
+      "cost": 1000,
+      "desc": "<b>Slot:</b> Cintura (Attacco Granata)<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80<br><i>Vuoi raggiungere qualsiasi risorsa? Pensa al contrario!</i><br><b>Effetto:</b> Si attacca a qualsiasi oggetto e permette di muoverlo (max 15kg, entro un arco di 15m). Costo: 1 PAV ogni 2m (Velocità 30) oppure 2 PAV al metro per movimenti veloci (Velocità 60)."
+    },
+    {
+      "name": "DISPLAY MESMER",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Elmo laterale<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 50<br><i>Le informazioni sono la cosa più importante. Accedi direttamente dal tuo campo visivo.</i><br><b>Effetto:</b> Tutte le informazioni raccolte dall'armatura e dai cloni PXICO sono visibili a schermo in tempo reale."
+    },
+    {
+      "name": "Stivali a Sospensione Magnetica",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> x2 Stivali<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 150<br><i>Maledetta Fa=μsN!</i><br><b>Effetto:</b> Riduce il malus movimento di 1, non attiva trappole legate al peso. Aumenta la velocità di movimento di 10, azzera il rumore dei passi e permette di usare i PAV per muoversi."
+    },
+    {
+      "name": "Drappo AntiS/T",
+      "cost": 1500,
+      "desc": "<b>Slot:</b> Cintura<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 100<br><i>Un tessuto che piega lo spazio-tempo. Lascia stare come funziona, è complicato...</i><br><b>Effetto:</b> Teletrasporto istantaneo (Velocità 100) fino a 8 metri (Costo: 1 PAV al metro). Durante il salto si è invisibili e intangibili. Usabile 1 volta ogni 24h (usarlo una seconda volta rompe il dispositivo)."
+    },
+    {
+      "name": "Granata PXICOinvisibile",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Cintura (Attacco Granata)<br><b>Peso:</b> 50 | <b>Armonizzazione:</b> 80<br><i>Crea una cortina di fumo invisibile: dall'esterno si vede esattamente ciò che c'era prima.</i><br><b>Effetto:</b> Area 4x4. Chi è all'interno è invisibile. Tutto ciò che viene spostato dall'esterno risulta immobile. Costo lancio: 2 PA + 5 PAV."
+    },
+    {
+      "name": "Strumento di Mimesi Corporale",
+      "cost": 250,
+      "desc": "<b>Slot:</b> Spalla<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 20<br><i>Perché andare in giro con armi e gadget in bella vista?</i><br><b>Effetto:</b> Mimesi passiva. Rende invisibile fino a 10kg di equipaggiamento addosso (la regola è che torna visibile se si muove). Non può nascondere armi in uso o componenti fissi delle armature."
+    },
+    {
+      "name": "Smaterializzatore",
+      "cost": 800,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 20 | <b>Armonizzazione:</b> 150<br><b>Requisiti:</b> Centralina MESMER<br><i>Alza la mano e guarda quei pezzettini di metallo sparire prima di colpirti!</i><br><b>Effetto:</b> A mano libera alzata (Azione base Velocità 60), annichilisce tutti i proiettili (max 100g l'uno) in un cono frontale di 120°. Costo: 2 PAV per il primo proiettile smaterializzato; i successivi nello stesso turno sono gratuiti."
+    },
+    {
+      "name": "Accumulatore Cinetico",
+      "cost": 250,
+      "desc": "<b>Slot:</b> Petto<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 80<br><b>Requisiti:</b> Centralina MESMER, Smaterializzatore<br><i>DA-OGGI-SEI-INARRESTABILE!!! Dacci i tuoi soldi.</i><br><b>Effetto:</b> Ogni singolo proiettile smaterializzato dal guanto genera e accumula 1 Carica Energetica."
+    },
+    {
+      "name": "Emettitore Cinetico",
+      "cost": 500,
+      "desc": "<b>Slot:</b> Guanto<br><b>Peso:</b> 10 | <b>Armonizzazione:</b> 110<br><b>Requisiti:</b> Accumulatore Cinetico<br><i>Stavolta è vero, te lo giuro.</i><br><b>Effetto:</b> Emette un'onda di energia cinetica a cono (120° per 3m). Danno: 5 x [Cariche Energetiche] x Volontà. Il danno si riduce in base alle coperture nemiche. Se usato a contatto diretto (palmo sul bersaglio): Danno x2."
+    }
+  ],
+
+  "Oggettistica Mesmer": [
+    {
+      "name": "Granata Marca MESMER",
+      "cost": 10,
+      "desc": "<b>Tipo:</b> Consumabile<br><b>Effetto:</b> Granata base economica e programmabile. Si aggancia agli attacchi della cintura e si converte automaticamente nel tipo di granata speciale selezionata (es. PXICOclone, Levitogranata, ecc.)."
+    }
+  ]
+}
