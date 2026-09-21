@@ -863,3 +863,99 @@ socket.on('update_fow_hexes', (data) => {
         render(); // Aggiorna la grafica istantaneamente per i giocatori
     }
 });
+
+window.npcTokenLibrary = [];
+window.currentNpcTokenBase64 = "";
+
+socket.emit('get_npc_tokens');
+
+socket.on('npc_token_library', (tokens) => {
+    window.npcTokenLibrary = tokens || [];
+
+    const select = document.getElementById('npc-token-select');
+    if (!select) return;
+
+    const oldValue = select.value;
+
+    select.innerHTML = `
+        <option value="">-- Nessuna pedina --</option>
+    `;
+
+    window.npcTokenLibrary.forEach(token => {
+        const option = document.createElement('option');
+
+        option.value = token.id;
+        option.textContent = token.name;
+
+        select.appendChild(option);
+    });
+
+    if ([...select.options].some(o => o.value === oldValue)) {
+        select.value = oldValue;
+    }
+});
+
+document.getElementById('npc-token-file')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.type !== "image/png") {
+        alert("La pedina deve essere PNG.");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        window.currentNpcTokenBase64 = event.target.result;
+
+        const preview = document.getElementById('npc-token-preview');
+
+        preview.src = window.currentNpcTokenBase64;
+        preview.style.display = 'inline-block';
+    };
+
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('npc-token-select')?.addEventListener('change', function() {
+    const tokenId = parseInt(this.value);
+
+    const token = window.npcTokenLibrary.find(
+        t => t.id === tokenId
+    );
+
+    if (!token) {
+        window.currentNpcTokenBase64 = "";
+        return;
+    }
+
+    window.currentNpcTokenBase64 = token.image_data;
+
+    const preview = document.getElementById('npc-token-preview');
+
+    preview.src = token.image_data;
+    preview.style.display = 'inline-block';
+
+    // Comodo: propone automaticamente il nome del preset
+    document.getElementById('npc-name').value = token.name;
+});
+
+document.getElementById('save-npc-token-btn')?.addEventListener('click', () => {
+    if (!window.currentNpcTokenBase64) {
+        alert("Carica prima una pedina.");
+        return;
+    }
+
+    const name = document.getElementById('npc-name').value.trim();
+
+    if (!name) {
+        alert("Inserisci prima il nome del nemico.");
+        return;
+    }
+
+    socket.emit('save_npc_token', {
+        name: name,
+        image_data: window.currentNpcTokenBase64
+    });
+});

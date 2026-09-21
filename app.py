@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 from flask_socketio import SocketIO, emit
 from sqlalchemy.orm.attributes import flag_modified
 import os
@@ -31,6 +32,7 @@ class Character(db.Model):
     color = db.Column(db.String(20), default="#000000")
 
     photo_url = db.Column(db.Text, default="") 
+    token_url = db.Column(db.Text, default="")
     lore = db.Column(db.Text, default="")
 
     hp_current = db.Column(db.Integer, default=100)
@@ -53,6 +55,11 @@ class Character(db.Model):
     xp = db.Column(db.Integer, default=0)
     shop = db.Column(db.JSON, default=list)
     notes = db.Column(db.Text, default="")
+
+class NpcTokenPreset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    image_data = db.Column(db.Text, nullable=False)
 
 class Line(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -113,6 +120,18 @@ def get_world_state():
 
 with app.app_context():
     db.create_all()
+    # Migrazione leggera: aggiunge token_url ai vecchi database
+    inspector = inspect(db.engine)
+    character_columns = {
+        column["name"]
+        for column in inspector.get_columns("character")
+    }
+
+    if "token_url" not in character_columns:
+        db.session.execute(
+            text("ALTER TABLE character ADD COLUMN token_url TEXT DEFAULT ''")
+        )
+        db.session.commit()
     if not WorldState.query.first():
         db.session.add(WorldState())
         db.session.commit()
@@ -149,7 +168,7 @@ def index():
 def get_char_data(char):
     return {
         "id": char.id, "name": char.name, "role": char.role, "x": char.pos_x, "y": char.pos_y, "color": char.color,
-        "photo_url": char.photo_url, "lore": char.lore, "hp_current": char.hp_current, "hp_max": char.hp_max,
+        "photo_url": char.photo_url, "token_url": char.token_url, "lore": char.lore, "hp_current": char.hp_current, "hp_max": char.hp_max,
         "stamina_current": char.stamina_current, "stamina_max": char.stamina_max,
         "conc_current": char.conc_current, "conc_max": char.conc_max, "pa_stats": char.pa_stats,
         "status": char.status, "stats": char.stats, "weapons": char.weapons,
@@ -357,13 +376,14 @@ def handle_spawn_npc(data):
     new_npc = Character(
         name=data.get("name", "Mostro"), 
         role="npc", 
-        pos_x=data.get("x", 0),  # <-- Ora usa le coordinate fornite
+        pos_x=data.get("x", 0),
         pos_y=data.get("y", 0),
         color=data.get("color", "#000000"), 
         hp_max=data.get("hp", 30), 
         hp_current=data.get("hp", 30),
         stats={"Tipo": "NPC / Nemico"}, weapons=[], skills=[], backpack=[], xp=0, shop=[],
-        is_hidden=data.get("is_hidden", False) # <-- Salva l'invisibilità
+        is_hidden=data.get("is_hidden", False),
+        token_url=data.get("token_url", "")
     )
     db.session.add(new_npc)
     db.session.commit()
@@ -466,6 +486,7 @@ def handle_update_character_sheet(data):
     char = db.session.get(Character, data.get("char_id"))
     if not char: return
     if "photo_url" in data: char.photo_url = data["photo_url"]
+    if "token_url" in data: char.token_url = data["token_url"]
     if "lore" in data: char.lore = data["lore"]
     if "stats" in data: char.stats = data["stats"]
     if "weapons" in data: char.weapons = data["weapons"]
@@ -786,6 +807,46 @@ def handle_resolve_reaction(data):
     for msg in chat_msgs:
         emit("dice_result", {"name": "SISTEMA", "message": msg, "is_master_roll": False}, broadcast=True)
 
+
+def get_npc_token_library():
+    tokens = NpcTokenPreset.query.order_by(NpcTokenPreset.name).all()
+
+    return [
+        {
+            "id": token.id,
+            "name": token.name,
+            "image_data": token.image_data
+        }
+        for token in tokens
+    ]
+
+
+@socketio.on("get_npc_tokens")
+def handle_get_npc_tokens():
+    emit("npc_token_library", get_npc_token_library())
+
+
+@socketio.on("save_npc_token")
+def handle_save_npc_token(data):
+    name = str(data.get("name", "")).strip()
+    image_data = data.get("image_data", "")
+
+    if not name or not image_data:
+        return
+
+    token = NpcTokenPreset(
+        name=name,
+        image_data=image_data
+    )
+
+    db.session.add(token)
+    db.session.commit()
+
+    emit(
+        "npc_token_library",
+        get_npc_token_library(),
+        broadcast=True
+    )
 
 
 if __name__ == "__main__":

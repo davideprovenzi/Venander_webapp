@@ -78,6 +78,33 @@ function drawGrid() {
     }
 }
 
+const tokenImageCache = new Map();
+
+function getCharacterTokenImage(char) {
+    if (!char.token_url) return null;
+
+    const cached = tokenImageCache.get(char.id);
+
+    if (cached && cached.src === char.token_url) {
+        return cached.image;
+    }
+
+    const image = new Image();
+
+    image.onload = () => {
+        render();
+    };
+
+    image.src = char.token_url;
+
+    tokenImageCache.set(char.id, {
+        src: char.token_url,
+        image: image
+    });
+
+    return image;
+}
+
 function drawTokens() {
     // Disegna l'epicentro del combattimento
     if (combatState.is_active && combatState.epicenter) {
@@ -167,20 +194,65 @@ function drawTokens() {
             }
         }
 
-        // Disegna la pedina
+        // Sfondo della pedina
         ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.fillStyle = char.color;
         ctx.fill();
+
+        const tokenImage = getCharacterTokenImage(char);
+
+        if (
+            tokenImage &&
+            tokenImage.complete &&
+            tokenImage.naturalWidth > 0
+        ) {
+            ctx.save();
+
+            // Il PNG viene ritagliato dentro la pedina circolare
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.clip();
+
+            const maxSize = radius * 2;
+
+            const scale = Math.min(
+                maxSize / tokenImage.naturalWidth,
+                maxSize / tokenImage.naturalHeight
+            );
+
+            const drawWidth = tokenImage.naturalWidth * scale;
+            const drawHeight = tokenImage.naturalHeight * scale;
+
+            ctx.drawImage(
+                tokenImage,
+                centerX - drawWidth / 2,
+                centerY - drawHeight / 2,
+                drawWidth,
+                drawHeight
+            );
+
+            ctx.restore();
+        } else {
+            // Fallback vecchio sistema
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillText(
+                char.name.charAt(0).toUpperCase(),
+                centerX,
+                centerY
+            );
+        }
+
+        // Bordo sopra l'immagine
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.lineWidth = isSelected ? 4 : 2;
         ctx.strokeStyle = isSelected ? '#ffeb3b' : '#000000';
         ctx.stroke();
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(char.name.charAt(0).toUpperCase(), centerX, centerY);
 
         // --- NUOVO: Mostra gli HP durante il combattimento ---
         if (combatState.is_active) {

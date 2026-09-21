@@ -141,24 +141,140 @@
 
         <!-- 1. SPAWN NPC (Chiuso di default) -->
         <div style="margin-top: 10px; border: 1px solid #c0392b; padding: 5px; border-radius: 5px; background: #fff;">
-            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #c0392b; background: #fadbd8;">
+
+            <h4 class="collapsible-header"
+                onclick="toggleSection(this)"
+                style="margin: 0; font-size: 14px; color: #c0392b; background: #fadbd8;">
                 Spawna Entità <span style="font-size:12px;">▶</span>
             </h4>
-            <div class="collapsible-content" style="display: none; padding-top: 10px;">
-                <input type="text" id="npc-name" placeholder="Nome (es. Goblin)" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <input type="number" id="npc-hp" placeholder="HP (es. 30)" style="width: 48%; padding: 5px;" value="30">
-                    <input type="color" id="npc-color" value="#8e44ad" style="width: 48%; height: 32px; cursor: pointer;">
+
+            <div class="collapsible-content"
+                style="display: none; padding-top: 10px;">
+
+                <!-- PEDINA NPC -->
+                <div style="
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 10px;
+                    margin-bottom: 10px;
+                ">
+
+                    <label style="font-size: 12px; font-weight: bold;">
+                        Pedina salvata
+                    </label>
+
+                    <select id="npc-token-select"
+                            style="width: 100%; margin: 5px 0; padding: 5px;">
+                        <option value="">-- Nessuna pedina --</option>
+                    </select>
+
+                    <input
+                        type="file"
+                        id="npc-token-file"
+                        accept="image/png"
+                        style="width: 100%; margin-bottom: 5px;"
+                    >
+
+                    <button
+                        id="save-npc-token-btn"
+                        style="width: 100%; padding: 5px;">
+                        💾 Salva questa pedina
+                    </button>
+
+                    <div style="text-align: center; margin-top: 8px;">
+                        <img
+                            id="npc-token-preview"
+                            style="
+                                display: none;
+                                width: 90px;
+                                height: 90px;
+                                object-fit: contain;
+                            "
+                        >
+                    </div>
+
                 </div>
-                
-                <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 5px; background: #f9f9f9; padding: 5px; border-radius: 3px; border: 1px dashed #ccc;">
+
+                <!-- DATI NPC -->
+                <input
+                    type="text"
+                    id="npc-name"
+                    placeholder="Nome (es. Goblin)"
+                    style="
+                        width: 100%;
+                        margin-bottom: 5px;
+                        padding: 5px;
+                        box-sizing: border-box;
+                    "
+                >
+
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 5px;
+                ">
+
+                    <input
+                        type="number"
+                        id="npc-hp"
+                        placeholder="HP (es. 30)"
+                        value="30"
+                        style="width: 48%; padding: 5px;"
+                    >
+
+                    <input
+                        type="color"
+                        id="npc-color"
+                        value="#8e44ad"
+                        style="
+                            width: 48%;
+                            height: 32px;
+                            cursor: pointer;
+                        "
+                    >
+
+                </div>
+
+                <div style="
+                    margin-bottom: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    background: #f9f9f9;
+                    padding: 5px;
+                    border-radius: 3px;
+                    border: 1px dashed #ccc;
+                ">
+
                     <input type="checkbox" id="npc-hidden" checked>
-                    <label for="npc-hidden" style="font-size: 12px; font-weight: bold; color: #555; cursor: pointer;">Spawna Nascosto (Fog of War)</label>
+
+                    <label
+                        for="npc-hidden"
+                        style="
+                            font-size: 12px;
+                            font-weight: bold;
+                            color: #555;
+                            cursor: pointer;
+                        ">
+                        Spawna Nascosto (Fog of War)
+                    </label>
+
                 </div>
-                
-                <button id="spawn-npc-btn" style="width: 100%; padding: 8px; background: #c0392b; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-weight: bold;">
+
+                <button
+                    id="spawn-npc-btn"
+                    style="
+                        width: 100%;
+                        padding: 8px;
+                        background: #c0392b;
+                        color: #fff;
+                        border: none;
+                        border-radius: 3px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">
                     📍 Posiziona sulla Mappa
                 </button>
+
             </div>
         </div>
 
@@ -586,7 +702,17 @@
             
             <label style="font-weight: bold; font-size: 13px;">Carica Immagine Avatar (Dal tuo PC):</label>
             <input type="file" id="profile-photo-file" accept="image/*" style="width: 100%; margin-bottom: 15px; margin-top: 5px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
-            
+            <label style="font-weight: bold; font-size: 13px;">
+                    Pedina sulla mappa:
+                </label>
+
+                <input
+                    type="file"
+                    id="profile-token-file"
+                    accept="image/png"
+                    style="width: 100%; margin-bottom: 15px; margin-top: 5px;
+                        padding: 5px; border: 1px solid #ccc; border-radius: 4px;"
+                >
             <label style="font-weight: bold; font-size: 13px;">Lore / Background:</label>
             <textarea id="profile-lore" style="width: 100%; height: 120px; padding: 5px; resize: vertical; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Scrivi la storia del tuo personaggio..."></textarea>
             

@@ -922,12 +922,15 @@ socket.on('show_ping', (data) => {
 // ==========================================
 let profileEditTargetId = null;
 let profileEditBase64 = "";
+let profileTokenBase64 = "";
 
 function openProfileEdit(char) {
     profileEditTargetId = char.id;
     profileEditBase64 = char.photo_url || ""; // Mantiene la foto vecchia se non se ne carica una nuova
+    profileTokenBase64 = char.token_url || ""; // Mantiene la pedina vecchia se non se ne carica una nuova
     document.getElementById('profile-lore').value = char.lore || "";
     document.getElementById('profile-photo-file').value = ""; // Resetta l'input del file
+    document.getElementById('profile-token-file').value = ""; // Resetta l'input del file
     document.getElementById('profile-edit-modal').style.display = 'flex';
 }
 
@@ -943,6 +946,32 @@ document.getElementById('profile-photo-file')?.addEventListener('change', functi
     reader.readAsDataURL(file);
 });
 
+document.getElementById('profile-token-file')?.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== "image/png") {
+        alert("La pedina deve essere un file PNG.");
+        event.target.value = "";
+        return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert("La pedina è troppo grande. Massimo 2 MB.");
+        event.target.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        profileTokenBase64 = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+});
+
+
 // Salva Profilo
 document.getElementById('save-profile-btn')?.addEventListener('click', () => {
     if (!profileEditTargetId) return;
@@ -950,6 +979,7 @@ document.getElementById('save-profile-btn')?.addEventListener('click', () => {
     socket.emit('update_character_sheet', {
         char_id: profileEditTargetId,
         photo_url: profileEditBase64,
+        token_url: profileTokenBase64,
         lore: document.getElementById('profile-lore').value.trim()
     });
     
@@ -1319,7 +1349,7 @@ window.equipItem = function(charId, itemName, itemDesc, slot, itemType = 'backpa
         stats.equipped.stivale_dx = stats.equipped.stivali;
         stats.equipped.stivali = null;
     }
-    
+
     let bp = char.backpack || [];
     let wp = char.weapons || []; // Prende anche le armi
 

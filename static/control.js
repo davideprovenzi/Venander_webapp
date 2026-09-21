@@ -94,8 +94,15 @@ canvas.addEventListener('click', (event) => {
         const color = document.getElementById('npc-color')?.value || "#8e44ad";
         const isHidden = document.getElementById('npc-hidden')?.checked || false;
         
-        socket.emit('spawn_npc', { name, hp, color, x: gridX, y: gridY, is_hidden: isHidden });
-        
+       socket.emit('spawn_npc', {
+            name,
+            hp,
+            color,
+            x: gridX,
+            y: gridY,
+            is_hidden: isHidden,
+            token_url: window.currentNpcTokenBase64 || ""
+        });
         window.isSpawningNpc = false;
         canvas.style.cursor = "pointer";
         statusBar.innerText = `[MASTER] Entità evocata in X:${gridX}, Y:${gridY}.`;
