@@ -1398,6 +1398,22 @@ def handle_master_publish_combat_result(data):
     data = data or {}
 
     if request.sid not in master_sids:
+
+        print(
+            "[COMBAT] PUBBLICAZIONE RIFIUTATA: "
+            "socket non registrato come Master",
+            request.sid
+        )
+
+        emit(
+            "master_combat_error",
+            {
+                "message":
+                    "Il server non riconosce questa sessione come Master."
+            },
+            to=request.sid
+        )
+
         return
 
     result_id = data.get("result_id")

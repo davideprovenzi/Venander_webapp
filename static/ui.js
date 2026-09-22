@@ -3540,11 +3540,11 @@ window.updateCombatActionPanel = function() {
             }
 
 
-            // Il Master controlla gli NPC
+            // Il Master può sempre visualizzare e gestire
+            // il personaggio attualmente di turno.
             if (
                 typeof isMaster !== 'undefined' &&
-                isMaster &&
-                currentActor.is_npc
+                isMaster
             ) {
                 isMyTurn = true;
             }
@@ -4425,18 +4425,10 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
     
     // Invia i dati precisi ad app.py per il calcolo matematico
     socket.emit('resolve_reaction', {
-
-        attack_id:
-            pendingIncomingAttack.attack_id,
-
-        reaction_type:
-            reactionType,
-
-        def_limb:
-            limb,
-
-        def_speed:
-            speed
+        attack_id: pendingIncomingAttack.attack_id,
+        reaction_type: reactionType,
+        def_limb: limb,
+        def_speed: speed
     });
 
     document.getElementById('defense-modal').style.display = 'none';
@@ -4787,3 +4779,18 @@ document.body.addEventListener('click', (e) => {
         e.target.style.display = 'none';
     }
 });
+
+socket.on(
+    'master_combat_error',
+    (data) => {
+
+        console.error(
+            '[COMBAT MASTER]',
+            data.message
+        );
+
+        alert(
+            data.message
+        );
+    }
+);
