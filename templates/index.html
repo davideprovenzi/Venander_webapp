@@ -599,13 +599,9 @@
          ========================================== -->
 
     <div id="edit-sheet-modal" class="modal-overlay">
-
         <div class="sheet-content">
-
             <span class="close-btn" id="close-edit-modal">&times;</span>
-
             <h2 style="margin-top: 0; color: #c0392b;">Modifica Scheda: <span id="edit-char-name"></span></h2>
-
 
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Scrivi un elemento per riga. Statistiche: usa il formato <strong>Nome: Valore</strong>.</p>
 
@@ -623,7 +619,6 @@
                     <textarea id="edit-skills" style="width: 100%; height: 100px; box-sizing: border-box; resize: vertical; padding: 5px;"></textarea>
                 </div>
                 
-                <!-- AGGIUNGI QUESTA SEZIONE PER LO ZAINO -->
                 <div class="sheet-section">
                     <h3>Zaino</h3>
                     <textarea id="edit-backpack" style="width: 100%; height: 100px; box-sizing: border-box; resize: vertical; padding: 5px;"></textarea>
@@ -640,13 +635,24 @@
                     <div id="compendio-list" style="max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
                         <em style="color: #777; font-size: 13px; text-align: center; padding: 10px;">Seleziona una categoria sopra per vedere le abilità disponibili.</em>
                     </div>
+                    
+                    <!-- FORGIA NUOVO OGGETTO -->
+                    <div style="background: rgba(255,255,255,0.8); padding: 8px; margin-top: 10px; border-radius: 4px; border: 1px dashed #e67e22;">
+                        <h4 style="margin: 0 0 5px 0; color: #d35400;">✨ Forgia Nuovo Oggetto</h4>
+                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                            <input type="text" id="new-comp-category" placeholder="Categoria (es. Armature)" style="flex: 1; padding: 4px; border: 1px solid #ccc;">
+                            <input type="text" id="new-comp-name" placeholder="Nome Oggetto" style="flex: 1; padding: 4px; border: 1px solid #ccc;">
+                            <input type="number" id="new-comp-cost" placeholder="Costo €" style="width: 70px; padding: 4px; border: 1px solid #ccc;">
+                        </div>
+                        <textarea id="new-comp-desc" placeholder="Descrizione (Slot, Effetti...)" style="width: 100%; height: 40px; padding: 4px; border: 1px solid #ccc; resize: vertical; box-sizing: border-box;"></textarea>
+                        <button id="btn-create-comp-item" style="width: 100%; margin-top: 5px; padding: 6px; background: #e67e22; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 3px;">Aggiungi al Compendio Globale</button>
+                    </div>
                 </div>
             </div>
 
             <button id="save-sheet-btn" style="width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 15px; border-radius: 5px;">
                 💾 Salva Modifiche
             </button>
-
         </div>
     </div>
 
@@ -733,7 +739,7 @@
         
         <button onclick="document.getElementById('move-modal').style.display='none'; window.pendingMove = null; render();" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer;">Annulla Azione</button>
     </div>
-<!-- PANNELLO AZIONE COMBATTIMENTO -->
+    <!-- PANNELLO AZIONE COMBATTIMENTO -->
     <div id="combat-action-panel" style="display: none; position: absolute; bottom: 40px; right: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #e74c3c; border-radius: 8px; padding: 15px; color: white; width: 280px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
         
         <div id="action-header" style="background: #c0392b; color: white; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
@@ -752,6 +758,41 @@
             <select id="attack-target" style="width: 100%; padding: 5px; margin-bottom: 8px; border-radius: 3px; border: 1px solid #7f8c8d;"></select>
             <select id="attack-weapon" style="width: 100%; padding: 5px; margin-bottom: 10px; border-radius: 3px; background: #2c3e50; color: white; border: 1px solid #34495e; font-weight: bold;"></select>
             
+            <div id="attack-weapon-info"
+                style="
+                    display:none;
+                    background:rgba(255,255,255,0.08);
+                    border:1px solid #555;
+                    border-radius:4px;
+                    padding:7px;
+                    margin-bottom:10px;
+                    font-size:11px;
+                    line-height:1.5;
+                ">
+
+                <div>
+                    ⚡ Velocità:
+                    <strong id="attack-info-speed">-</strong>
+                </div>
+
+                <div>
+                    🎯 Range:
+                    <strong id="attack-info-range">-</strong>
+                </div>
+
+                <div>
+                    📏 Distanza:
+                    <strong id="attack-info-distance">-</strong>
+                </div>
+
+                <div>
+                    ⚔️ Danno:
+                    <strong id="attack-info-damage">-</strong>
+                </div>
+
+            </div>
+
+
             <div style="display: flex; gap: 5px; margin-bottom: 10px;">
                 <select id="attack-limb" style="flex: 1; padding: 5px; border-radius: 3px; border: 1px solid #7f8c8d; background: #34495e; color: white;">
                     <option value="bd">Braccio Dx</option>
@@ -759,7 +800,7 @@
                     <option value="gd">Gamba Dx</option>
                     <option value="gs">Gamba Sx</option>
                 </select>
-                <input type="number" id="attack-speed" placeholder="Vel." value="85" style="width: 60px; text-align: center; border-radius: 3px; border: 1px solid #7f8c8d; font-weight: bold;">
+                <input type="number" id="attack-speed" readonly style="width: 60px; text-align: center; border-radius: 3px; border: 1px solid #7f8c8d; font-weight: bold;">
             </div>
             
             <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
@@ -788,6 +829,150 @@
                 <option value="gs">Gamba Sx</option>
             </select>
             <input type="number" id="reaction-speed" placeholder="Velocità" value="100" style="width: 70px; text-align: center; border-radius: 3px;">
+        </div>
+
+
+        <div id="master-combat-review"
+            style="
+                display:none;
+                position:fixed;
+                top:50%;
+                left:50%;
+                transform:translate(-50%, -50%);
+                z-index:10000;
+                width:430px;
+                max-width:90vw;
+                background:#1f2933;
+                color:white;
+                border:2px solid #e74c3c;
+                border-radius:8px;
+                padding:18px;
+                box-shadow:0 10px 40px rgba(0,0,0,0.8);
+            ">
+
+            <h3 style="
+                margin-top:0;
+                color:#e74c3c;
+                text-align:center;
+            ">
+                👑 Revisione Scontro
+            </h3>
+
+
+            <div id="master-review-summary"
+                style="
+                    background:#111;
+                    padding:10px;
+                    border-radius:5px;
+                    margin-bottom:12px;
+                    font-size:13px;
+                    line-height:1.5;
+                ">
+            </div>
+
+
+            <label>
+                🎲 Tiro Attacco
+            </label>
+
+            <input
+                id="master-review-att-roll"
+                type="number"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    margin-bottom:10px;
+                    padding:6px;
+                "
+            >
+
+
+            <label>
+                🛡️ Tiro Difesa
+            </label>
+
+            <input
+                id="master-review-def-roll"
+                type="number"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    margin-bottom:10px;
+                    padding:6px;
+                "
+            >
+
+
+            <label>
+                💥 Danno
+            </label>
+
+            <input
+                id="master-review-damage"
+                type="number"
+                min="0"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    margin-bottom:10px;
+                    padding:6px;
+                "
+            >
+
+
+            <label>
+                💬 Messaggio pubblico
+            </label>
+
+            <textarea
+                id="master-review-message"
+                rows="5"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    resize:vertical;
+                    margin-bottom:12px;
+                    padding:7px;
+                "
+            ></textarea>
+
+
+            <div style="
+                display:flex;
+                gap:8px;
+            ">
+
+                <button
+                    id="master-review-cancel"
+                    style="
+                        flex:1;
+                        padding:8px;
+                        background:#7f8c8d;
+                        color:white;
+                        border:none;
+                        cursor:pointer;
+                    "
+                >
+                    Annulla
+                </button>
+
+                <button
+                    id="master-review-publish"
+                    style="
+                        flex:2;
+                        padding:8px;
+                        background:#27ae60;
+                        color:white;
+                        border:none;
+                        font-weight:bold;
+                        cursor:pointer;
+                    "
+                >
+                    ✅ PUBBLICA
+                </button>
+
+            </div>
+
         </div>
 
         <div style="text-align: center; margin-bottom: 15px; font-size: 12px; color: #bdc3c7;">

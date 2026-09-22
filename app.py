@@ -8,6 +8,8 @@ import random
 import re
 import json
 import math
+import uuid
+import html
 
 # ==========================================
 # CONFIGURAZIONE FLASK
@@ -96,6 +98,10 @@ class WorldState(db.Model):
 # ==========================================
 # MEMORIA GLOBALE COMBATTIMENTO E SETUP DB
 # ==========================================
+pending_attacks = {}
+pending_combat_results = {}
+master_sids = set()
+
 combat_state = {
     "is_active": False,
     "turn_order": [],
@@ -177,8 +183,34 @@ def get_char_data(char):
     }
 
 # ==========================================
-# WEBSOCKET - CONNESSIONE
+# WEBSOCKET - CONNESSIONE / RUOLI SESSIONE
 # ==========================================
+def emit_to_masters(event_name, data):
+    """Invia un evento solo ai socket registrati come Master."""
+    for sid in list(master_sids):
+        socketio.emit(event_name, data, to=sid)
+
+
+@socketio.on("register_session_role")
+def handle_register_session_role(data):
+    role = str((data or {}).get("role", "")).strip().lower()
+
+    master_sids.discard(request.sid)
+
+    if role == "master":
+        master_sids.add(request.sid)
+
+        # Se il Master ricarica la pagina mentre ci sono risultati
+        # in attesa, glieli rimandiamo.
+        for result in pending_combat_results.values():
+            emit("master_pending_combat_result", result, to=request.sid)
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    master_sids.discard(request.sid)
+
+
 @socketio.on("connect")
 def handle_connect():
     chars = Character.query.order_by(Character.id).all()
@@ -199,6 +231,10 @@ def handle_connect():
 def handle_toggle_combat():
     global combat_state
     combat_state["is_active"] = not combat_state["is_active"]
+
+    # Un nuovo stato di combattimento invalida richieste e risultati precedenti.
+    pending_attacks.clear()
+    pending_combat_results.clear()
     
     if combat_state["is_active"]:
         characters = Character.query.filter_by(is_hidden=False).all()
@@ -535,6 +571,394 @@ def load_compendio():
 def handle_get_compendio():
     emit("compendio_data", load_compendio())
 
+
+# ==========================================
+# HELPERS COMBATTIMENTO / COMPENDIO V2
+# ==========================================
+def get_compendium_item(compendium_id=None, name=None):
+    compendio = load_compendio()
+    items = compendio.get("items", []) if isinstance(compendio, dict) else []
+
+    if compendium_id:
+        for item in items:
+            if item.get("id") == compendium_id:
+                return item
+
+    if name:
+        wanted = str(name).strip().casefold()
+        for item in items:
+            current_name = str(item.get("name", "")).strip().casefold()
+            if current_name == wanted:
+                return item
+
+    return None
+
+
+def offset_to_cube(col, row):
+    """Conversione Odd-R identica a static/utils.js."""
+    q = col - (row - (row & 1)) // 2
+    r = row
+    s = -q - r
+    return q, r, s
+
+
+def hex_distance(x1, y1, x2, y2):
+    a = offset_to_cube(int(x1), int(y1))
+    b = offset_to_cube(int(x2), int(y2))
+    return max(
+        abs(a[0] - b[0]),
+        abs(a[1] - b[1]),
+        abs(a[2] - b[2])
+    )
+
+
+def numeric_speed(value):
+    if value is None or value == "":
+        return None
+
+    if isinstance(value, (int, float)):
+        return int(value)
+
+    match = re.search(r"-?\d+(?:[.,]\d+)?", str(value))
+    if not match:
+        return None
+
+    return int(float(match.group(0).replace(",", ".")))
+
+
+def compendium_attack_speed(item):
+    if not item:
+        return None
+
+    speed = item.get("activation", {}).get("speed", {})
+    raw = speed.get("effect_or_action")
+
+    if raw is None:
+        raw = speed.get("activation")
+
+    return numeric_speed(raw)
+
+
+def compendium_attack_range(item):
+    if not item:
+        return None
+
+    combat = item.get("combat", {})
+    raw_range = combat.get("range", {}).get("max_m")
+
+    if raw_range not in (None, ""):
+        try:
+            return float(raw_range)
+        except (TypeError, ValueError):
+            pass
+
+    item_type = str(item.get("type", "")).casefold()
+    mode = str(item.get("activation", {}).get("mode", "")).casefold()
+
+    if "corpo a corpo" in item_type or "colpo senz" in mode:
+        return 1.0
+
+    area = combat.get("area", {})
+    shape = str(area.get("shape", "")).casefold()
+    size = str(area.get("size", ""))
+
+    if "cono" in shape or "linea" in shape:
+        match = re.search(r"(\d+(?:[.,]\d+)?)\s*m", size, re.IGNORECASE)
+        if match:
+            return float(match.group(1).replace(",", "."))
+
+    return None
+
+
+def get_equipped_attack_item(character, source_slot=None, compendium_id=None, weapon_name=None):
+    equipped = ((character.stats or {}).get("equipped") or {})
+
+    def matches(item):
+        if not isinstance(item, dict):
+            return False
+
+        if compendium_id and item.get("compendium_id") == compendium_id:
+            return True
+
+        if weapon_name:
+            current_name = str(item.get("name", "")).strip().casefold()
+            wanted_name = str(weapon_name).strip().casefold()
+            if current_name == wanted_name:
+                return True
+
+        return False
+
+    if source_slot:
+        item = equipped.get(source_slot)
+        if item and matches(item):
+            return source_slot, item
+
+    for slot, item in equipped.items():
+        if matches(item):
+            return slot, item
+
+    return None, None
+
+
+def character_stat(character, stat_name):
+    stats = character.stats or {}
+    wanted = str(stat_name).strip().casefold()
+
+    for key, value in stats.items():
+        if str(key).strip().casefold() == wanted:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return 0.0
+
+    return 0.0
+
+
+def calculate_basic_damage(formula, attacker, weapon_name=""):
+    """Calcola solo formule deterministiche semplici."""
+    if not formula:
+        unarmed = str(weapon_name).strip().casefold()
+        if unarmed in {"pugno dx", "pugno sx", "mani nude"}:
+            return 5
+        return None
+
+    text_formula = str(formula).strip()
+
+    if re.fullmatch(r"clone\s*:\s*0", text_formula, re.IGNORECASE):
+        return 0
+
+    # Formule a fasce, somme o regole descrittive vengono gestite altrove/manuale.
+    if (
+        ";" in text_formula
+        or "–" in text_formula
+        or "dimezz" in text_formula.casefold()
+        or "+" in text_formula
+    ):
+        return None
+
+    clean = re.sub(r"\([^)]*\)", "", text_formula).strip()
+
+    fixed = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s*HP", clean, re.IGNORECASE)
+    if fixed:
+        return int(round(float(fixed.group(1).replace(",", "."))))
+
+    clean = clean.replace("×", "*").replace("x", "*")
+    parts = [part.strip() for part in clean.split("*") if part.strip()]
+
+    if not parts:
+        return None
+
+    result = 1.0
+    valid_stats = {
+        "forza",
+        "destrezza",
+        "percezione",
+        "arguzia",
+        "volontà",
+        "spirito",
+        "virtù"
+    }
+
+    for part in parts:
+        if re.fullmatch(r"\d+(?:[.,]\d+)?", part):
+            result *= float(part.replace(",", "."))
+            continue
+
+        if part.casefold() in valid_stats:
+            result *= character_stat(attacker, part)
+            continue
+
+        return None
+
+    return int(round(result))
+
+
+def resolve_attack_damage(comp_item, attacker, distance, weapon_name=""):
+    """
+    Risolve il danno che può essere determinato automaticamente.
+    Le formule non deterministiche restano modificabili dal Master.
+    """
+    if not comp_item:
+        basic_damage = calculate_basic_damage(None, attacker, weapon_name=weapon_name)
+        return {
+            "damage": basic_damage,
+            "formula": "5" if basic_damage is not None else None,
+            "note": None,
+            "automatic": basic_damage is not None
+        }
+
+    compendium_id = comp_item.get("id")
+    damage_data = comp_item.get("combat", {}).get("damage", {})
+    raw_formula = damage_data.get("formula")
+
+    # CRA-004 — GUANTI NUKEBULLET
+    if compendium_id == "CRA-004":
+        arguzia = character_stat(attacker, "Arguzia")
+
+        if distance <= 3:
+            damage = 10 * arguzia
+            formula = "10×Arguzia"
+        elif distance <= 6:
+            damage = 4 * arguzia
+            formula = "4×Arguzia"
+        else:
+            return {
+                "damage": None,
+                "formula": raw_formula,
+                "note": "Bersaglio fuori dai 6 m del NukeBULLET.",
+                "automatic": False
+            }
+
+        return {
+            "damage": int(damage),
+            "formula": formula,
+            "note": (
+                "Il bonus ×5 a contatto non è applicato automaticamente: "
+                "serve una modalità di attacco 'Contatto'."
+                if distance <= 1 else None
+            ),
+            "automatic": True
+        }
+
+    # CRA-006 — GUANTI NOT ORBITAL LASER
+    if compendium_id == "CRA-006":
+        arguzia = character_stat(attacker, "Arguzia")
+
+        if distance > 50:
+            return {
+                "damage": 0,
+                "formula": "Oltre 50 m: 0 danni",
+                "note": "Dopo 50 m il fascio prosegue come luce e calore ma non infligge danni.",
+                "automatic": True
+            }
+
+        divisions = 0 if distance <= 10 else math.ceil((distance - 10) / 10)
+        base_damage = 20 * arguzia
+        exact_damage = base_damage / (2 ** divisions)
+        formula = "20×Arguzia" if divisions == 0 else f"(20×Arguzia) ÷ {2 ** divisions}"
+
+        if not float(exact_damage).is_integer():
+            return {
+                "damage": None,
+                "formula": formula,
+                "note": f"Danno teorico: {exact_damage:g}. Serve definire la regola di arrotondamento.",
+                "automatic": False
+            }
+
+        return {
+            "damage": int(exact_damage),
+            "formula": formula,
+            "note": None,
+            "automatic": True
+        }
+
+    # UMB-006 — TRINKET BOMBA: dipende dalla posizione della bomba, non dal lanciatore.
+    if compendium_id == "UMB-006":
+        return {
+            "damage": None,
+            "formula": raw_formula,
+            "note": (
+                "Il Trinket bomba richiede la distanza tra il bersaglio e la bomba piazzata; "
+                "il danno va confermato dal Master."
+            ),
+            "automatic": False
+        }
+
+    basic_damage = calculate_basic_damage(raw_formula, attacker, weapon_name=weapon_name)
+
+    return {
+        "damage": basic_damage,
+        "formula": raw_formula,
+        "note": None if basic_damage is not None else "Formula non ancora automatizzata.",
+        "automatic": basic_damage is not None
+    }
+
+
+def get_equipment_hp(item):
+    if not isinstance(item, dict):
+        return 0, 0
+
+    comp_item = get_compendium_item(
+        compendium_id=item.get("compendium_id"),
+        name=item.get("name")
+    )
+
+    max_hp = item.get("durability_max")
+    if max_hp is None and comp_item:
+        max_hp = comp_item.get("equipment", {}).get("hp")
+
+    try:
+        max_hp = int(max_hp or 0)
+    except (TypeError, ValueError):
+        max_hp = 0
+
+    current_hp = item.get("durability_current")
+    if current_hp is None:
+        current_hp = max_hp
+
+    try:
+        current_hp = int(current_hp or 0)
+    except (TypeError, ValueError):
+        current_hp = 0
+
+    return current_hp, max_hp
+
+
+def get_defense_equipment(character, limb_key):
+    equipped = ((character.stats or {}).get("equipped") or {})
+
+    priorities = {
+        "bd": ["guanto_dx", "avambr_dx", "spalla_dx", "mano_dx"],
+        "bs": ["guanto_sx", "avambr_sx", "spalla_sx", "mano_sx"],
+        "gd": ["stivale_dx", "gambe"],
+        "gs": ["stivale_sx", "gambe"]
+    }
+
+    fallback = (None, None)
+
+    for slot in priorities.get(limb_key, []):
+        item = equipped.get(slot)
+        if not isinstance(item, dict):
+            continue
+
+        if fallback == (None, None):
+            fallback = (slot, item)
+
+        current_hp, max_hp = get_equipment_hp(item)
+        if max_hp > 0 or current_hp > 0:
+            return slot, item
+
+    return fallback
+
+
+def set_equipment_current_hp(character, slot_key, new_hp):
+    stats = dict(character.stats or {})
+    equipped = dict(stats.get("equipped") or {})
+    item = equipped.get(slot_key)
+
+    if not isinstance(item, dict):
+        return
+
+    group_id = item.get("equip_group_id")
+
+    for key, equipped_item in list(equipped.items()):
+        if not isinstance(equipped_item, dict):
+            continue
+
+        same_instance = key == slot_key
+
+        if group_id:
+            same_instance = equipped_item.get("equip_group_id") == group_id
+
+        if same_instance:
+            updated = dict(equipped_item)
+            updated["durability_current"] = max(0, int(new_hp))
+            equipped[key] = updated
+
+    stats["equipped"] = equipped
+    character.stats = stats
+    flag_modified(character, "stats")
+
 @socketio.on("add_skill_to_shop")
 def handle_add_skill_to_shop(data):
     char = db.session.get(Character, data.get("char_id"))
@@ -714,98 +1138,386 @@ def handle_sync_limbs(data):
     combat_state["players_limbs"][str(data["char_id"])] = data["limbs"]
     emit("sync_limbs", data, broadcast=True, include_self=False)
 
+
 @socketio.on("declare_attack")
 def handle_declare_attack(data):
-    # Invia l'allarme di attacco al difensore (e a tutti per la chat)
-    emit("incoming_attack", data, broadcast=True)
+    data = data or {}
+
+    attacker = db.session.get(Character, data.get("attacker_id"))
+    defender = db.session.get(Character, data.get("defender_id"))
+
+    if not attacker or not defender or attacker.id == defender.id:
+        return
+
+    requested_name = str(data.get("weapon", "Mani Nude")).strip() or "Mani Nude"
+    source_slot = data.get("source_slot") or None
+    compendium_id = data.get("compendium_id") or None
+
+    is_unarmed = requested_name.casefold() in {"pugno dx", "pugno sx", "mani nude"}
+
+    equipped_slot, equipped_item = get_equipped_attack_item(
+        attacker,
+        source_slot=source_slot,
+        compendium_id=compendium_id,
+        weapon_name=requested_name
+    )
+
+    # Se il client dichiara uno slot/id del compendio, l'oggetto deve essere davvero equipaggiato.
+    if not is_unarmed and (source_slot or compendium_id) and not equipped_item:
+        emit(
+            "dice_result",
+            {
+                "name": "SISTEMA",
+                "message": "⚠️ Attacco rifiutato: l'oggetto selezionato non risulta equipaggiato.",
+                "is_master_roll": False
+            },
+            to=request.sid
+        )
+        return
+
+    if not compendium_id and equipped_item:
+        compendium_id = equipped_item.get("compendium_id")
+
+    comp_item = get_compendium_item(
+        compendium_id=compendium_id,
+        name=(equipped_item or {}).get("name") if equipped_item else requested_name
+    )
+
+    weapon_name = (
+        comp_item.get("name")
+        if comp_item
+        else (equipped_item or {}).get("name", requested_name)
+    )
+
+    server_speed = compendium_attack_speed(comp_item)
+
+    if server_speed is None:
+        try:
+            server_speed = int(data.get("speed"))
+        except (TypeError, ValueError):
+            server_speed = None
+
+    if server_speed is None or server_speed <= 0:
+        emit(
+            "dice_result",
+            {
+                "name": "SISTEMA",
+                "message": "⚠️ Attacco rifiutato: velocità non valida.",
+                "is_master_roll": False
+            },
+            to=request.sid
+        )
+        return
+
+    distance = hex_distance(
+        attacker.pos_x,
+        attacker.pos_y,
+        defender.pos_x,
+        defender.pos_y
+    )
+
+    attack_range = compendium_attack_range(comp_item)
+    if is_unarmed and attack_range is None:
+        attack_range = 1.0
+
+    if attack_range is not None and distance > attack_range:
+        emit(
+            "dice_result",
+            {
+                "name": "SISTEMA",
+                "message": (
+                    f"⚠️ Bersaglio fuori range: {distance} m, "
+                    f"massimo {attack_range:g} m."
+                ),
+                "is_master_roll": False
+            },
+            to=request.sid
+        )
+        return
+
+    damage_data = (comp_item or {}).get("combat", {}).get("damage", {})
+    activation = (comp_item or {}).get("activation", {})
+    area = (comp_item or {}).get("combat", {}).get("area", {})
+
+    damage_resolution = resolve_attack_damage(
+        comp_item,
+        attacker,
+        distance,
+        weapon_name=weapon_name
+    )
+
+    attack_id = str(uuid.uuid4())
+
+    attack = {
+        "attack_id": attack_id,
+        "attacker_id": attacker.id,
+        "attacker_name": attacker.name,
+        "defender_id": defender.id,
+        "defender_name": defender.name,
+        "weapon": weapon_name,
+        "speed": server_speed,
+        "compendium_id": compendium_id,
+        "source_slot": equipped_slot or source_slot,
+        "damage_formula": damage_data.get("formula"),
+        "damage_type": damage_data.get("type"),
+        "resolved_damage": damage_resolution.get("damage"),
+        "resolved_damage_formula": damage_resolution.get("formula"),
+        "damage_automatic": damage_resolution.get("automatic", False),
+        "damage_note": damage_resolution.get("note"),
+        "range": attack_range,
+        "distance": distance,
+        "activation_mode": activation.get("mode"),
+        "area_shape": area.get("shape")
+    }
+
+    pending_attacks[attack_id] = attack
+
+    # La dichiarazione dell'attacco è pubblica, ma nessun tiro/danno viene ancora pubblicato.
+    emit(
+        "dice_result",
+        {
+            "name": attacker.name,
+            "message": (
+                f"sferra un attacco con <b>{html.escape(str(weapon_name))}</b> "
+                f"contro <b>{html.escape(str(defender.name))}</b> "
+                f"a Velocità <b>{server_speed}</b>!"
+            ),
+            "is_master_roll": False
+        },
+        broadcast=True
+    )
+
+    # Al difensore mandiamo solo i dati necessari alla reazione, non il danno già calcolato.
+    incoming_attack = {
+        "attack_id": attack_id,
+        "attacker_id": attacker.id,
+        "attacker_name": attacker.name,
+        "defender_id": defender.id,
+        "defender_name": defender.name,
+        "weapon": weapon_name,
+        "speed": server_speed,
+        "compendium_id": compendium_id,
+        "source_slot": equipped_slot or source_slot,
+        "damage_formula": damage_data.get("formula"),
+        "damage_type": damage_data.get("type"),
+        "range": attack_range,
+        "distance": distance,
+        "activation_mode": activation.get("mode"),
+        "area_shape": area.get("shape")
+    }
+
+    emit("incoming_attack", incoming_attack, broadcast=True)
+
 
 @socketio.on("resolve_reaction")
 def handle_resolve_reaction(data):
-    # Uso .get() così se manca un dato non va in crash (KeyError)
-    attacker_id = data.get("attacker_id")
-    defender_id = data.get("defender_id")
-    
-    if not attacker_id or not defender_id: 
+    data = data or {}
+    attack_id = data.get("attack_id")
+    attack = pending_attacks.get(attack_id)
+
+    if not attack:
+        emit(
+            "dice_result",
+            {
+                "name": "SISTEMA",
+                "message": "⚠️ Questo attacco non è più disponibile o è già stato risolto.",
+                "is_master_roll": False
+            },
+            to=request.sid
+        )
         return
-        
-    attacker = db.session.get(Character, attacker_id)
-    defender = db.session.get(Character, defender_id)
 
-    if not attacker or not defender: return
+    attacker = db.session.get(Character, attack["attacker_id"])
+    defender = db.session.get(Character, attack["defender_id"])
 
-    att_speed = int(data.get("att_speed", 85))
-    def_speed = int(data.get("def_speed", 100))
-    weapon_name = data.get("weapon", "Mani Nude")
-    reaction = data.get("reaction_type", "Schivata")
-    def_limb_key = data.get("def_limb", "bd")
+    if not attacker or not defender:
+        pending_attacks.pop(attack_id, None)
+        return
 
-    # 1. Calcolo Danno Arma dell'Attaccante
-    damage = 5 # Danno base Mani Nude
-    if attacker.stats and "equipped" in attacker.stats and attacker.stats["equipped"]:
-        for slot in ["mano_dx", "mano_sx"]:
-            item = attacker.stats["equipped"].get(slot)
-            if item and item.get("name") == weapon_name:
-                match = re.search(r'Danno:\s*(\d+)', item.get("desc", ""), re.IGNORECASE)
-                if match: damage = int(match.group(1))
-                break
+    try:
+        att_speed = int(attack["speed"])
+        def_speed = int(data.get("def_speed", 100))
+    except (TypeError, ValueError):
+        return
 
-    # 2. Lancio Dadi Automatico (1d20 + Bonus Velocità diviso 10)
+    weapon_name = attack.get("weapon", "Mani Nude")
+    reaction = str(data.get("reaction_type", "Schivata"))
+    def_limb_key = str(data.get("def_limb", "bd"))
+
+    if reaction not in {"Schivata", "Parata", "Scambio"}:
+        reaction = "Schivata"
+
+    if def_limb_key not in {"bd", "bs", "gd", "gs"}:
+        def_limb_key = "bd"
+
+    damage = attack.get("resolved_damage")
+    damage_formula = attack.get("resolved_damage_formula") or attack.get("damage_formula")
+    damage_note = attack.get("damage_note")
+
+    # I dadi vengono tirati qui, ma il risultato resta segreto fino alla pubblicazione del Master.
     att_roll = random.randint(1, 20) + (att_speed // 10)
     def_roll = random.randint(1, 20) + (def_speed // 10)
 
-    chat_msgs = ["⚔️ <b>RISOLUZIONE AUTOMATICA SCONTRO</b> ⚔️",
-                 f"Attacco ({weapon_name}): {att_roll} (Dado + Vel)",
-                 f"Difesa ({reaction}): {def_roll} (Dado + Vel)"]
+    result_id = str(uuid.uuid4())
 
-    # 3. Risoluzione della Difesa
+    result = {
+        "result_id": result_id,
+        "attack_id": attack_id,
+        "attacker_id": attacker.id,
+        "attacker_name": attacker.name,
+        "defender_id": defender.id,
+        "defender_name": defender.name,
+        "weapon": weapon_name,
+        "reaction_type": reaction,
+        "def_limb": def_limb_key,
+        "att_speed": att_speed,
+        "def_speed": def_speed,
+        "att_roll": att_roll,
+        "def_roll": def_roll,
+        "damage": damage,
+        "damage_formula": damage_formula,
+        "damage_note": damage_note,
+        "damage_type": attack.get("damage_type"),
+        "distance": attack.get("distance"),
+        "range": attack.get("range"),
+        "compendium_id": attack.get("compendium_id"),
+        "source_slot": attack.get("source_slot")
+    }
+
+    pending_combat_results[result_id] = result
+
+    # Una reazione può essere inviata una sola volta.
+    pending_attacks.pop(attack_id, None)
+
+    # Nessun HP viene modificato e nessun tiro viene pubblicato qui.
+    emit_to_masters("master_pending_combat_result", result)
+
+
+@socketio.on("master_publish_combat_result")
+def handle_master_publish_combat_result(data):
+    data = data or {}
+
+    if request.sid not in master_sids:
+        return
+
+    result_id = data.get("result_id")
+    result = pending_combat_results.get(result_id)
+
+    if not result:
+        return
+
+    attacker = db.session.get(Character, result["attacker_id"])
+    defender = db.session.get(Character, result["defender_id"])
+
+    if not attacker or not defender:
+        pending_combat_results.pop(result_id, None)
+        return
+
+    try:
+        att_roll = int(data.get("att_roll"))
+        def_roll = int(data.get("def_roll"))
+        damage = max(0, int(data.get("damage", 0)))
+    except (TypeError, ValueError):
+        return
+
+    reaction = result.get("reaction_type", "Schivata")
+    def_limb_key = result.get("def_limb", "bd")
+    resolution_lines = []
+
     if reaction == "Schivata":
         if def_roll >= att_roll:
-            chat_msgs.append(f"💨 <b>{defender.name}</b> schiva perfettamente l'attacco!")
+            resolution_lines.append(
+                f"💨 <b>{html.escape(defender.name)}</b> schiva perfettamente l'attacco!"
+            )
         else:
             defender.hp_current = max(0, defender.hp_current - damage)
-            chat_msgs.append(f"🩸 Schivata fallita! <b>{defender.name}</b> subisce <b>{damage} danni</b> (HP Rimanenti: {defender.hp_current}).")
+            resolution_lines.append(
+                f"🩸 Schivata fallita! <b>{html.escape(defender.name)}</b> subisce "
+                f"<b>{damage} danni</b> (HP Rimanenti: {defender.hp_current})."
+            )
 
     elif reaction == "Parata":
-        armor_hp = 0
-        stats_copy = dict(defender.stats) if defender.stats else {}
-        equipped = stats_copy.get("equipped") or {}
-        equipped_armor = equipped.get(def_limb_key)
-
-        # Cerca i Punti Vita dell'armatura sull'arto usato per parare
-        if equipped_armor:
-            hp_match = re.search(r'HP:\s*(\d+)', equipped_armor.get("desc", ""), re.IGNORECASE)
-            if hp_match: armor_hp = int(hp_match.group(1))
-
         if def_roll >= att_roll:
-            chat_msgs.append(f"🛡️ <b>{defender.name}</b> para perfettamente! L'attacco è respinto senza danni.")
+            resolution_lines.append(
+                f"🛡️ <b>{html.escape(defender.name)}</b> para perfettamente! "
+                "L'attacco è respinto senza danni."
+            )
         else:
-            dmg_to_armor = min(damage, armor_hp)
-            dmg_to_player = damage - dmg_to_armor
+            defense_slot, defense_item = get_defense_equipment(defender, def_limb_key)
+            armor_hp, armor_max_hp = get_equipment_hp(defense_item)
 
-            # Danno all'armatura
-            if equipped_armor and armor_hp > 0:
-                new_armor_hp = armor_hp - dmg_to_armor
-                new_desc = re.sub(r'HP:\s*\d+', f'HP: {new_armor_hp}', equipped_armor["desc"], flags=re.IGNORECASE)
-                stats_copy["equipped"][def_limb_key]["desc"] = new_desc
-                defender.stats = stats_copy
-                flag_modified(defender, "stats")
-                chat_msgs.append(f"🛡️ L'armatura su {def_limb_key} si usura assorbendo {dmg_to_armor} danni (HP Armatura restanti: {new_armor_hp}).")
+            damage_to_armor = min(damage, armor_hp) if armor_hp > 0 else 0
+            damage_to_player = damage - damage_to_armor
 
-            # Danno in eccesso al giocatore
-            if dmg_to_player > 0:
-                defender.hp_current = max(0, defender.hp_current - dmg_to_player)
-                chat_msgs.append(f"🩸 L'attacco trapassa la guardia! <b>{defender.name}</b> subisce <b>{dmg_to_player} danni</b> (HP Rimanenti: {defender.hp_current}).")
+            if defense_item and armor_hp > 0:
+                new_armor_hp = armor_hp - damage_to_armor
+                set_equipment_current_hp(defender, defense_slot, new_armor_hp)
+                resolution_lines.append(
+                    f"🛡️ <b>{html.escape(str(defense_item.get('name', 'Equipaggiamento')))}</b> "
+                    f"assorbe <b>{damage_to_armor}</b> danni "
+                    f"({new_armor_hp}/{armor_max_hp} HP)."
+                )
+
+            if damage_to_player > 0:
+                defender.hp_current = max(0, defender.hp_current - damage_to_player)
+                resolution_lines.append(
+                    f"🩸 L'attacco trapassa la guardia! <b>{html.escape(defender.name)}</b> "
+                    f"subisce <b>{damage_to_player} danni</b> "
+                    f"(HP Rimanenti: {defender.hp_current})."
+                )
+            elif damage == 0:
+                resolution_lines.append("🛡️ Nessun danno da applicare.")
 
     elif reaction == "Scambio":
         defender.hp_current = max(0, defender.hp_current - damage)
-        chat_msgs.append(f"⚔️ Nessuna difesa! <b>{defender.name}</b> accetta <b>{damage} danni</b> per colpire a sua volta (HP Rimanenti: {defender.hp_current}).")
+        resolution_lines.append(
+            f"⚔️ Nessuna difesa! <b>{html.escape(defender.name)}</b> accetta "
+            f"<b>{damage} danni</b> per colpire a sua volta "
+            f"(HP Rimanenti: {defender.hp_current})."
+        )
 
-    # 4. Salva ed Emetti i risultati
     db.session.commit()
+
     emit("update_character", get_char_data(defender), broadcast=True)
-    
-    for msg in chat_msgs:
-        emit("dice_result", {"name": "SISTEMA", "message": msg, "is_master_roll": False}, broadcast=True)
+
+    public_message = str(data.get("message", "")).strip()
+
+    if public_message:
+        # Il testo del Master viene trattato come testo semplice; i newline diventano <br>.
+        public_message = html.escape(public_message).replace("\n", "<br>")
+    else:
+        public_message = (
+            "⚔️ <b>RISOLUZIONE SCONTRO</b> ⚔️"
+            f"<br>Attacco ({html.escape(str(result.get('weapon', 'Attacco')))}): <b>{att_roll}</b>"
+            f"<br>Difesa ({html.escape(str(reaction))}): <b>{def_roll}</b>"
+            f"<br>Danno impostato dal Master: <b>{damage}</b>"
+        )
+
+        if resolution_lines:
+            public_message += "<br>" + "<br>".join(resolution_lines)
+
+    emit(
+        "dice_result",
+        {
+            "name": "SISTEMA",
+            "message": public_message,
+            "is_master_roll": False
+        },
+        broadcast=True
+    )
+
+    pending_combat_results.pop(result_id, None)
+
+
+@socketio.on("master_discard_combat_result")
+def handle_master_discard_combat_result(data):
+    data = data or {}
+
+    if request.sid not in master_sids:
+        return
+
+    result_id = data.get("result_id")
+    pending_combat_results.pop(result_id, None)
 
 
 def get_npc_token_library():

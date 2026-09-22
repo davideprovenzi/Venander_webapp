@@ -56,6 +56,8 @@ function populatePlayerSheetUI(myChar) {
         statsList.innerHTML = '';
         if (myChar.stats) {
             for (const [key, value] of Object.entries(myChar.stats)) {
+                if (key === 'equipped' || key === 'pa_stats' || typeof value === 'object') continue;
+
                 let statVal = parseInt(value) || 1;
                 let maxPa = 6 + (statVal - 1) * 3;
                 let currentPa = (myChar.pa_stats && myChar.pa_stats[key] !== undefined) ? myChar.pa_stats[key] : maxPa;
@@ -349,33 +351,89 @@ function populatePlayerSheetUI(myChar) {
            let controlsHtml = '';
             if (canEdit) {
                 // 1. Cerca la parola "Slot:" nella descrizione dell'oggetto
-                const slotMatch = item.desc.match(/Slot:(?:<\/b>)?\s*([^<\n]+)/i);
+                const compItem = findCompendioItem(item);
+                const allowedSlots =
+                    compItem?.equipment?.slot?.allowed_slots || [];
+
                 let selectHtml = '';
-                
-                // 2. Se l'oggetto ha uno slot, crea la tendina filtrata
-                if (slotMatch) {
-                    const s = slotMatch[1].trim().toLowerCase();
-                    let options = '<option value="">-- Assegna --</option>';
-                    
-                    if (s.includes('elmo') && !s.includes('laterale') && !s.includes('superiore') && !s.includes('frontale')) options += '<option value="elmo">Elmo</option>';
-                    if (s.includes('visore') || s.includes('laterale') || s.includes('superiore') || s.includes('frontale')) options += '<option value="visore">Visore/Elmo Lat.</option>';
-                    if (s.includes('schiena') || s.includes('valigetta')) options += '<option value="schiena">Schiena</option>';
-                    if (s.includes('spall')) options += '<option value="spalla_dx">Spalla Dx</option><option value="spalla_sx">Spalla Sx</option>';
-                    if (s.includes('pett')) options += '<option value="petto">Pettorali</option>';
-                    if (s.includes('avambr')) options += '<option value="avambr_dx">Avambr. Dx</option><option value="avambr_sx">Avambr. Sx</option>';
-                    if (s.includes('cintura')) options += '<option value="cintura">Cintura</option>';
-                    if (s.includes('guant')) { options += '<option value="guanto_dx">Guanto Dx</option><option value="guanto_sx">Guanto Sx</option>';}
-                    if (s.includes('gamb')) { options += '<option value="gambe">Gambe</option>'; }
-                    if (s.includes('stival')) { options += '<option value="stivale_dx">Stivale Dx</option><option value="stivale_sx">Stivale Sx</option>';}
-                    if (s.includes('mano') || s.includes('arma')) options += '<option value="mano_dx">Arma Dx</option><option value="mano_sx">Arma Sx</option>';
-                                        
-                    // Fallback: se ha uno slot non riconosciuto dai filtri standard, permette l'impugnatura manuale
-                    if (options === '<option value="">-- Assegna --</option>') {
-                        options += '<option value="mano_dx">Mano Dx</option><option value="mano_sx">Mano Sx</option>';
+
+                if (allowedSlots.length > 0) {
+                    let options =
+                        '<option value="">-- Assegna --</option>';
+
+                    const slotLabels = {
+                        visore: 'Visore',
+                        elmo: 'Elmo',
+                        schiena: 'Schiena',
+                        spalla_dx: 'Spalla Dx',
+                        spalla_sx: 'Spalla Sx',
+                        petto: 'Pettorali',
+                        avambr_dx: 'Avambraccio Dx',
+                        avambr_sx: 'Avambraccio Sx',
+                        cintura: 'Cintura',
+                        guanto_dx: 'Guanto Dx',
+                        guanto_sx: 'Guanto Sx',
+                        gambe: 'Gambe',
+                        stivale_dx: 'Stivale Dx',
+                        stivale_sx: 'Stivale Sx',
+                        mano_dx: 'Arma Dx',
+                        mano_sx: 'Arma Sx'
+                    };
+
+                    const slotInfo =
+                        compItem?.equipment?.slot;
+
+                    if (
+                        slotInfo?.occupancy === 'all' &&
+                        allowedSlots.length > 1
+                    ) {
+
+                        const combinedLabel =
+                            allowedSlots
+                                .map(slot =>
+                                    slotLabels[slot] || slot
+                                )
+                                .join(' + ');
+
+                        options += `
+                            <option value="${allowedSlots[0]}">
+                                ${combinedLabel}
+                            </option>
+                        `;
+
+                    } else {
+
+                        allowedSlots.forEach(slot => {
+
+                            options += `
+                                <option value="${slot}">
+                                    ${slotLabels[slot] || slot}
+                                </option>
+                            `;
+
+                        });
+
                     }
 
-                    selectHtml = `<select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value, 'backpack')" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">${options}</select>`;
+                    selectHtml = `
+                        <select
+                            onchange="window.equipItem(
+                                ${myChar.id},
+                                '${item.name.replace(/'/g, "\\'")}',
+                                '${getCompendioDescription(item).replace(/'/g, "\\'")}',
+                                this.value,
+                                'backpack',
+                                '${item.compendium_id || ''}'
+                            )"
+                            style="padding:2px; border-radius:3px;
+                                font-size:11px; flex:1;
+                                border:1px solid #ccc;"
+                        >
+                            ${options}
+                        </select>
+                    `;
                 }
+                
 
                 // 3. Genera l'HTML (se selectHtml è vuoto, mostra solo i bottoni +/- e Cestino)
                 controlsHtml = `
@@ -477,7 +535,7 @@ function populatePlayerSheetUI(myChar) {
 
     // 3. GESTIONE MARCHE (Brand)
     statsSubtabsContainer.innerHTML = '';
-    allBrands.forEach(brandName => {
+    getAllBrands().forEach(brandName => {
         const subBtn = document.createElement('button');
         subBtn.innerText = brandName;
         subBtn.style.padding = '4px 8px'; subBtn.style.fontSize = '12px'; subBtn.style.cursor = 'pointer'; subBtn.style.fontWeight = 'bold'; subBtn.style.borderRadius = '3px'; subBtn.style.border = '1px solid #8e44ad';
@@ -488,26 +546,32 @@ function populatePlayerSheetUI(myChar) {
     });
 
     // 4. ESTRAZIONE E FILTRAGGIO INCROCIATO
-    let shopItemsToShow = [];
-    
-    // Seleziona gli oggetti in base al brand (o tutti i brand fusi insieme)
-    if (currentBrandSubTab === 'Tutti') {
-        allBrands.forEach(b => {
-            if (b !== 'Tutti' && globalCompendio[`${currentShopTab} ${b}`]) {
-                shopItemsToShow = shopItemsToShow.concat(globalCompendio[`${currentShopTab} ${b}`]);
-            }
-        });
-    } else {
-        const compendioKey = `${currentShopTab} ${currentBrandSubTab}`;
-        if (globalCompendio[compendioKey]) {
-            shopItemsToShow = globalCompendio[compendioKey];
-        }
+    let shopItemsToShow = getCompendioItems();
+
+    // Categoria principale
+    shopItemsToShow = shopItemsToShow.filter(
+        item => getShopGroup(item) === currentShopTab
+    );
+
+    // Marca
+    if (currentBrandSubTab !== 'Tutti') {
+        shopItemsToShow = shopItemsToShow.filter(
+            item => item.brand === currentBrandSubTab
+        );
     }
 
-    // Filtra in base al tipo di armatura (es. Elmo) se richiesto
-    if (currentShopTab === 'Armature' && currentArmorType !== 'Tutti') {
+    // Tipo armatura
+    if (
+        currentShopTab === 'Armature' &&
+        currentArmorType !== 'Tutti'
+    ) {
+        const wanted = currentArmorType.toLowerCase();
+
         shopItemsToShow = shopItemsToShow.filter(item => {
-            return item.desc && item.desc.includes(`Slot:</b> ${currentArmorType}`);
+            const raw =
+                item?.equipment?.slot?.raw?.toLowerCase() || '';
+
+            return raw.includes(wanted);
         });
     }
 
@@ -526,8 +590,11 @@ function populatePlayerSheetUI(myChar) {
                 if (b.name === item.name) ownedQty += (b.qty || 1);
             });
             const ownedText = ownedQty > 0 ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px; font-weight:bold;">Nello Zaino: x${ownedQty}</span>` : "";
-
-            li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${item.cost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 12px 0; line-height:1.4;">${item.desc || "Nessuna descrizione."}</p>${ownedText}</div>`;
+            
+            const itemCost = getCompendioCost(item);
+            const itemDesc = getCompendioDescription(item);
+    
+            li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${itemCost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 12px 0; line-height:1.4;">${itemDesc}</p>${ownedText}</div>`;
             
             const btn = document.createElement('button');
             btn.style.padding = '8px'; btn.style.borderRadius = '4px'; btn.style.fontWeight = 'bold'; btn.style.width = '100%'; btn.style.border = 'none'; btn.style.marginTop = '10px';
@@ -536,22 +603,26 @@ function populatePlayerSheetUI(myChar) {
                 btn.innerText = 'Solo Visualizzazione'; btn.style.background = '#bdc3c7'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.disabled = true;
             } else {
                 btn.innerText = 'Acquista (Invia allo Zaino)'; btn.style.background = '#8e44ad'; btn.style.color = '#fff';
-                const canAfford = myChar.xp >= item.cost;
+                const canAfford = myChar.xp >= itemCost;
                 btn.style.cursor = canAfford ? 'pointer' : 'not-allowed'; btn.style.opacity = canAfford ? '1' : '0.5';
                 
                 if (canAfford) {
                     btn.onclick = () => { 
-                        if (confirm(`Vuoi spendere ${item.cost} € per acquistare "${item.name}"?`)) {
+                        if (confirm(`Vuoi spendere ${itemCost} € per acquistare "${item.name}"?`)) {
                             // 1. Deducce il costo (invia importo negativo all'aggiornamento soldi/XP)
-                            socket.emit('update_xp', { char_id: myChar.id, amount: -item.cost });
+                            socket.emit('update_xp', { char_id: myChar.id, amount: -itemCost });
                             
                             // 2. Aggiunge l'oggetto direttamente nello zaino
                             const bp = myChar.backpack || [];
-                            const existingIndex = bp.findIndex(b => b.name === item.name);
+                            const existingIndex = bp.findIndex(
+                                b =>
+                                    b.compendium_id === item.id ||
+                                    (!b.compendium_id && b.name === item.name)
+                            );
                             if (existingIndex !== -1) {
                                 bp[existingIndex].qty = (bp[existingIndex].qty || 1) + 1;
                             } else {
-                                bp.push({ name: item.name, desc: item.desc, qty: 1, img: item.img || "" });
+                                bp.push({ compendium_id: item.id, name: item.name, desc: item.desc, qty: 1, img: item.img || "" });
                             }
                             socket.emit('update_character_sheet', { char_id: myChar.id, backpack: bp });
                         }
@@ -664,46 +735,6 @@ document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
     
     if (editSheetModal) editSheetModal.style.display = 'none';
 });
-// ==========================================
-// SALVATAGGIO SCHEDA
-// ==========================================
-document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
-    if (!selectedCharacterId) return;
-    
-    const statsLines = document.getElementById('edit-stats').value.split('\n').filter(l => l.trim() !== '');
-    const statsObj = {};
-    statsLines.forEach(line => {
-        const parts = line.split(':');
-        if (parts.length >= 2) statsObj[parts.shift().trim()] = parts.join(':').trim();
-    });
-    
-    const parseList = (id) => document.getElementById(id).value.split('\n').map(s => s.trim()).filter(s => s !== '');
-    
-    // Recupera la foto e la lore dai campi appena inseriti
-    const photoUrl = document.getElementById('edit-photo-url') ? document.getElementById('edit-photo-url').value.trim() : "";
-    const loreText = document.getElementById('edit-lore') ? document.getElementById('edit-lore').value.trim() : "";
-
-    // Invia tutto al server
-    socket.emit('update_character_sheet', { 
-        char_id: selectedCharacterId, 
-        photo_url: photoUrl,
-        lore: loreText,
-        stats: statsObj, 
-        weapons: parseList('edit-weapons'), 
-        skills: parseList('edit-skills'), 
-        backpack: parseList('edit-backpack'), 
-        shop: [] 
-    });
-    
-    editSheetModal.style.display = 'none';
-});
-
-document.getElementById('close-modal')?.addEventListener('click', () => { sheetModal.style.display = 'none'; });
-document.getElementById('close-edit-modal')?.addEventListener('click', () => { editSheetModal.style.display = 'none'; });
-window.addEventListener('click', (event) => {
-    if (event.target === sheetModal) sheetModal.style.display = 'none';
-    if (event.target === editSheetModal) editSheetModal.style.display = 'none';
-});
 
 // ==========================================
 // CHAT E DADI
@@ -784,69 +815,385 @@ document.getElementById('custom-dice')?.addEventListener('keypress', (e) => {
 // ==========================================
 // COMPENDIO SHOP (LOGICA)
 // ==========================================
-let globalCompendio = {};
-let currentShopTab = 'Armature'; 
-let currentBrandSubTab = 'Tutti'; // Di default mostra tutto
-let currentArmorType = 'Tutti';   // NUOVO: Filtro parte del corpo
+let globalCompendio = {
+    items: [],
+    indexes: {}
+};
 
-const allBrands = ['Tutti', 'Sfygaa', 'Umbryll', 'Crappterra', 'MEDMAD', 'Torbtech', 'Mesmer'];
-const armorTypes = ['Tutti', 'Elmo', 'Spalla', 'Pettorali', 'Schiena', 'Avambraccio', 'Guanti', 'Cintura', 'Gambe', 'Stivali'];
+let currentShopTab = 'Gadget';
+let currentBrandSubTab = 'Tutti';
+let currentArmorType = 'Tutti';
 
-// Popolamento dinamico delle categorie Master all'arrivo dei dati
+const armorTypes = [
+    'Tutti',
+    'Elmo',
+    'Spalla',
+    'Pettorali',
+    'Schiena',
+    'Avambraccio',
+    'Guanti',
+    'Cintura',
+    'Gambe',
+    'Stivali'
+];
+
+function getCompendioItems() {
+    return Array.isArray(globalCompendio?.items)
+        ? globalCompendio.items
+        : [];
+}
+
+function getAllBrands() {
+    const brands = globalCompendio?.indexes?.brands;
+
+    if (Array.isArray(brands)) {
+        return ['Tutti', ...brands];
+    }
+
+    return [
+        'Tutti',
+        ...new Set(
+            getCompendioItems()
+                .map(item => item.brand)
+                .filter(Boolean)
+        )
+    ];
+}
+
+function getShopGroup(item) {
+    const cls = item?.class || '';
+
+    if (
+        cls === 'Kit' ||
+        cls === 'Munizione / consumabile'
+    ) {
+        return 'Oggettistica';
+    }
+
+    if (cls === 'Armatura') {
+        return 'Armature';
+    }
+
+    // Centralina, Gadget, Interfaccia,
+    // Caricatore, Connettore, Contenitore...
+    return 'Gadget';
+}
+
+function getCompendioDescription(item) {
+    return (
+        item?.text?.original_rules ||
+        item?.text?.effect_summary ||
+        item?.text?.description ||
+        'Nessuna descrizione.'
+    );
+}
+
+function getCompendioCost(item) {
+    return Number(item?.equipment?.cost_eur || 0);
+}
+
+function findCompendioItem(inventoryItem) {
+    if (!inventoryItem) return null;
+
+    const items = getCompendioItems();
+
+    // Metodo nuovo e affidabile
+    if (inventoryItem.compendium_id) {
+        const found = items.find(
+            item => item.id === inventoryItem.compendium_id
+        );
+
+        if (found) return found;
+    }
+
+    // Compatibilità con vecchi salvataggi
+    return items.find(
+        item => item.name === inventoryItem.name
+    ) || null;
+}
+
+function getAllowedSlots(inventoryItem) {
+    const compItem = findCompendioItem(inventoryItem);
+
+    if (!compItem) return [];
+
+    return compItem?.equipment?.slot?.allowed_slots || [];
+}
+
+
 socket.on('compendio_data', (data) => {
-    globalCompendio = data || {};
-    
-    // Aggiorna la tendina del Master con le nuove categorie
+    globalCompendio = data || {
+        items: [],
+        indexes: {}
+    };
+
+    // Tendina Master: categorie reali del database
     const catSelect = document.getElementById('compendio-category');
+
     if (catSelect) {
-        catSelect.innerHTML = '<option value="">-- Seleziona Categoria --</option>';
-        Object.keys(globalCompendio).forEach(key => {
-            catSelect.innerHTML += `<option value="${key}">${key}</option>`;
+        catSelect.innerHTML =
+            '<option value="">-- Seleziona Categoria --</option>';
+
+        const classes =
+            globalCompendio?.indexes?.classes ||
+            [...new Set(
+                getCompendioItems()
+                    .map(item => item.class)
+                    .filter(Boolean)
+            )];
+
+        classes.forEach(category => {
+            const option = document.createElement('option');
+
+            option.value = category;
+            option.textContent = category;
+
+            catSelect.appendChild(option);
         });
     }
 
     const currentViewedId = parseInt(userSelect?.value);
-    if (sheetModal && sheetModal.style.display === 'flex' && !isNaN(currentViewedId)) {
-        const char = characters.find(c => c.id === currentViewedId);
+
+    if (
+        sheetModal &&
+        sheetModal.style.display === 'flex' &&
+        !isNaN(currentViewedId)
+    ) {
+        const char = characters.find(
+            c => c.id === currentViewedId
+        );
+
         if (char) populatePlayerSheetUI(char);
     }
 });
-
 // Aggiunta manuale dallo Shop Master allo Zaino del Giocatore
-document.getElementById('compendio-category')?.addEventListener('change', (event) => {
-    const cat = event.target.value;
-    const listContainer = document.getElementById('compendio-list');
-    listContainer.innerHTML = '';
-    if (!cat || !globalCompendio[cat]) {
-        listContainer.innerHTML = `<em style="color:#777; font-size:13px; text-align:center; padding:10px;">Seleziona una categoria valida.</em>`;
-        return;
-    }
-    globalCompendio[cat].forEach(item => {
-        const row = document.createElement('div');
-        row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems = 'center'; row.style.padding = '5px'; row.style.borderBottom = '1px solid #eee'; row.style.fontSize = '13px';
-        row.innerHTML = `<div><strong>${item.name}</strong> (${item.cost} €)<br><span style="color:#666; font-size:11px;">${item.desc || ''}</span></div>`;
-        const addBtn = document.createElement('button');
-        addBtn.innerText = '+ Metti in Zaino'; addBtn.style.background = '#27ae60'; addBtn.style.color = 'white'; addBtn.style.border = 'none'; addBtn.style.padding = '4px 8px'; addBtn.style.borderRadius = '3px'; addBtn.style.cursor = 'pointer'; addBtn.style.fontWeight = 'bold';
-        
-        addBtn.onclick = () => {
-            if (!selectedCharacterId) { alert("Seleziona prima un personaggio sulla mappa."); return; }
-            const char = characters.find(c => c.id === selectedCharacterId);
-            if (char) {
-                const bp = char.backpack || [];
-                const existingIndex = bp.findIndex(b => b.name === item.name);
-                if (existingIndex !== -1) {
-                    bp[existingIndex].qty = (bp[existingIndex].qty || 1) + 1;
-                } else {
-                    bp.push({ name: item.name, desc: item.desc, qty: 1, img: item.img || "" });
+document.getElementById('compendio-category')?.addEventListener(
+    'change',
+    (event) => {
+
+        const category = event.target.value;
+
+        const listContainer =
+            document.getElementById('compendio-list');
+
+        if (!listContainer) return;
+
+        listContainer.innerHTML = '';
+
+        if (!category) {
+            listContainer.innerHTML = `
+                <em style="
+                    color:#777;
+                    font-size:13px;
+                    text-align:center;
+                    padding:10px;
+                ">
+                    Seleziona una categoria valida.
+                </em>
+            `;
+            return;
+        }
+
+
+        // ==========================================
+        // FILTRA DAL NUOVO COMPENDIO
+        // ==========================================
+
+        const items = getCompendioItems()
+            .filter(item => item.class === category);
+
+
+        if (items.length === 0) {
+            listContainer.innerHTML = `
+                <em style="color:#777;">
+                    Nessun oggetto in questa categoria.
+                </em>
+            `;
+            return;
+        }
+
+
+        // ==========================================
+        // CREA LE RIGHE
+        // ==========================================
+
+        items.forEach(item => {
+
+            const row =
+                document.createElement('div');
+
+            row.style.display = 'flex';
+            row.style.justifyContent = 'space-between';
+            row.style.alignItems = 'center';
+            row.style.padding = '7px';
+            row.style.borderBottom =
+                '1px solid #eee';
+            row.style.fontSize = '13px';
+            row.style.gap = '10px';
+
+
+            const cost =
+                getCompendioCost(item);
+
+            const description =
+                getCompendioDescription(item);
+
+
+            row.innerHTML = `
+                <div style="flex:1;">
+                    <strong>
+                        ${item.name}
+                    </strong>
+
+                    <span style="
+                        color:#8e44ad;
+                        font-weight:bold;
+                    ">
+                        (${cost} €)
+                    </span>
+
+                    <br>
+
+                    <span style="
+                        color:#666;
+                        font-size:11px;
+                    ">
+                        ${description}
+                    </span>
+                </div>
+            `;
+
+
+            // ==========================================
+            // BOTTONE MASTER
+            // ==========================================
+
+            const addBtn =
+                document.createElement('button');
+
+            addBtn.innerText =
+                '+ Metti in Zaino';
+
+            addBtn.style.background =
+                '#27ae60';
+
+            addBtn.style.color =
+                'white';
+
+            addBtn.style.border =
+                'none';
+
+            addBtn.style.padding =
+                '4px 8px';
+
+            addBtn.style.borderRadius =
+                '3px';
+
+            addBtn.style.cursor =
+                'pointer';
+
+            addBtn.style.fontWeight =
+                'bold';
+
+
+            addBtn.onclick = () => {
+
+                if (!selectedCharacterId) {
+                    alert(
+                        "Seleziona prima un personaggio sulla mappa."
+                    );
+                    return;
                 }
-                socket.emit('update_character_sheet', { char_id: selectedCharacterId, backpack: bp });
-                addBtn.innerText = 'Aggiunto ✓'; addBtn.style.background = '#7f8c8d'; addBtn.disabled = true;
-            }
-        };
-        row.appendChild(addBtn);
-        listContainer.appendChild(row);
-    });
-});
+
+                const char = characters.find(
+                    c => c.id === selectedCharacterId
+                );
+
+                if (!char) return;
+
+
+                const backpack =
+                    char.backpack || [];
+
+
+                const existingIndex =
+                    backpack.findIndex(b => {
+
+                        if (typeof b === 'string') {
+                            return b === item.name;
+                        }
+
+                        return (
+                            b.compendium_id === item.id ||
+                            (
+                                !b.compendium_id &&
+                                b.name === item.name
+                            )
+                        );
+                    });
+
+
+                if (existingIndex !== -1) {
+
+                    if (
+                        typeof backpack[existingIndex]
+                        === 'string'
+                    ) {
+
+                        backpack[existingIndex] = {
+                            compendium_id: item.id,
+                            name: item.name,
+                            desc: description,
+                            qty: 2
+                        };
+
+                    } else {
+
+                        backpack[existingIndex].qty =
+                            (
+                                backpack[existingIndex].qty ||
+                                1
+                            ) + 1;
+                    }
+
+                } else {
+
+                    backpack.push({
+                        compendium_id: item.id,
+                        name: item.name,
+                        desc: description,
+                        qty: 1
+                    });
+                }
+
+
+                socket.emit(
+                    'update_character_sheet',
+                    {
+                        char_id:
+                            selectedCharacterId,
+
+                        backpack:
+                            backpack
+                    }
+                );
+
+
+                addBtn.innerText =
+                    'Aggiunto ✓';
+
+                addBtn.style.background =
+                    '#7f8c8d';
+
+                addBtn.disabled = true;
+            };
+
+
+            row.appendChild(addBtn);
+            listContainer.appendChild(row);
+        });
+    }
+);
 
 updateChatStatus();
 updateSheetButton();
@@ -1180,64 +1527,245 @@ if (actionHeader && actionPanel) {
 // ==========================================
 // HUD EQUIPAGGIAMENTO
 // ==========================================
+
+// ==========================================
+// HELPERS DATI EQUIPAGGIAMENTO V2
+// ==========================================
+
+function getEquippedCompendiumItem(itemData) {
+    if (!itemData) return null;
+
+    return findCompendioItem({
+        compendium_id: itemData.compendium_id || null,
+        name: itemData.name
+    });
+}
+
+
+function formatEquipmentDamage(compItem) {
+    const formula = compItem?.combat?.damage?.formula;
+
+    if (!formula) return null;
+
+    return String(formula);
+}
+
+
+function formatEquipmentSpeed(compItem) {
+    if (!compItem) return null;
+
+    return (
+        compItem?.activation?.speed?.effect_or_action ??
+        compItem?.activation?.speed?.activation ??
+        null
+    );
+}
+
+
+function formatEquipmentRange(compItem) {
+    const range = compItem?.combat?.range?.max_m;
+
+    if (range === null || range === undefined || range === '') {
+        return null;
+    }
+
+    return `${range} m`;
+}
+
+
+function buildEquipmentTooltip(itemData) {
+    const compItem = getEquippedCompendiumItem(itemData);
+
+    if (!compItem) {
+        return itemData.desc || "Nessuna descrizione.";
+    }
+
+    const rows = [];
+
+    const slot = compItem?.equipment?.slot?.raw;
+    const weight = compItem?.equipment?.weight;
+    const harmonization = compItem?.equipment?.harmonization;
+    const hp = compItem?.equipment?.hp;
+
+    const speed = formatEquipmentSpeed(compItem);
+    const range = formatEquipmentRange(compItem);
+    const damage = formatEquipmentDamage(compItem);
+
+    if (slot) {
+        rows.push(`<b>Slot:</b> ${slot}`);
+    }
+
+    if (weight !== null && weight !== undefined) {
+        rows.push(`<b>Peso:</b> ${weight}`);
+    }
+
+    if (harmonization !== null && harmonization !== undefined) {
+        rows.push(`<b>Armonizzazione:</b> ${harmonization}`);
+    }
+
+    if (hp !== null && hp !== undefined) {
+        rows.push(`<b>Vita:</b> ${hp}`);
+    }
+
+    if (speed !== null && speed !== undefined) {
+        rows.push(`<b>Velocità:</b> ${speed}`);
+    }
+
+    if (range) {
+        rows.push(`<b>Range:</b> ${range}`);
+    }
+
+    if (damage) {
+        rows.push(`<b>Danno:</b> ${damage}`);
+    }
+
+    const requirements =
+        compItem?.requirements?.items || [];
+
+    if (requirements.length > 0) {
+        rows.push(
+            `<b>Requisiti:</b> ${requirements.join(', ')}`
+        );
+    }
+
+    const rules =
+        compItem?.text?.original_rules ||
+        compItem?.text?.effect_summary ||
+        compItem?.text?.description;
+
+    if (rules) {
+        rows.push(
+            `<div style="margin-top:6px;">${rules}</div>`
+        );
+    }
+
+    return rows.join('<br>');
+}
+
 window.updateEquippedPanel = function(char) {
     const panel = document.getElementById('equipped-panel');
     if (!panel) return;
 
-    if (!char || (typeof isMaster !== 'undefined' && isMaster && char.id !== selectedCharacterId)) {
+    // Il Master vede il pannello solo del personaggio selezionato
+    if (
+        !char ||
+        (
+            typeof isMaster !== 'undefined' &&
+            isMaster &&
+            char.id !== selectedCharacterId
+        )
+    ) {
         panel.style.display = 'none';
         return;
     }
+
     panel.style.display = 'block';
 
     const equipped = char.stats?.equipped || {};
-    
-    // Lista completa delle chiavi di equipaggiamento
+
+    // ==========================================
+    // SLOT DISPONIBILI
+    // ==========================================
+
     const slotKeys = [
         'visore',
         'elmo',
         'schiena',
+
         'spalla_dx',
         'petto',
         'spalla_sx',
+
         'avambr_dx',
         'cintura',
         'avambr_sx',
+
         'guanto_dx',
         'gambe',
         'guanto_sx',
+
         'mano_dx',
         'mano_sx',
+
         'stivale_dx',
         'stivale_sx'
     ];
-    // Testi in filigrana per gli slot vuoti
+
+
+    // ==========================================
+    // TESTO SLOT VUOTI
+    // ==========================================
+
     const defaultSlotText = {
-        'visore': 'VISORE', 'elmo': 'ELMO', 'schiena': 'SCHIENA', 
-        'spalla_dx': 'SPALLA DX', 'petto': 'PETTO', 'spalla_sx': 'SPALLA SX', 
-        'avambr_dx': 'AVAMBR. DX', 'cintura': 'CINTURA', 'avambr_sx': 'AVAMBR. SX', 
-        'guanto_dx': 'GUANTO DX', 'gambe': 'GAMBE', 'guanto_sx': 'GUANTO SX', 'mano_dx': 'ARMA DX', 
-        'mano_sx': 'ARMA SX', 'stivale_dx': 'STIVALE DX', 'stivale_sx': 'STIVALE SX'
+        visore: 'VISORE',
+        elmo: 'ELMO',
+        schiena: 'SCHIENA',
+
+        spalla_dx: 'SPALLA DX',
+        petto: 'PETTO',
+        spalla_sx: 'SPALLA SX',
+
+        avambr_dx: 'AVAMBR. DX',
+        cintura: 'CINTURA',
+        avambr_sx: 'AVAMBR. SX',
+
+        guanto_dx: 'GUANTO DX',
+        gambe: 'GAMBE',
+        guanto_sx: 'GUANTO SX',
+
+        mano_dx: 'ARMA DX',
+        mano_sx: 'ARMA SX',
+
+        stivale_dx: 'STIVALE DX',
+        stivale_sx: 'STIVALE SX'
     };
 
-    // Emoji Placeholder
+
+    // ==========================================
+    // EMOJI FALLBACK
+    // ==========================================
+
     const slotEmojis = {
-        'visore': '🥽', 'elmo': '🪖', 'schiena': '🎒', 
-        'spalla_dx': '🦾', 'petto': '🦺', 'spalla_sx': '🦾', 
-        'avambr_dx': '🛡️', 'cintura': '🥋', 'avambr_sx': '🛡️', 
-        'guanto_dx': '🧤', 'mano_dx': '🗡️', 
-        'gambe': '👖', 'guanto_sx': '🧤', 'mano_sx': '🗡️', 'stivale_dx': '🥾', 'stivale_sx': '🥾'
+        visore: '🥽',
+        elmo: '🪖',
+        schiena: '🎒',
+
+        spalla_dx: '🦾',
+        petto: '🦺',
+        spalla_sx: '🦾',
+
+        avambr_dx: '🛡️',
+        cintura: '🥋',
+        avambr_sx: '🛡️',
+
+        guanto_dx: '🧤',
+        gambe: '👖',
+        guanto_sx: '🧤',
+
+        mano_dx: '🗡️',
+        mano_sx: '🗡️',
+
+        stivale_dx: '🥾',
+        stivale_sx: '🥾'
     };
 
-    // Compatibilità con i vecchi salvataggi.
-    // I vecchi "guanti" vengono visualizzati come guanto destro.
-    // I vecchi "stivali" vengono visualizzati come stivale destro.
+
+    // ==========================================
+    // RETROCOMPATIBILITÀ VECCHI SALVATAGGI
+    // ==========================================
+
     const legacySlotAliases = {
         guanto_dx: 'guanti',
         stivale_dx: 'stivali'
     };
 
+
+    // ==========================================
+    // CICLO SLOT
+    // ==========================================
+
     slotKeys.forEach(key => {
+
         const el = document.getElementById(`slot-${key}`);
         if (!el) return;
 
@@ -1245,193 +1773,1031 @@ window.updateEquippedPanel = function(char) {
 
         const actualSlotKey = equipped[key]
             ? key
-            : (legacyKey && equipped[legacyKey] ? legacyKey : key);
+            : (
+                legacyKey && equipped[legacyKey]
+                    ? legacyKey
+                    : key
+            );
 
         const itemData = equipped[actualSlotKey];
+
         const nameEl = el.querySelector('.doll-name');
         const iconEl = el.querySelector('.doll-icon');
-        
+
+        if (!nameEl || !iconEl) return;
+
+
+        // ==========================================
+        // SLOT OCCUPATO
+        // ==========================================
+
         if (itemData) {
-            nameEl.innerText = itemData.name;
+
+            nameEl.innerText = itemData.name || 'Oggetto';
             nameEl.style.color = '#f1c40f';
+
             el.classList.add('filled');
-            
+
+
+            // ==========================================
+            // CERCA DATI NEL NUOVO COMPENDIO
+            // ==========================================
+
+            const compItem = typeof findCompendioItem === 'function'
+                ? findCompendioItem({
+                    compendium_id: itemData.compendium_id || null,
+                    name: itemData.name
+                })
+                : null;
+
+
+            // ==========================================
+            // DATI STRUTTURATI
+            // ==========================================
+
+            const damage =
+                compItem?.combat?.damage?.formula ?? null;
+
+            const activationSpeed =
+                compItem?.activation?.speed?.effect_or_action ??
+                compItem?.activation?.speed?.activation ??
+                null;
+
+            const range =
+                compItem?.combat?.range?.max_m ?? null;
+
+            const equipmentHp =
+                compItem?.equipment?.hp ?? null;
+
+
+            // ==========================================
+            // DURABILITÀ
+            // ==========================================
+
+            const maxHp =
+                itemData.durability_max ??
+                equipmentHp ??
+                null;
+
+            const currentHp =
+                itemData.durability_current ??
+                maxHp;
+
+
+            // ==========================================
+            // OVERLAY ICONA
+            // ==========================================
+
             let overlayHtml = '';
-            
-            // Estrazione Danno (Armi)
-            const dmgMatch = itemData.desc.match(/Danno:\s*(\d+)/i);
-            if (dmgMatch) {
-                overlayHtml += `<div style="position:absolute; top:2px; right:2px; background:#c0392b; color:white; font-size:9px; padding:1px 3px; border-radius:3px; font-weight:bold; box-shadow:0 0 2px #000; z-index:5;">⚔️ ${dmgMatch[1]}</div>`;
+
+
+            // DANNO
+            if (
+                damage !== null &&
+                damage !== undefined &&
+                String(damage).trim() !== ''
+            ) {
+
+                overlayHtml += `
+                    <div style="
+                        position:absolute;
+                        top:2px;
+                        right:2px;
+                        max-width:90%;
+                        background:#c0392b;
+                        color:white;
+                        font-size:9px;
+                        padding:1px 3px;
+                        border-radius:3px;
+                        font-weight:bold;
+                        box-shadow:0 0 2px #000;
+                        z-index:5;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                        white-space:nowrap;
+                    ">
+                        ⚔️ ${damage}
+                    </div>
+                `;
             }
-            
-            // Estrazione HP e Barra Vita (Armature)
-            const hpMatch = itemData.desc.match(/HP:\s*(\d+)(?:\/(\d+))?/i);
-            if (hpMatch) {
-                let curHp = parseInt(hpMatch[1]);
-                let maxHp = hpMatch[2] ? parseInt(hpMatch[2]) : curHp;
-                if (maxHp < curHp) maxHp = curHp; // Sicurezza per evitare barre oltre il 100%
 
-                let hpPercent = (curHp / maxHp) * 100;
-                let barColor = '#2ecc71'; // Verde
-                if (hpPercent <= 25) barColor = '#e74c3c'; // Rosso
-                else if (hpPercent <= 50) barColor = '#f39c12'; // Arancione
 
-                // Testo HP
-                overlayHtml += `<div style="position:absolute; bottom:10px; left:2px; background:#2980b9; color:white; font-size:9px; padding:1px 3px; border-radius:3px; font-weight:bold; box-shadow:0 0 2px #000; z-index:5;">🛡️ ${curHp}/${maxHp}</div>`;
+            // HP / DURABILITÀ
+            if (
+                maxHp !== null &&
+                maxHp !== undefined &&
+                Number(maxHp) > 0
+            ) {
 
-                // Barra di avanzamento
-                overlayHtml += `<div style="position:absolute; bottom:2px; left:2px; right:2px; height:4px; background:rgba(0,0,0,0.5); border-radius:2px; overflow:hidden; z-index:5;">
-                                    <div style="width:${hpPercent}%; height:100%; background:${barColor}; transition:width 0.3s ease;"></div>
-                                </div>`;
+                const safeMaxHp = Number(maxHp);
+
+                const safeCurrentHp = Math.max(
+                    0,
+                    Math.min(
+                        Number(currentHp ?? safeMaxHp),
+                        safeMaxHp
+                    )
+                );
+
+                const hpPercent =
+                    (safeCurrentHp / safeMaxHp) * 100;
+
+                let barColor = '#2ecc71';
+
+                if (hpPercent <= 25) {
+                    barColor = '#e74c3c';
+                } else if (hpPercent <= 50) {
+                    barColor = '#f39c12';
+                }
+
+                overlayHtml += `
+                    <div style="
+                        position:absolute;
+                        bottom:10px;
+                        left:2px;
+                        background:#2980b9;
+                        color:white;
+                        font-size:9px;
+                        padding:1px 3px;
+                        border-radius:3px;
+                        font-weight:bold;
+                        box-shadow:0 0 2px #000;
+                        z-index:5;
+                    ">
+                        🛡️ ${safeCurrentHp}/${safeMaxHp}
+                    </div>
+
+                    <div style="
+                        position:absolute;
+                        bottom:2px;
+                        left:2px;
+                        right:2px;
+                        height:4px;
+                        background:rgba(0,0,0,0.5);
+                        border-radius:2px;
+                        overflow:hidden;
+                        z-index:5;
+                    ">
+                        <div style="
+                            width:${hpPercent}%;
+                            height:100%;
+                            background:${barColor};
+                            transition:width 0.3s ease;
+                        "></div>
+                    </div>
+                `;
             }
+
+
+            // ==========================================
+            // IMMAGINE / EMOJI
+            // ==========================================
 
             if (itemData.img) {
-                iconEl.style.backgroundImage = `url('${itemData.img}')`;
+
+                iconEl.style.backgroundImage =
+                    `url('${itemData.img}')`;
+
+                iconEl.style.backgroundSize = 'contain';
+                iconEl.style.backgroundRepeat = 'no-repeat';
+                iconEl.style.backgroundPosition = 'center';
+
                 iconEl.innerHTML = overlayHtml;
+
             } else {
+
                 iconEl.style.backgroundImage = 'none';
-                let fallbackEmoji = slotEmojis[key] || '📦';
-                iconEl.innerHTML = overlayHtml + `<span style="font-size: 22px; opacity: 0.9; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); margin-bottom: 5px;">${fallbackEmoji}</span>`;
+
+                const fallbackEmoji =
+                    slotEmojis[key] || '📦';
+
+                iconEl.innerHTML = `
+                    ${overlayHtml}
+
+                    <span style="
+                        font-size:22px;
+                        opacity:0.9;
+                        filter:drop-shadow(
+                            0px 2px 2px rgba(0,0,0,0.8)
+                        );
+                        margin-bottom:5px;
+                    ">
+                        ${fallbackEmoji}
+                    </span>
+                `;
             }
+
+
+            // ==========================================
+            // TOOLTIP STRUTTURATO
+            // ==========================================
+
+            let tooltipHtml = '';
+
+            if (compItem) {
+
+                const tooltipRows = [];
+
+                const slot =
+                    compItem?.equipment?.slot?.raw;
+
+                const weight =
+                    compItem?.equipment?.weight;
+
+                const harmonization =
+                    compItem?.equipment?.harmonization;
+
+                const requirements =
+                    compItem?.requirements?.items || [];
+
+
+                if (slot) {
+                    tooltipRows.push(
+                        `<b>Slot:</b> ${slot}`
+                    );
+                }
+
+
+                if (
+                    weight !== null &&
+                    weight !== undefined
+                ) {
+                    tooltipRows.push(
+                        `<b>Peso:</b> ${weight}`
+                    );
+                }
+
+
+                if (
+                    harmonization !== null &&
+                    harmonization !== undefined
+                ) {
+                    tooltipRows.push(
+                        `<b>Armonizzazione:</b> ${harmonization}`
+                    );
+                }
+
+
+                if (
+                    maxHp !== null &&
+                    maxHp !== undefined
+                ) {
+                    tooltipRows.push(
+                        `<b>Vita:</b> ${currentHp}/${maxHp}`
+                    );
+                }
+
+
+                if (
+                    activationSpeed !== null &&
+                    activationSpeed !== undefined
+                ) {
+                    tooltipRows.push(
+                        `<b>Velocità:</b> ${activationSpeed}`
+                    );
+                }
+
+
+                if (
+                    range !== null &&
+                    range !== undefined
+                ) {
+                    tooltipRows.push(
+                        `<b>Range:</b> ${range} m`
+                    );
+                }
+
+
+                if (
+                    damage !== null &&
+                    damage !== undefined &&
+                    String(damage).trim() !== ''
+                ) {
+                    tooltipRows.push(
+                        `<b>Danno:</b> ${damage}`
+                    );
+                }
+
+
+                if (requirements.length > 0) {
+                    tooltipRows.push(
+                        `<b>Requisiti:</b> ${requirements.join(', ')}`
+                    );
+                }
+
+
+                const rules =
+                    compItem?.text?.original_rules ||
+                    compItem?.text?.effect_summary ||
+                    compItem?.text?.description;
+
+                if (rules) {
+                    tooltipRows.push(`
+                        <div style="
+                            margin-top:6px;
+                            border-top:1px solid #555;
+                            padding-top:6px;
+                        ">
+                            ${rules}
+                        </div>
+                    `);
+                }
+
+                tooltipHtml =
+                    tooltipRows.join('<br>');
+
+            } else {
+
+                // Fallback vecchi oggetti
+                tooltipHtml =
+                    itemData.desc ||
+                    'Nessuna descrizione.';
+            }
+
+
+            // Salviamo temporaneamente il tooltip sull'elemento
+            el.dataset.tooltipHtml = tooltipHtml;
+
+
         } else {
+
+            // ==========================================
+            // SLOT VUOTO
+            // ==========================================
+
             nameEl.innerText = 'Vuoto';
             nameEl.style.color = '#7f8c8d';
+
             el.classList.remove('filled');
+
             iconEl.style.backgroundImage = 'none';
-            iconEl.innerHTML = `<span style="font-size: 10px; font-weight: bold; letter-spacing: 1px; color: rgba(52, 152, 219, 0.4); text-transform: uppercase;">${defaultSlotText[key]}</span>`;
+
+            iconEl.innerHTML = `
+                <span style="
+                    font-size:10px;
+                    font-weight:bold;
+                    letter-spacing:1px;
+                    color:rgba(52,152,219,0.4);
+                    text-transform:uppercase;
+                ">
+                    ${defaultSlotText[key]}
+                </span>
+            `;
+
+            el.dataset.tooltipHtml = '';
         }
 
+
+        // ==========================================
+        // RICREA ELEMENTO
+        // per evitare listener duplicati
+        // ==========================================
+
         const newEl = el.cloneNode(true);
-        el.parentNode.replaceChild(newEl, el);
 
-        newEl.addEventListener('mouseenter', (e) => {
-            if (!itemData) return; 
-            const tt = document.getElementById('equip-tooltip');
-            document.getElementById('tt-name').innerText = itemData.name;
-            document.getElementById('tt-desc').innerHTML = itemData.desc; 
-            tt.style.display = 'block';
-            tt.style.left = (e.pageX + 15) + 'px';
-            tt.style.top = (e.pageY - 15) + 'px';
-        });
-        newEl.addEventListener('mousemove', (e) => {
-            if (!itemData) return;
-            document.getElementById('equip-tooltip').style.left = (e.pageX + 15) + 'px';
-            document.getElementById('equip-tooltip').style.top = (e.pageY - 15) + 'px';
-        });
-       newEl.addEventListener('mouseleave', () => {
-            document.getElementById('equip-tooltip').style.display = 'none';
-        });
+        el.parentNode.replaceChild(
+            newEl,
+            el
+        );
 
-        newEl.addEventListener('click', () => {
-            if (itemData) {``
-                if (confirm(`Vuoi rimettere "${itemData.name}" nello zaino?`)) {
-                    document.getElementById('equip-tooltip').style.display = 'none';
-                    window.unequipFromSlot(char.id, actualSlotKey);
+
+        // ==========================================
+        // TOOLTIP
+        // ==========================================
+
+        newEl.addEventListener(
+            'mouseenter',
+            (e) => {
+
+                if (!itemData) return;
+
+                const tt =
+                    document.getElementById(
+                        'equip-tooltip'
+                    );
+
+                if (!tt) return;
+
+                const ttName =
+                    document.getElementById(
+                        'tt-name'
+                    );
+
+                const ttDesc =
+                    document.getElementById(
+                        'tt-desc'
+                    );
+
+                if (ttName) {
+                    ttName.innerText =
+                        itemData.name || 'Oggetto';
+                }
+
+                if (ttDesc) {
+                    ttDesc.innerHTML =
+                        newEl.dataset.tooltipHtml ||
+                        itemData.desc ||
+                        '';
+                }
+
+                tt.style.display = 'block';
+
+                tt.style.left =
+                    (e.pageX + 15) + 'px';
+
+                tt.style.top =
+                    (e.pageY - 15) + 'px';
+            }
+        );
+
+
+        newEl.addEventListener(
+            'mousemove',
+            (e) => {
+
+                if (!itemData) return;
+
+                const tt =
+                    document.getElementById(
+                        'equip-tooltip'
+                    );
+
+                if (!tt) return;
+
+                tt.style.left =
+                    (e.pageX + 15) + 'px';
+
+                tt.style.top =
+                    (e.pageY - 15) + 'px';
+            }
+        );
+
+
+        newEl.addEventListener(
+            'mouseleave',
+            () => {
+
+                const tt =
+                    document.getElementById(
+                        'equip-tooltip'
+                    );
+
+                if (tt) {
+                    tt.style.display = 'none';
                 }
             }
-        });
+        );
+
+
+        // ==========================================
+        // CLICK = DISEQUIPAGGIA
+        // ==========================================
+
+        newEl.addEventListener(
+            'click',
+            () => {
+
+                if (!itemData) return;
+
+                if (
+                    confirm(
+                        `Vuoi rimettere "${itemData.name}" nello zaino?`
+                    )
+                ) {
+
+                    const tt =
+                        document.getElementById(
+                            'equip-tooltip'
+                        );
+
+                    if (tt) {
+                        tt.style.display = 'none';
+                    }
+
+                    window.unequipFromSlot(
+                        char.id,
+                        actualSlotKey
+                    );
+                }
+            }
+        );
+
     });
 };
-window.equipItem = function(charId, itemName, itemDesc, slot, itemType = 'backpack') {
+
+// ==========================================
+// HELPERS EQUIPAGGIAMENTO
+// ==========================================
+
+// Rimette nello zaino / armi un oggetto precedentemente equipaggiato.
+function returnEquippedItemToInventory(item, backpack, weapons) {
+    if (!item) return;
+
+    const cleanItem = {
+        compendium_id:
+            item.compendium_id || null,
+
+        name:
+            item.name,
+
+        desc:
+            item.desc || "Nessuna descrizione",
+
+        qty: 1,
+
+        img:
+            item.img || "",
+
+        durability_current:
+            item.durability_current ?? null,
+
+        durability_max:
+            item.durability_max ?? null
+    };
+
+    const originalType = item.original_type || 'backpack';
+
+    if (originalType === 'weapon') {
+
+        // Le armi sono elementi singoli, quindi ne reinseriamo una.
+        weapons.push({
+            compendium_id: cleanItem.compendium_id,
+            name: cleanItem.name,
+            desc: cleanItem.desc,
+            img: cleanItem.img
+        });
+
+    } else {
+
+        // Per lo zaino proviamo prima ad accorpare la quantità.
+        const existing = backpack.find(b => {
+            if (typeof b === 'string') {
+                return b === cleanItem.name;
+            }
+
+            if (
+                cleanItem.compendium_id &&
+                b.compendium_id
+            ) {
+                return b.compendium_id === cleanItem.compendium_id;
+            }
+
+            return b.name === cleanItem.name;
+        });
+
+        if (existing && typeof existing !== 'string') {
+            existing.qty = (existing.qty || 1) + 1;
+        } else {
+            backpack.push(cleanItem);
+        }
+    }
+}
+
+
+// Restituisce tutti gli slot occupati dalla stessa ISTANZA equipaggiata.
+function getLinkedEquippedSlots(equipped, slotKey) {
+    const item = equipped[slotKey];
+
+    if (!item) return [];
+
+    // Nuovo sistema x2
+    if (item.equip_group_id) {
+        return Object.keys(equipped).filter(key => {
+            return (
+                equipped[key] &&
+                equipped[key].equip_group_id === item.equip_group_id
+            );
+        });
+    }
+
+    // Vecchi salvataggi: consideriamo solo lo slot cliccato.
+    return [slotKey];
+}
+
+
+// Rimuove un oggetto equipaggiato.
+// Se occupa 2 slot, li libera entrambi e restituisce UNA sola copia.
+function removeEquippedInstance(equipped, slotKey, backpack, weapons) {
+    const item = equipped[slotKey];
+
+    if (!item) return;
+
+    const linkedSlots = getLinkedEquippedSlots(
+        equipped,
+        slotKey
+    );
+
+    returnEquippedItemToInventory(
+        item,
+        backpack,
+        weapons
+    );
+
+    linkedSlots.forEach(key => {
+        equipped[key] = null;
+    });
+}
+
+
+
+window.equipItem = function(
+    charId,
+    itemName,
+    itemDesc,
+    slot,
+    itemType = 'backpack',
+    compendiumId = null
+) {
     if (!slot) return;
+
     const char = characters.find(c => c.id === charId);
     if (!char) return;
 
     let stats = char.stats || {};
-    if (!stats.equipped) stats.equipped = {};
-    // Converte automaticamente i vecchi slot nel nuovo formato.
-    if (stats.equipped.guanti && !stats.equipped.guanto_dx) {
-        stats.equipped.guanto_dx = stats.equipped.guanti;
-        stats.equipped.guanti = null;
+
+    if (!stats.equipped) {
+        stats.equipped = {};
     }
 
-    if (stats.equipped.stivali && !stats.equipped.stivale_dx) {
-        stats.equipped.stivale_dx = stats.equipped.stivali;
-        stats.equipped.stivali = null;
+    const equipped = stats.equipped;
+
+    // ==========================================
+    // RETROCOMPATIBILITÀ VECCHI SLOT
+    // ==========================================
+
+    if (
+        equipped.guanti &&
+        !equipped.guanto_dx
+    ) {
+        equipped.guanto_dx = equipped.guanti;
+        equipped.guanti = null;
     }
 
-    let bp = char.backpack || [];
-    let wp = char.weapons || []; // Prende anche le armi
+    if (
+        equipped.stivali &&
+        !equipped.stivale_dx
+    ) {
+        equipped.stivale_dx = equipped.stivali;
+        equipped.stivali = null;
+    }
+
+
+    let backpack = char.backpack || [];
+    let weapons = char.weapons || [];
+
+
+    // ==========================================
+    // TROVA L'OGGETTO NEL NUOVO COMPENDIO
+    // ==========================================
+
+    const compItem = findCompendioItem({
+        compendium_id: compendiumId || null,
+        name: itemName
+    });
+
+    const slotInfo =
+        compItem?.equipment?.slot || null;
+
+    const allowedSlots =
+        slotInfo?.allowed_slots || [];
+
+    const occupancy =
+        slotInfo?.occupancy || 'one';
+
+
+    // ==========================================
+    // RIMUOVI MANUALMENTE
+    // ==========================================
 
     if (slot === 'rimuovi') {
-        for (let k in stats.equipped) {
-            if (stats.equipped[k] && stats.equipped[k].name === itemName) {
-                let oldItem = stats.equipped[k];
-                let oType = oldItem.original_type || 'backpack';
-                
-                if (oType === 'weapon') {
-                    const existingWp = wp.find(w => (w.name || w) === oldItem.name);
-                    if (!existingWp) wp.push({ name: oldItem.name, desc: oldItem.desc });
-                } else {
-                    const existingBp = bp.find(b => (b.name || b) === oldItem.name);
-                    if (existingBp) existingBp.qty = (existingBp.qty || 1) + 1;
-                    else bp.push(oldItem);
-                }
-                stats.equipped[k] = null;
-            }
-        }
-    } else {
-        // 1. Rimuovi l'oggetto dall'inventario corretto
-        let itemImg = "";
-        if (itemType === 'weapon') {
-            const wpIndex = wp.findIndex(w => (w.name || w) === itemName);
-            if (wpIndex !== -1) {
-                itemImg = wp[wpIndex].img || "";
-                wp.splice(wpIndex, 1);
-            }
-        } else {
-            const bpIndex = bp.findIndex(b => (b.name || b) === itemName);
-            if (bpIndex !== -1) {
-                itemImg = bp[bpIndex].img || "";
-                if (bp[bpIndex].qty > 1) bp[bpIndex].qty -= 1;
-                else bp.splice(bpIndex, 1);
-            }
-        }
 
-        // 2. Se c'è già un oggetto nello slot, rimettilo al suo posto d'origine
-        if (stats.equipped[slot]) {
-            const oldItem = stats.equipped[slot];
-            let oType = oldItem.original_type || 'backpack';
-            
-            if (oType === 'weapon') {
-                const existingWp = wp.find(w => (w.name || w) === oldItem.name);
-                if (!existingWp) wp.push({ name: oldItem.name, desc: oldItem.desc });
-            } else {
-                const existingBp = bp.find(b => (b.name || b) === oldItem.name);
-                if (existingBp) existingBp.qty = (existingBp.qty || 1) + 1;
-                else bp.push({ name: oldItem.name, desc: oldItem.desc, qty: oldItem.qty || 1, img: oldItem.img || "" });
-            }
-        }
+        const matchingSlots = Object.keys(equipped).filter(
+            key =>
+                equipped[key] &&
+                equipped[key].name === itemName
+        );
 
-        // 3. Equipaggia il nuovo oggetto memorizzando la sua natura
-        stats.equipped[slot] = { name: itemName, desc: itemDesc, qty: 1, img: itemImg, original_type: itemType };
+        const processedGroups = new Set();
+
+        matchingSlots.forEach(slotKey => {
+            const item = equipped[slotKey];
+
+            const groupKey =
+                item.equip_group_id ||
+                `legacy-${slotKey}`;
+
+            if (processedGroups.has(groupKey)) {
+                return;
+            }
+
+            processedGroups.add(groupKey);
+
+            removeEquippedInstance(
+                equipped,
+                slotKey,
+                backpack,
+                weapons
+            );
+        });
+
+        socket.emit('update_character_sheet', {
+            char_id: charId,
+            stats: stats,
+            backpack: backpack,
+            weapons: weapons
+        });
+
+        return;
     }
 
-    socket.emit('update_character_sheet', { char_id: charId, stats: stats, backpack: bp, weapons: wp });
+
+    // ==========================================
+    // DETERMINA GLI SLOT CHE DEVE OCCUPARE
+    // ==========================================
+
+    let targetSlots = [slot];
+
+    if (
+        compItem &&
+        allowedSlots.length > 0
+    ) {
+
+        // Evita equipaggiamenti in slot sbagliati.
+        if (!allowedSlots.includes(slot)) {
+            alert(
+                `"${itemName}" non può essere equipaggiato in questo slot.`
+            );
+            return;
+        }
+
+        // Esempio:
+        // x2 Stivali -> entrambi
+        // x2 Guanti  -> entrambi
+        if (
+            occupancy === 'all' &&
+            allowedSlots.length > 1
+        ) {
+            targetSlots = [...allowedSlots];
+        }
+    }
+
+
+    // ==========================================
+    // RECUPERA E RIMUOVE L'OGGETTO DALL'INVENTARIO
+    // ==========================================
+
+    let sourceItem = null;
+
+    if (itemType === 'weapon') {
+
+        const weaponIndex = weapons.findIndex(w => {
+            const name =
+                typeof w === 'string'
+                    ? w
+                    : w.name;
+
+            return name === itemName;
+        });
+
+        if (weaponIndex === -1) {
+            alert(`Arma "${itemName}" non trovata.`);
+            return;
+        }
+
+        const rawItem = weapons[weaponIndex];
+
+        sourceItem =
+            typeof rawItem === 'string'
+                ? {
+                    name: rawItem,
+                    desc: itemDesc
+                }
+                : { ...rawItem };
+
+        weapons.splice(
+            weaponIndex,
+            1
+        );
+
+    } else {
+
+        const backpackIndex = backpack.findIndex(b => {
+            if (typeof b === 'string') {
+                return b === itemName;
+            }
+
+            if (
+                compendiumId &&
+                b.compendium_id
+            ) {
+                return b.compendium_id === compendiumId;
+            }
+
+            return b.name === itemName;
+        });
+
+        if (backpackIndex === -1) {
+            alert(`Oggetto "${itemName}" non trovato nello zaino.`);
+            return;
+        }
+
+        const rawItem = backpack[backpackIndex];
+
+        sourceItem =
+            typeof rawItem === 'string'
+                ? {
+                    name: rawItem,
+                    desc: itemDesc,
+                    qty: 1
+                }
+                : { ...rawItem };
+
+        if (
+            typeof rawItem !== 'string' &&
+            (rawItem.qty || 1) > 1
+        ) {
+
+            rawItem.qty -= 1;
+
+        } else {
+
+            backpack.splice(
+                backpackIndex,
+                1
+            );
+        }
+    }
+
+
+    // ==========================================
+    // SE GLI SLOT SONO OCCUPATI,
+    // RIMETTE VIA GLI OGGETTI PRESENTI
+    // ==========================================
+
+    const alreadyRemovedGroups = new Set();
+
+    targetSlots.forEach(targetSlot => {
+
+        const oldItem =
+            equipped[targetSlot];
+
+        if (!oldItem) return;
+
+        const groupKey =
+            oldItem.equip_group_id ||
+            `legacy-${targetSlot}`;
+
+        if (alreadyRemovedGroups.has(groupKey)) {
+            return;
+        }
+
+        alreadyRemovedGroups.add(groupKey);
+
+        removeEquippedInstance(
+            equipped,
+            targetSlot,
+            backpack,
+            weapons
+        );
+    });
+
+
+    // ==========================================
+    // CREA ID UNICO PER L'ISTANZA EQUIPAGGIATA
+    // ==========================================
+
+    const equipGroupId =
+        typeof crypto !== 'undefined' &&
+        typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2)}`;
+
+
+    const effectiveCompendiumId =
+        compendiumId ||
+        sourceItem?.compendium_id ||
+        compItem?.id ||
+        null;
+
+
+    // ==========================================
+    // CREA L'OGGETTO EQUIPAGGIATO
+    // ==========================================
+
+    const equipmentMaxHp =
+    compItem?.equipment?.hp ?? null;
+    const equippedItem = {
+        compendium_id: effectiveCompendiumId,
+
+        name: itemName,
+
+        desc:
+            itemDesc ||
+            sourceItem?.desc ||
+            (
+                compItem
+                    ? getCompendioDescription(compItem)
+                    : "Nessuna descrizione"
+            ),
+
+        qty: 1,
+
+        img:
+            sourceItem?.img || "",
+
+        original_type:
+            itemType,
+
+        equip_group_id:
+            equipGroupId,
+
+        equipped_slots:
+            [...targetSlots],
+
+        durability_max:
+            sourceItem?.durability_max ??
+            equipmentMaxHp,
+
+        durability_current:
+            sourceItem?.durability_current ??
+            equipmentMaxHp,
+    };
+
+
+    // ==========================================
+    // OCCUPA TUTTI GLI SLOT NECESSARI
+    // ==========================================
+
+    targetSlots.forEach(targetSlot => {
+
+        equipped[targetSlot] = {
+            ...equippedItem
+        };
+
+    });
+
+
+    // ==========================================
+    // SALVATAGGIO
+    // ==========================================
+
+    socket.emit(
+        'update_character_sheet',
+        {
+            char_id: charId,
+            stats: stats,
+            backpack: backpack,
+            weapons: weapons
+        }
+    );
 };
 
-window.unequipFromSlot = function(charId, slotKey) {
-    const char = characters.find(c => c.id === charId);
-    if (!char || !char.stats?.equipped || !char.stats.equipped[slotKey]) return;
-    
-    const item = char.stats.equipped[slotKey];
-    let bp = char.backpack || [];
-    let wp = char.weapons || [];
-    
-    let oType = item.original_type || 'backpack';
-    
-    // Lo smista nel contenitore giusto
-    if (oType === 'weapon') {
-        const existingWp = wp.find(w => (w.name || w) === item.name);
-        if (!existingWp) wp.push({ name: item.name, desc: item.desc });
-    } else {
-        const existingBp = bp.find(b => (b.name || b) === item.name);
-        if (existingBp) existingBp.qty = (existingBp.qty || 1) + 1;
-        else bp.push(item);
+window.unequipFromSlot = function(
+    charId,
+    slotKey
+) {
+    const char =
+        characters.find(
+            c => c.id === charId
+        );
+
+    if (
+        !char ||
+        !char.stats?.equipped ||
+        !char.stats.equipped[slotKey]
+    ) {
+        return;
     }
-    
-    char.stats.equipped[slotKey] = null;
-    socket.emit('update_character_sheet', { char_id: charId, stats: char.stats, backpack: bp, weapons: wp });
+
+    const equipped =
+        char.stats.equipped;
+
+    const backpack =
+        char.backpack || [];
+
+    const weapons =
+        char.weapons || [];
+
+
+    removeEquippedInstance(
+        equipped,
+        slotKey,
+        backpack,
+        weapons
+    );
+
+
+    socket.emit(
+        'update_character_sheet',
+        {
+            char_id: charId,
+            stats: char.stats,
+            backpack: backpack,
+            weapons: weapons
+        }
+    );
 };
 
 // ==========================================
@@ -1439,61 +2805,1243 @@ window.unequipFromSlot = function(charId, slotKey) {
 // ==========================================
 window.playersLimbs = {}; // Memoria locale dei frame (sincronizzata col server)
 
-// Aggiorna l'HUD dell'attaccante
-window.updateCombatActionPanel = function() {
-    const panel = document.getElementById('combat-action-panel');
-    if (!panel || typeof combatState === 'undefined' || !combatState.is_active) {
-        if(panel) panel.style.display = 'none';
+function getAttackDataFromEquippedItem(item) {
+    if (!item) return null;
+
+    const compItem =
+        findCompendioItem(item);
+
+    if (!compItem) return null;
+
+
+    const speed =
+        compItem?.activation?.speed?.effect_or_action ??
+        compItem?.activation?.speed?.activation ??
+        null;
+
+
+    const range =
+        compItem?.combat?.range?.max_m ??
+        null;
+
+
+    const damage =
+        compItem?.combat?.damage?.formula ??
+        null;
+
+
+    const damageType =
+        compItem?.combat?.damage?.type ??
+        null;
+
+
+    return {
+        compItem,
+        speed,
+        range,
+        damage,
+        damageType
+    };
+}
+
+function getCombatDistance(
+    attackerId,
+    targetId
+) {
+    const attacker =
+        characters.find(
+            c => c.id === attackerId
+        );
+
+    const target =
+        characters.find(
+            c => c.id === targetId
+        );
+
+    if (!attacker || !target) {
+        return null;
+    }
+
+    return hexDistance(
+        attacker.x,
+        attacker.y,
+        target.x,
+        target.y
+    );
+}
+
+function updateAttackWeaponInfo() {
+
+    const actionSelect =
+        document.getElementById(
+            'attack-weapon'
+        );
+
+    const targetSelect =
+        document.getElementById(
+            'attack-target'
+        );
+
+    const infoPanel =
+        document.getElementById(
+            'attack-weapon-info'
+        );
+
+    if (
+        !actionSelect ||
+        !targetSelect ||
+        !infoPanel
+    ) {
         return;
     }
+
+
+    const option =
+        actionSelect.selectedOptions[0];
+
+    if (!option) {
+        infoPanel.style.display = 'none';
+        return;
+    }
+
+
+    // ==========================================
+    // VELOCITÀ
+    // ==========================================
+
+    const speed =
+        option.dataset.speed !== undefined
+            ? Number(option.dataset.speed)
+            : null;
+
+    const speedRaw =
+        option.dataset.speedRaw || null;
+
+
+    const speedInput =
+        document.getElementById(
+            'attack-speed'
+        );
+
+
+    if (speedInput) {
+
+        if (speed !== null) {
+
+            speedInput.value = speed;
+            speedInput.readOnly = true;
+
+            speedInput.dataset.autoSpeed = '1';
+
+            speedInput.style.opacity = '0.75';
+
+        } else {
+
+            // Se prima conteneva un valore automatico
+            // lo puliamo.
+            if (
+                speedInput.dataset.autoSpeed === '1'
+            ) {
+                speedInput.value = '';
+            }
+
+            speedInput.readOnly = false;
+
+            speedInput.dataset.autoSpeed = '0';
+
+            speedInput.style.opacity = '1';
+
+            speedInput.placeholder =
+                'Velocità manuale';
+        }
+    }
+
+
+    const displayedSpeed =
+        speed !== null
+            ? speed
+            : (
+                speedRaw ||
+                'Da inserire'
+            );
+
+
+    document.getElementById(
+        'attack-info-speed'
+    ).innerText =
+        displayedSpeed;
+
+
+    // ==========================================
+    // COSTO FRAME
+    // ==========================================
+
+    if (speed !== null) {
+
+        const cost =
+            Math.max(
+                0,
+                110 - speed
+            );
+
+        document.getElementById(
+            'attack-cost'
+        ).innerText = cost;
+
+    } else {
+
+        document.getElementById(
+            'attack-cost'
+        ).innerText = '-';
+    }
+
+
+    // ==========================================
+    // RANGE
+    // ==========================================
+
+    const range =
+        option.dataset.range !== undefined
+            ? Number(option.dataset.range)
+            : null;
+
+
+    document.getElementById(
+        'attack-info-range'
+    ).innerText =
+        range !== null
+            ? `${range} m`
+            : 'N/D';
+
+
+    // ==========================================
+    // DANNO
+    // ==========================================
+
+    const damage =
+        option.dataset.damage || 'N/D';
+
+    const damageType =
+        option.dataset.damageType || '';
+
+
+    document.getElementById(
+        'attack-info-damage'
+    ).innerText =
+        damageType
+            ? `${damage} — ${damageType}`
+            : damage;
+
+
+    // ==========================================
+    // DISTANZA
+    // ==========================================
+
+    const targetId =
+        parseInt(
+            targetSelect.value
+        );
+
+
+    let distance = null;
+
+
+    if (
+        targetId &&
+        combatState?.turn_order?.length
+    ) {
+
+        const actor =
+            combatState.turn_order[
+                combatState.current_index
+            ];
+
+        const attackerId =
+            actor.id !== undefined
+                ? actor.id
+                : actor.char_id;
+
+
+        distance =
+            getCombatDistance(
+                attackerId,
+                targetId
+            );
+    }
+
+
+    const distanceEl =
+        document.getElementById(
+            'attack-info-distance'
+        );
+
+
+    if (distance === null) {
+
+        distanceEl.innerText = '-';
+        distanceEl.style.color = '';
+
+    } else {
+
+        distanceEl.innerText =
+            `${distance} m`;
+
+        if (
+            range !== null &&
+            distance > range
+        ) {
+
+            distanceEl.innerText +=
+                ' — FUORI RANGE';
+
+            distanceEl.style.color =
+                '#e74c3c';
+
+        } else {
+
+            distanceEl.style.color =
+                '#2ecc71';
+        }
+    }
+
+
+    infoPanel.style.display =
+        'block';
+}
+
+// Aggiorna l'HUD dell'attaccante
+
+// ==========================================
+// AZIONI OFFENSIVE DA EQUIPAGGIAMENTO
+// ==========================================
+
+function getSlotCombatLimb(slot) {
+    const map = {
+        mano_dx: 'bd',
+        guanto_dx: 'bd',
+        avambr_dx: 'bd',
+        spalla_dx: 'bd',
+
+        mano_sx: 'bs',
+        guanto_sx: 'bs',
+        avambr_sx: 'bs',
+        spalla_sx: 'bs',
+
+        stivale_dx: 'gd',
+        stivale_sx: 'gs'
+    };
+
+    return map[slot] || null;
+}
+
+
+function isOffensiveCompendiumItem(compItem) {
+    if (!compItem) return false;
+
+    const type = String(
+        compItem.type || ''
+    ).toLowerCase();
+
+    const damage = String(
+        compItem?.combat?.damage?.formula || ''
+    ).trim();
+
+    // Se è dichiarato offensivo, entra sicuramente
+    if (type.includes('offensiv')) {
+        return true;
+    }
+
+    // Alcuni oggetti non sono classificati "Offensivo"
+    // ma possono comunque infliggere danno.
+    if (
+        damage &&
+        damage.toLowerCase() !== 'clone: 0'
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+function getNumericSpeed(rawSpeed) {
+    if (
+        rawSpeed === null ||
+        rawSpeed === undefined ||
+        rawSpeed === ''
+    ) {
+        return null;
+    }
+
+    if (typeof rawSpeed === 'number') {
+        return rawSpeed;
+    }
+
+    // Esempio:
+    // "50; 85 dal 2° turno" -> 50
+    const match = String(rawSpeed).match(
+        /-?\d+(?:[.,]\d+)?/
+    );
+
+    if (!match) return null;
+
+    return Number(
+        match[0].replace(',', '.')
+    );
+}
+
+
+function getCompendiumAttackSpeed(compItem) {
+    if (!compItem) {
+        return {
+            raw: null,
+            numeric: null
+        };
+    }
+
+    const raw =
+        compItem?.activation?.speed?.effect_or_action ??
+        compItem?.activation?.speed?.activation ??
+        null;
+
+    return {
+        raw: raw,
+        numeric: getNumericSpeed(raw)
+    };
+}
+
+
+function getCompendiumAttackRange(compItem) {
+    if (!compItem) return null;
+
+    const explicitRange =
+        compItem?.combat?.range?.max_m;
+
+    if (
+        explicitRange !== null &&
+        explicitRange !== undefined &&
+        explicitRange !== ''
+    ) {
+        return Number(explicitRange);
+    }
+
+    const type = String(
+        compItem.type || ''
+    ).toLowerCase();
+
+    const mode = String(
+        compItem?.activation?.mode || ''
+    ).toLowerCase();
+
+    // Corpo a corpo = esagono adiacente
+    if (
+        type.includes('corpo a corpo') ||
+        mode.includes('colpo senz')
+    ) {
+        return 1;
+    }
+
+    // Alcuni attacchi a cono hanno la distanza
+    // dentro "Dimensione area".
+    const shape = String(
+        compItem?.combat?.area?.shape || ''
+    ).toLowerCase();
+
+    const size = String(
+        compItem?.combat?.area?.size || ''
+    );
+
+    if (
+        shape.includes('cono') ||
+        shape.includes('linea')
+    ) {
+        const match = size.match(
+            /(\d+(?:[.,]\d+)?)\s*m/i
+        );
+
+        if (match) {
+            return Number(
+                match[1].replace(',', '.')
+            );
+        }
+    }
+
+    return null;
+}
+
+
+function collectCombatActions(char) {
+    const equipped =
+        char?.stats?.equipped || {};
+
+    const actions = [];
+
+    const seenGroups = new Set();
+
+    const slotOrder = [
+        'mano_dx',
+        'mano_sx',
+
+        'guanto_dx',
+        'guanto_sx',
+
+        'avambr_dx',
+        'avambr_sx',
+
+        'spalla_dx',
+        'spalla_sx',
+
+        'petto',
+        'cintura',
+        'schiena',
+
+        'stivale_dx',
+        'stivale_sx',
+
+        'visore',
+        'elmo',
+        'gambe'
+    ];
+
+
+    slotOrder.forEach(slot => {
+
+        const item =
+            equipped[slot];
+
+        if (!item) return;
+
+
+        // Evita che un oggetto x2 venga mostrato due volte.
+        const groupKey =
+            item.equip_group_id ||
+            `${slot}-${item.compendium_id || item.name}`;
+
+        if (seenGroups.has(groupKey)) {
+            return;
+        }
+
+
+        const compItem =
+            findCompendioItem(item);
+
+
+        // Le armi nelle mani vengono mantenute anche
+        // se sono vecchi oggetti non presenti nel compendio.
+        const isHandWeapon =
+            slot === 'mano_dx' ||
+            slot === 'mano_sx';
+
+
+        if (
+            !isHandWeapon &&
+            !isOffensiveCompendiumItem(compItem)
+        ) {
+            return;
+        }
+
+
+        seenGroups.add(groupKey);
+
+
+        const speed =
+            getCompendiumAttackSpeed(compItem);
+
+        const range =
+            getCompendiumAttackRange(compItem);
+
+        const damage =
+            compItem?.combat?.damage?.formula ??
+            null;
+
+        const damageType =
+            compItem?.combat?.damage?.type ??
+            null;
+
+
+        // Se l'oggetto occupa più arti diversi,
+        // non scegliamo arbitrariamente un arto.
+        let preferredLimb =
+            getSlotCombatLimb(slot);
+
+        const equippedSlots =
+            item.equipped_slots || [slot];
+
+        const linkedLimbs = [
+            ...new Set(
+                equippedSlots
+                    .map(getSlotCombatLimb)
+                    .filter(Boolean)
+            )
+        ];
+
+        if (linkedLimbs.length === 1) {
+            preferredLimb = linkedLimbs[0];
+        }
+
+        if (linkedLimbs.length > 1) {
+            preferredLimb = null;
+        }
+
+
+        actions.push({
+            id:
+                `eq-${groupKey}`,
+
+            name:
+                item.name,
+
+            item:
+                item,
+
+            compItem:
+                compItem,
+
+            slot:
+                slot,
+
+            limb:
+                preferredLimb,
+
+            compendiumId:
+                item.compendium_id ||
+                compItem?.id ||
+                null,
+
+            speedRaw:
+                speed.raw,
+
+            speed:
+                speed.numeric,
+
+            range:
+                range,
+
+            damage:
+                damage,
+
+            damageType:
+                damageType,
+
+            mode:
+                compItem?.activation?.mode || null,
+
+            areaShape:
+                compItem?.combat?.area?.shape || null
+        });
+    });
+
+
+    // ==========================================
+    // PUGNI BASE
+    // ==========================================
+
+    if (!equipped.mano_dx) {
+        actions.push({
+            id: 'base-pugno-dx',
+            name: 'Pugno Dx',
+            slot: 'mano_dx',
+            limb: 'bd',
+            compendiumId: null,
+            speedRaw: null,
+            speed: null,
+            range: 1,
+            damage: null,
+            damageType: 'Fisico'
+        });
+    }
+
+
+    if (!equipped.mano_sx) {
+        actions.push({
+            id: 'base-pugno-sx',
+            name: 'Pugno Sx',
+            slot: 'mano_sx',
+            limb: 'bs',
+            compendiumId: null,
+            speedRaw: null,
+            speed: null,
+            range: 1,
+            damage: null,
+            damageType: 'Fisico'
+        });
+    }
+
+
+    return actions;
+}
+
+window.updateCombatActionPanel = function() {
+
+    const panel =
+        document.getElementById('combat-action-panel');
+
+
+    // ==========================================
+    // CONTROLLO COMBATTIMENTO ATTIVO
+    // ==========================================
+
+    if (
+        !panel ||
+        typeof combatState === 'undefined' ||
+        !combatState.is_active
+    ) {
+
+        if (panel) {
+            panel.style.display = 'none';
+        }
+
+        return;
+    }
+
+
+    // ==========================================
+    // IDENTIFICA IL PERSONAGGIO DI TURNO
+    // ==========================================
 
     let isMyTurn = false;
     let activeCharId = null;
 
-    if (combatState.turn_order && combatState.turn_order.length > 0) {
-        const currentActor = combatState.turn_order[combatState.current_index];
+
+    if (
+        combatState.turn_order &&
+        combatState.turn_order.length > 0
+    ) {
+
+        const currentActor =
+            combatState.turn_order[
+                combatState.current_index
+            ];
+
+
         if (currentActor) {
-            activeCharId = currentActor.id !== undefined ? currentActor.id : currentActor.char_id;
-            const selectElem = document.getElementById('user-select');
-            const myCharId = selectElem ? parseInt(selectElem.value) : -1;
-            
-            if (activeCharId === myCharId) isMyTurn = true;
-            if (typeof isMaster !== 'undefined' && isMaster && currentActor.is_npc) isMyTurn = true;
+
+            activeCharId =
+                currentActor.id !== undefined
+                    ? currentActor.id
+                    : currentActor.char_id;
+
+
+            const selectElem =
+                document.getElementById(
+                    'user-select'
+                );
+
+
+            const myCharId =
+                selectElem
+                    ? parseInt(selectElem.value)
+                    : -1;
+
+
+            // Turno del giocatore
+            if (activeCharId === myCharId) {
+                isMyTurn = true;
+            }
+
+
+            // Il Master controlla gli NPC
+            if (
+                typeof isMaster !== 'undefined' &&
+                isMaster &&
+                currentActor.is_npc
+            ) {
+                isMyTurn = true;
+            }
         }
     }
 
-    if (isMyTurn && activeCharId) {
-        panel.style.display = 'block';
-        const myLimbs = window.playersLimbs[activeCharId] || {bd: 60, bs: 60, gd: 60, gs: 60};
-        document.getElementById('hud-bd').innerText = myLimbs.bd;
-        document.getElementById('hud-bs').innerText = myLimbs.bs;
-        document.getElementById('hud-gd').innerText = myLimbs.gd;
-        document.getElementById('hud-gs').innerText = myLimbs.gs;
 
-        const targetSelect = document.getElementById('attack-target');
-        targetSelect.innerHTML = '<option value="">-- Seleziona Bersaglio --</option>';
-        characters.forEach(c => {
-            if (c.id !== activeCharId && c.hp_current > 0 && !c.is_hidden) {
-                targetSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    // ==========================================
+    // NON È IL MIO TURNO
+    // ==========================================
+
+    if (
+        !isMyTurn ||
+        !activeCharId
+    ) {
+
+        panel.style.display = 'none';
+        return;
+    }
+
+
+    panel.style.display = 'block';
+
+
+    // ==========================================
+    // FRAME ARTI
+    // ==========================================
+
+    const myLimbs =
+        window.playersLimbs[
+            activeCharId
+        ] || {
+            bd: 60,
+            bs: 60,
+            gd: 60,
+            gs: 60
+        };
+
+
+    const hudBd =
+        document.getElementById('hud-bd');
+
+    const hudBs =
+        document.getElementById('hud-bs');
+
+    const hudGd =
+        document.getElementById('hud-gd');
+
+    const hudGs =
+        document.getElementById('hud-gs');
+
+
+    if (hudBd) hudBd.innerText = myLimbs.bd;
+    if (hudBs) hudBs.innerText = myLimbs.bs;
+    if (hudGd) hudGd.innerText = myLimbs.gd;
+    if (hudGs) hudGs.innerText = myLimbs.gs;
+
+
+    // ==========================================
+    // BERSAGLI
+    // ==========================================
+
+    const targetSelect =
+        document.getElementById(
+            'attack-target'
+        );
+
+
+    if (targetSelect) {
+
+        // Mantiene il bersaglio selezionato
+        // durante gli aggiornamenti dell'HUD.
+        const previousTarget =
+            targetSelect.value;
+
+
+        targetSelect.innerHTML =
+            '<option value="">-- Seleziona Bersaglio --</option>';
+
+
+        characters.forEach(char => {
+
+            if (
+                char.id !== activeCharId &&
+                char.hp_current > 0 &&
+                !char.is_hidden
+            ) {
+
+                const option =
+                    document.createElement(
+                        'option'
+                    );
+
+                option.value =
+                    char.id;
+
+                option.textContent =
+                    char.name;
+
+                targetSelect.appendChild(
+                    option
+                );
             }
         });
 
-        const weaponSelect = document.getElementById('attack-weapon');
-        weaponSelect.innerHTML = '';
-        
-        const activeChar = characters.find(c => c.id === activeCharId);
-        if (activeChar && activeChar.stats && activeChar.stats.equipped) {
-            const eq = activeChar.stats.equipped;
-            if (eq.mano_dx) weaponSelect.innerHTML += `<option value="${eq.mano_dx.name}" data-limb="bd">🗡️ ${eq.mano_dx.name} (Dx)</option>`;
-            else weaponSelect.innerHTML += `<option value="Pugno Dx" data-limb="bd">✊ Pugno Vuoto (Dx)</option>`;
 
-            if (eq.mano_sx) weaponSelect.innerHTML += `<option value="${eq.mano_sx.name}" data-limb="bs">🗡️ ${eq.mano_sx.name} (Sx)</option>`;
-            else weaponSelect.innerHTML += `<option value="Pugno Sx" data-limb="bs">✊ Pugno Vuoto (Sx)</option>`;
-        } else {
-            weaponSelect.innerHTML += `<option value="Pugno Dx" data-limb="bd">✊ Pugno Vuoto (Dx)</option>`;
+        // Ripristina il bersaglio
+        // se esiste ancora.
+        if (
+            [...targetSelect.options]
+                .some(
+                    option =>
+                        option.value ===
+                        previousTarget
+                )
+        ) {
+
+            targetSelect.value =
+                previousTarget;
         }
-    } else {
+    }
+
+
+    // ==========================================
+    // PERSONAGGIO ATTIVO
+    // ==========================================
+
+    const activeChar =
+        characters.find(
+            char =>
+                char.id === activeCharId
+        );
+
+
+    if (!activeChar) {
         panel.style.display = 'none';
+        return;
+    }
+
+
+    // ==========================================
+    // SELETTORE AZIONE / ARMA / GADGET
+    // ==========================================
+
+    const weaponSelect =
+        document.getElementById(
+            'attack-weapon'
+        );
+
+
+    if (!weaponSelect) return;
+
+
+    // Mantiene la selezione precedente
+    const previousAction =
+        weaponSelect.value;
+
+
+    weaponSelect.innerHTML = '';
+
+
+    // Recupera tutte le azioni offensive
+    // disponibili dall'equipaggiamento.
+    const actions =
+        collectCombatActions(
+            activeChar
+        );
+
+
+    // ==========================================
+    // CREA LE OPTION
+    // ==========================================
+
+    actions.forEach(action => {
+
+        const option =
+            document.createElement(
+                'option'
+            );
+
+
+        option.value =
+            action.id;
+
+
+        // ==========================================
+        // ICONA IN BASE ALLO SLOT
+        // ==========================================
+
+        let icon = '⚔️';
+
+
+        if (
+            action.name &&
+            action.name.includes('Pugno')
+        ) {
+
+            icon = '✊';
+
+        } else if (
+            action.slot?.includes(
+                'guanto'
+            )
+        ) {
+
+            icon = '🧤';
+
+        } else if (
+            action.slot?.includes(
+                'avambr'
+            )
+        ) {
+
+            icon = '🦾';
+
+        } else if (
+            action.slot?.includes(
+                'stivale'
+            )
+        ) {
+
+            icon = '🥾';
+
+        } else if (
+            action.slot?.includes(
+                'spalla'
+            )
+        ) {
+
+            icon = '🦾';
+
+        } else if (
+            action.slot === 'petto'
+        ) {
+
+            icon = '🦺';
+
+        } else if (
+            action.slot === 'cintura'
+        ) {
+
+            icon = '💣';
+
+        } else if (
+            action.slot === 'schiena'
+        ) {
+
+            icon = '🎒';
+
+        } else if (
+            action.slot === 'visore' ||
+            action.slot === 'elmo'
+        ) {
+
+            icon = '🎯';
+
+        } else if (
+            action.slot === 'mano_dx' ||
+            action.slot === 'mano_sx'
+        ) {
+
+            icon = '🗡️';
+        }
+
+
+        // ==========================================
+        // TESTO LATO / ARTO
+        // ==========================================
+
+        let sideText = '';
+
+
+        if (action.limb === 'bd') {
+
+            sideText = ' (Dx)';
+
+        } else if (
+            action.limb === 'bs'
+        ) {
+
+            sideText = ' (Sx)';
+
+        } else if (
+            action.limb === 'gd'
+        ) {
+
+            sideText =
+                ' (Gamba Dx)';
+
+        } else if (
+            action.limb === 'gs'
+        ) {
+
+            sideText =
+                ' (Gamba Sx)';
+        }
+
+
+        option.textContent =
+            `${icon} ${action.name}${sideText}`;
+
+
+        // ==========================================
+        // DATI AZIONE
+        // ==========================================
+
+        option.dataset.actionName =
+            action.name || 'Attacco';
+
+
+        option.dataset.slot =
+            action.slot || '';
+
+
+        option.dataset.limb =
+            action.limb || '';
+
+
+        option.dataset.compendiumId =
+            action.compendiumId || '';
+
+
+        // Velocità numerica
+        if (
+            action.speed !== null &&
+            action.speed !== undefined
+        ) {
+
+            option.dataset.speed =
+                action.speed;
+        }
+
+
+        // Valore originale velocità
+        if (
+            action.speedRaw !== null &&
+            action.speedRaw !== undefined
+        ) {
+
+            option.dataset.speedRaw =
+                String(
+                    action.speedRaw
+                );
+        }
+
+
+        // Range
+        if (
+            action.range !== null &&
+            action.range !== undefined
+        ) {
+
+            option.dataset.range =
+                action.range;
+        }
+
+
+        // Danno
+        if (
+            action.damage !== null &&
+            action.damage !== undefined &&
+            String(action.damage).trim() !== ''
+        ) {
+
+            option.dataset.damage =
+                String(
+                    action.damage
+                );
+        }
+
+
+        // Tipo danno
+        if (
+            action.damageType
+        ) {
+
+            option.dataset.damageType =
+                action.damageType;
+        }
+
+
+        // Modalità attivazione
+        if (
+            action.mode
+        ) {
+
+            option.dataset.mode =
+                action.mode;
+        }
+
+
+        // Forma area
+        if (
+            action.areaShape
+        ) {
+
+            option.dataset.areaShape =
+                action.areaShape;
+        }
+
+
+        weaponSelect.appendChild(
+            option
+        );
+    });
+
+
+    // ==========================================
+    // NESSUNA AZIONE DISPONIBILE
+    // ==========================================
+
+    if (
+        weaponSelect.options.length === 0
+    ) {
+
+        const option =
+            document.createElement(
+                'option'
+            );
+
+        option.value = '';
+        option.textContent =
+            '-- Nessuna azione offensiva --';
+
+        weaponSelect.appendChild(
+            option
+        );
+
+        weaponSelect.disabled = true;
+
+    } else {
+
+        weaponSelect.disabled = false;
+    }
+
+
+    // ==========================================
+    // RIPRISTINA AZIONE SELEZIONATA
+    // ==========================================
+
+    if (
+        [...weaponSelect.options]
+            .some(
+                option =>
+                    option.value ===
+                    previousAction
+            )
+    ) {
+
+        weaponSelect.value =
+            previousAction;
+    }
+
+
+    // ==========================================
+    // ARTO AUTOMATICO
+    // ==========================================
+
+    const selectedOption =
+        weaponSelect.selectedOptions[0];
+
+
+    if (selectedOption) {
+
+        const autoLimb =
+            selectedOption.dataset.limb;
+
+
+        // Solo se il gadget è chiaramente
+        // associato a un singolo arto.
+        if (autoLimb) {
+
+            const limbSelect =
+                document.getElementById(
+                    'attack-limb'
+                );
+
+            if (limbSelect) {
+
+                limbSelect.value =
+                    autoLimb;
+            }
+        }
+    }
+
+
+    // ==========================================
+    // AGGIORNA VELOCITÀ / RANGE /
+    // DISTANZA / DANNO
+    // ==========================================
+
+    if (
+        typeof updateAttackWeaponInfo ===
+        'function'
+    ) {
+
+        updateAttackWeaponInfo();
     }
 };
 
@@ -1503,11 +4051,6 @@ socket.on('combat_update', (data) => {
     setTimeout(() => { window.updateCombatActionPanel(); }, 50);
 });
 
-// Ascolta i dati degli arti in parallelo a game.js
-socket.on('combat_update', (data) => {
-    if (data.players_limbs) window.playersLimbs = data.players_limbs;
-    setTimeout(() => { updateCombatActionPanel(); }, 50);
-});
 
 // Calcolatore Costo Dinamico (Attacco)
 document.getElementById('attack-speed')?.addEventListener('input', (e) => {
@@ -1517,21 +4060,75 @@ document.getElementById('attack-speed')?.addEventListener('input', (e) => {
 });
 
 // Seleziona automaticamente l'arto (bd/bs) in base all'arma scelta
-document.getElementById('attack-weapon')?.addEventListener('change', (e) => {
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    if (!selectedOption) return;
-    const autoLimb = selectedOption.getAttribute('data-limb');
-    if (autoLimb) {
-        document.getElementById('attack-limb').value = autoLimb;
+document.getElementById('attack-weapon')?.addEventListener('change',(e) => {
+
+        const option =
+            e.target.selectedOptions[0];
+
+        if (!option) return;
+
+
+        const limb =
+            option.dataset.limb;
+
+
+        // Solo gli oggetti legati chiaramente
+        // a un arto lo selezionano automaticamente.
+        //
+        // Cintura, petto, schiena ecc.
+        // lasciano scegliere manualmente.
+        if (limb) {
+
+            document.getElementById(
+                'attack-limb'
+            ).value = limb;
+        }
+
+
+        updateAttackWeaponInfo();
     }
-});
+);
+
+document.getElementById(
+    'attack-target'
+)?.addEventListener(
+    'change',
+    () => {
+        updateAttackWeaponInfo();
+    }
+);
 
 // Sferra Attacco
 document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     const targetId = document.getElementById('attack-target').value;
-    const weaponName = document.getElementById('attack-weapon').value;
+    
+    const actionSelect = document.getElementById('attack-weapon');
+
+    const actionOption =
+        actionSelect.selectedOptions[0];
+
+    if (!actionOption) {
+        alert("Nessuna azione offensiva disponibile.");
+        return;
+    }
+
+    const weaponName =
+        actionOption.dataset.actionName ||
+        actionOption.textContent;
+
+
     const limb = document.getElementById('attack-limb').value;
-    const speed = parseInt(document.getElementById('attack-speed').value) || 85;
+    const speed =
+    parseInt(
+        document.getElementById(
+            'attack-speed'
+        ).value
+    );
+
+    if (!Number.isFinite(speed) || speed <= 0) {
+    alert("Questa azione non ha ancora una velocità definita. Inseriscila manualmente.");
+    return;
+    }
     const cost = 110 - speed < 0 ? 0 : 110 - speed;
     
     // Recupera l'ID di chi sta attaccando (Giocatore o NPC)
@@ -1539,6 +4136,42 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     const attackerId = currentActor.id !== undefined ? currentActor.id : currentActor.char_id;
     
     if (!targetId) { alert("Seleziona un bersaglio!"); return; }
+
+    const selectedWeaponOption =
+    document.getElementById(
+        'attack-weapon'
+    ).selectedOptions[0];
+
+
+    const weaponRange =
+        selectedWeaponOption?.dataset?.range
+            ? Number(
+                selectedWeaponOption.dataset.range
+            )
+            : null;
+
+
+    const distance =
+        getCombatDistance(
+            attackerId,
+            parseInt(targetId)
+        );
+
+
+    if (
+        weaponRange !== null &&
+        distance !== null &&
+        distance > weaponRange
+    ) {
+
+        alert(
+            `Bersaglio fuori range!\n` +
+            `Distanza: ${distance} m\n` +
+            `Range massimo: ${weaponRange} m`
+        );
+
+        return;
+    }
     
     let myLimbs = window.playersLimbs[attackerId] || {bd: 60, bs: 60, gd: 60, gs: 60};
     if (myLimbs[limb] < cost) {
@@ -1561,14 +4194,59 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     
     const attackerName = characters.find(c => c.id === attackerId).name;
 
-    socket.emit('combat_msg', { name: attackerName, message: `sferra un attacco con <b>${weaponName}</b> contro <b>${targetName}</b> a Velocità <b>${speed}</b>!` });
-    
-    socket.emit('declare_attack', { 
-        attacker_id: attackerId, attacker_name: attackerName, 
-        defender_id: parseInt(targetId), defender_name: targetName, 
-        weapon: weaponName, speed: speed 
+    socket.emit('declare_attack', {
+
+        attacker_id:
+            attackerId,
+
+        attacker_name:
+            attackerName,
+
+        defender_id:
+            parseInt(targetId),
+
+        defender_name:
+            targetName,
+
+        weapon:
+            weaponName,
+
+        speed:
+            speed,
+
+
+        // NUOVI DATI
+        compendium_id:
+            actionOption.dataset.compendiumId ||
+            null,
+
+        source_slot:
+            actionOption.dataset.slot ||
+            null,
+
+        damage_formula:
+            actionOption.dataset.damage ||
+            null,
+
+        damage_type:
+            actionOption.dataset.damageType ||
+            null,
+
+        range:
+            weaponRange,
+
+        distance:
+            distance,
+
+        activation_mode:
+            actionOption.dataset.mode ||
+            null,
+
+        area_shape:
+            actionOption.dataset.areaShape ||
+            null
     });
-    
+        
     updateCombatActionPanel();
 });
 
@@ -1578,18 +4256,144 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
 let pendingIncomingAttack = null;
 
 socket.on('incoming_attack', (data) => {
-    const myCharId = parseInt(userSelect?.value);
-    const targetChar = characters.find(c => c.id === data.defender_id);
-    
-    // Mostra il pop-up se l'attacco è contro di me, OPPURE se sono il Master e attaccano un NPC
-    const isMe = (myCharId === data.defender_id);
-    const isNpcForMaster = (isMaster && targetChar && targetChar.role === 'npc');
 
-    if (isMe || isNpcForMaster) {
-        pendingIncomingAttack = data;
-        document.getElementById('defense-alert-text').innerHTML = `<b>${data.attacker_name}</b> sta attaccando <b>${targetChar.name}</b> con <b>${data.weapon}</b> a <span style="color:#e74c3c; font-weight:bold; font-size:18px;">Velocità ${data.speed}</span>!`;
-        document.getElementById('defense-modal').style.display = 'block';
+    const myCharId =
+        parseInt(userSelect?.value);
+
+    const targetChar =
+        characters.find(
+            c => c.id === data.defender_id
+        );
+
+    if (!targetChar) return;
+
+
+    const isMe =
+        myCharId === data.defender_id;
+
+    const isNpcForMaster =
+        isMaster &&
+        targetChar.role === 'npc';
+
+
+    if (!isMe && !isNpcForMaster) {
+        return;
     }
+
+
+    pendingIncomingAttack = data;
+
+
+    let extraInfo = '';
+
+
+    if (
+        data.distance !== null &&
+        data.distance !== undefined
+    ) {
+
+        extraInfo += `
+            <br>
+            📏 Distanza:
+            <b>${data.distance} m</b>
+        `;
+    }
+
+
+    if (
+        data.range !== null &&
+        data.range !== undefined
+    ) {
+
+        extraInfo += `
+            &nbsp;|&nbsp;
+            🎯 Range:
+            <b>${data.range} m</b>
+        `;
+    }
+
+
+    if (data.damage_type) {
+
+        extraInfo += `
+            <br>
+            💥 Tipo danno:
+            <b>${data.damage_type}</b>
+        `;
+    }
+
+
+    const effectiveFormula =
+    data.resolved_damage_formula ||
+    data.damage_formula;
+
+
+    if (effectiveFormula) {
+
+        extraInfo += `
+            <br>
+            ⚔️ Formula attiva:
+            <b>${effectiveFormula}</b>
+        `;
+    }
+
+
+    if (
+        data.resolved_damage !== null &&
+        data.resolved_damage !== undefined
+    ) {
+
+        extraInfo += `
+            &nbsp;→&nbsp;
+            💥
+            <b>${data.resolved_damage} danni</b>
+        `;
+    }
+
+
+    if (data.damage_note) {
+
+        extraInfo += `
+            <br>
+            <span style="
+                color:#f39c12;
+                font-size:11px;
+            ">
+                ⚠️ ${data.damage_note}
+            </span>
+        `;
+    }
+
+
+    document.getElementById(
+        'defense-alert-text'
+    ).innerHTML = `
+
+        <b>${data.attacker_name}</b>
+        sta attaccando
+        <b>${targetChar.name}</b>
+
+        con
+
+        <b>${data.weapon}</b>
+
+        a
+
+        <span style="
+            color:#e74c3c;
+            font-weight:bold;
+            font-size:18px;
+        ">
+            Velocità ${data.speed}
+        </span>
+
+        ${extraInfo}
+    `;
+
+
+    document.getElementById(
+        'defense-modal'
+    ).style.display = 'block';
 });
 
 document.getElementById('reaction-speed')?.addEventListener('input', (e) => {
@@ -1621,13 +4425,18 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
     
     // Invia i dati precisi ad app.py per il calcolo matematico
     socket.emit('resolve_reaction', {
-        attacker_id: pendingIncomingAttack.attacker_id,
-        defender_id: defenderId,
-        reaction_type: reactionType,
-        def_limb: limb,
-        def_speed: speed,
-        att_speed: pendingIncomingAttack.speed,
-        weapon: pendingIncomingAttack.weapon
+
+        attack_id:
+            pendingIncomingAttack.attack_id,
+
+        reaction_type:
+            reactionType,
+
+        def_limb:
+            limb,
+
+        def_speed:
+            speed
     });
 
     document.getElementById('defense-modal').style.display = 'none';
@@ -1722,4 +4531,259 @@ document.getElementById('save-notes-btn')?.addEventListener('click', () => {
     const msg = document.getElementById('notes-saved-msg');
     msg.style.display = 'block';
     setTimeout(() => { msg.style.display = 'none'; }, 2000);
+});
+
+
+let pendingMasterCombatResult = null;
+
+
+socket.on(
+    'master_pending_combat_result',
+    (data) => {
+
+        if (!isMaster) return;
+
+
+        pendingMasterCombatResult =
+            data;
+
+
+        const modal =
+            document.getElementById(
+                'master-combat-review'
+            );
+
+
+        const summary =
+            document.getElementById(
+                'master-review-summary'
+            );
+
+
+        summary.innerHTML = `
+
+            <b>${data.attacker_name}</b>
+            attacca
+            <b>${data.defender_name}</b>
+
+            <br>
+
+            ⚔️ ${data.weapon}
+
+            <br>
+
+            🛡️ Reazione:
+            <b>${data.reaction_type}</b>
+
+            ${
+                data.distance !== null &&
+                data.distance !== undefined
+
+                ? `<br>📏 Distanza: ${data.distance} m`
+
+                : ''
+            }
+
+            ${
+                data.damage_formula
+
+                ? `<br>💥 Formula: ${data.damage_formula}`
+
+                : ''
+            }
+        `;
+
+
+        document.getElementById(
+            'master-review-att-roll'
+        ).value =
+            data.att_roll;
+
+
+        document.getElementById(
+            'master-review-def-roll'
+        ).value =
+            data.def_roll;
+
+
+        document.getElementById(
+            'master-review-damage'
+        ).value =
+            data.damage ?? 0;
+
+
+        document.getElementById(
+            'master-review-message'
+        ).value =
+            buildMasterCombatMessage(
+                data
+            );
+
+
+        modal.style.display =
+            'block';
+    }
+);
+
+
+function buildMasterCombatMessage(
+    data
+) {
+
+    return (
+        `⚔️ ${data.attacker_name} attacca ` +
+        `${data.defender_name} con ${data.weapon}.\n\n` +
+
+        `Attacco: ${data.att_roll}\n` +
+        `Difesa (${data.reaction_type}): ${data.def_roll}\n` +
+        `Danno: ${data.damage ?? 0}`
+    );
+}
+
+document.getElementById(
+    'master-review-publish'
+)?.addEventListener(
+    'click',
+    () => {
+
+        if (
+            !pendingMasterCombatResult
+        ) {
+            return;
+        }
+
+
+        const attRoll =
+            parseInt(
+                document.getElementById(
+                    'master-review-att-roll'
+                ).value
+            );
+
+
+        const defRoll =
+            parseInt(
+                document.getElementById(
+                    'master-review-def-roll'
+                ).value
+            );
+
+
+        const damage =
+            parseInt(
+                document.getElementById(
+                    'master-review-damage'
+                ).value
+            );
+
+
+        const message =
+            document.getElementById(
+                'master-review-message'
+            ).value.trim();
+
+
+        if (
+            !Number.isFinite(attRoll) ||
+            !Number.isFinite(defRoll) ||
+            !Number.isFinite(damage)
+        ) {
+
+            alert(
+                "Controlla tiro attacco, tiro difesa e danno."
+            );
+
+            return;
+        }
+
+
+        socket.emit(
+            'master_publish_combat_result',
+            {
+
+                result_id:
+                    pendingMasterCombatResult.result_id,
+
+                att_roll:
+                    attRoll,
+
+                def_roll:
+                    defRoll,
+
+                damage:
+                    Math.max(
+                        0,
+                        damage
+                    ),
+
+                message:
+                    message
+            }
+        );
+
+
+        document.getElementById(
+            'master-combat-review'
+        ).style.display =
+            'none';
+
+
+        pendingMasterCombatResult =
+            null;
+    }
+);
+
+document.getElementById(
+    'master-review-cancel'
+)?.addEventListener(
+    'click',
+    () => {
+
+        if (
+            !pendingMasterCombatResult
+        ) {
+            return;
+        }
+
+
+        socket.emit(
+            'master_discard_combat_result',
+            {
+                result_id:
+                    pendingMasterCombatResult.result_id
+            }
+        );
+
+
+        document.getElementById(
+            'master-combat-review'
+        ).style.display =
+            'none';
+
+
+        pendingMasterCombatResult =
+            null;
+    }
+);
+
+// ==========================================
+// CHIUSURA SICURA E UNIVERSALE DELLE SCHEDE
+// ==========================================
+document.body.addEventListener('click', (e) => {
+    // 1. Chiude la Scheda Giocatore cliccando la X
+    if (e.target && e.target.id === 'close-modal') {
+        const modal = document.getElementById('sheet-modal');
+        if (modal) modal.style.display = 'none';
+    }
+    
+    // 2. Chiude la Scheda Master cliccando la X
+    if (e.target && e.target.id === 'close-edit-modal') {
+        const modal = document.getElementById('edit-sheet-modal');
+        if (modal) modal.style.display = 'none';
+    }
+    
+    // 3. Chiude qualsiasi finestra cliccando sullo sfondo scuro (overlay)
+    if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+        e.target.style.display = 'none';
+    }
 });

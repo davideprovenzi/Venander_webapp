@@ -140,14 +140,36 @@ function updateSheetButton() {
 
 // Funzione per cercare se una determinata abilità ha dei bonus nel Compendio
 function getSkillBonusInfo(skillName) {
-    if (!globalCompendio) return null;
-    for (const category in globalCompendio) {
-        const found = globalCompendio[category].find(s => s.name === skillName);
-        if (found && found.bonus) return found.bonus;
-    }
-    return null;
-}
+    if (!globalCompendio?.items) return null;
 
+    const item = globalCompendio.items.find(
+        entry => entry.name === skillName
+    );
+
+    if (!item) return null;
+
+    const bonusText =
+        item?.effects?.bonus_malus;
+
+    if (!bonusText) return null;
+
+    // Compatibilità con bonus semplici tipo:
+    // "+1 Forza"
+    // "da +1 Forza agli arti superiori"
+    const match = bonusText.match(
+        /\+(\d+)\s+(Forza|Destrezza|Percezione|Arguzia|Volontà)/i
+    );
+
+    if (!match) return null;
+
+    return {
+        stat:
+            match[2].charAt(0).toUpperCase() +
+            match[2].slice(1).toLowerCase(),
+
+        val: parseInt(match[1])
+    };
+}
 
 
 // ==========================================
@@ -491,6 +513,7 @@ userSelect?.addEventListener('change', () => {
 
     if (value === 'master' || role === 'master') {
         isMaster = true;
+        socket.emit('register_session_role',{role: 'master'});
         selectedCharacterId = null;
         masterPanel.style.display = 'block';
         sheetBtn.style.display = 'none';
@@ -502,6 +525,7 @@ userSelect?.addEventListener('change', () => {
         canvas.style.cursor = "pointer";
     } else {
         isMaster = false;
+        socket.emit('register_session_role',{role: 'player'});
         masterPanel.style.display = 'none';
         sheetBtn.style.display = 'block';
         if (renameBtn) renameBtn.style.display = 'inline-block';
