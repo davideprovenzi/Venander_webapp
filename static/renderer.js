@@ -167,7 +167,7 @@ function getCharacterTokenImage(char) {
     const image = new Image();
 
     image.onload = () => {
-        render();
+        requestRender();
     };
 
     image.src = char.token_url;
@@ -360,13 +360,13 @@ function drawTokens() {
 // Aggiunge un segmento laser e programma la sua cancellazione dopo 1.5 secondi
 function addLaserSegment(segment) {
     laserLines.push(segment);
-    render();
+    requestRender();
     
     setTimeout(() => {
         const index = laserLines.indexOf(segment);
         if (index > -1) {
             laserLines.splice(index, 1);
-            render();
+            requestRender();
         }
     }, 1500); // Tempo di permanenza a schermo: 1.5s
 }
@@ -576,6 +576,24 @@ function drawFogOfWar() {
     ctx.setTransform(1, 0, 0, 1, 0, 0); 
     ctx.drawImage(fogCanvas, 0, 0);
     ctx.restore();
+}
+
+let renderRequested = false;
+
+function requestRender() {
+
+    if (renderRequested) {
+        return;
+    }
+
+    renderRequested = true;
+
+    requestAnimationFrame(() => {
+
+        renderRequested = false;
+
+        render();
+    });
 }
 
 function render() {
