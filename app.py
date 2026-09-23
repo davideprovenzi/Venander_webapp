@@ -20,7 +20,12 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///venander.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=50000000)
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    max_http_buffer_size=50000000,
+    async_mode="threading"
+)
 
 # ==========================================
 # MODELLI DATABASE
@@ -1578,5 +1583,10 @@ def handle_save_npc_token(data):
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        debug=True,
+        use_reloader=False
+    )

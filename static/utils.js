@@ -3,6 +3,22 @@ const HEX_SIZE = 30; // Dimensione (raggio) dell'esagono
 const HEX_W = Math.sqrt(3) * HEX_SIZE; // Larghezza esagono
 const HEX_H = 2 * HEX_SIZE; // Altezza esagono
 
+const HEX_CORNERS = Array.from(
+    { length: 6 },
+    (_, i) => {
+
+        const angle =
+            Math.PI / 180 *
+            (60 * i - 30);
+
+        return {
+            x: HEX_SIZE * Math.cos(angle),
+            y: HEX_SIZE * Math.sin(angle)
+        };
+    }
+);
+
+
 // Converte le coordinate della griglia (X,Y) in pixel esatti sulla mappa
 function hexToPixel(col, row) {
     const x = HEX_W * (col + 0.5 * (row & 1)); // Sfalsa le righe dispari

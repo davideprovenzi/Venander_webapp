@@ -50,34 +50,109 @@ function drawLines() {
 }
 
 function drawGrid() {
-    ctx.strokeStyle = '#cccccc'; // Colore della griglia esagonale
+
+    ctx.strokeStyle = '#cccccc';
     ctx.lineWidth = 1;
 
-    // Calcola il range di esagoni visibili nella telecamera
-    const startRow = Math.floor((-camera.y / camera.zoom) / (HEX_SIZE * 1.5)) - 1;
-    const endRow = Math.ceil(((canvas.height - camera.y) / camera.zoom) / (HEX_SIZE * 1.5)) + 1;
-    
-    const startCol = Math.floor((-camera.x / camera.zoom) / HEX_W) - 1;
-    const endCol = Math.ceil(((canvas.width - camera.x) / camera.zoom) / HEX_W) + 1;
+    // Calcola gli esagoni visibili nella camera
+    const startRow =
+        Math.floor(
+            (-camera.y / camera.zoom) /
+            (HEX_SIZE * 1.5)
+        ) - 1;
 
-    for (let r = startRow; r <= endRow; r++) {
-        for (let q = startCol; q <= endCol; q++) {
-            const center = hexToPixel(q, r);
-            
-            ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle = Math.PI / 180 * (60 * i - 30);
-                const px = center.x + HEX_SIZE * Math.cos(angle);
-                const py = center.y + HEX_SIZE * Math.sin(angle);
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
+    const endRow =
+        Math.ceil(
+            ((canvas.height - camera.y) / camera.zoom) /
+            (HEX_SIZE * 1.5)
+        ) + 1;
+
+    const startCol =
+        Math.floor(
+            (-camera.x / camera.zoom) /
+            HEX_W
+        ) - 1;
+
+    const endCol =
+        Math.ceil(
+            ((canvas.width - camera.x) / camera.zoom) /
+            HEX_W
+        ) + 1;
+
+
+    // Un solo path per tutta la griglia
+    ctx.beginPath();
+
+
+    for (
+        let row = startRow;
+        row <= endRow;
+        row++
+    ) {
+
+        for (
+            let col = startCol;
+            col <= endCol;
+            col++
+        ) {
+
+            const center =
+                hexToPixel(
+                    col,
+                    row
+                );
+
+
+            for (
+                let i = 0;
+                i < 6;
+                i++
+            ) {
+
+                const corner =
+                    HEX_CORNERS[i];
+
+                const px =
+                    center.x +
+                    corner.x;
+
+                const py =
+                    center.y +
+                    corner.y;
+
+
+                if (i === 0) {
+
+                    ctx.moveTo(
+                        px,
+                        py
+                    );
+
+                } else {
+
+                    ctx.lineTo(
+                        px,
+                        py
+                    );
+                }
             }
-            ctx.closePath();
-            ctx.stroke();
+
+
+            // Chiude geometricamente l'esagono
+            const firstCorner =
+                HEX_CORNERS[0];
+
+            ctx.lineTo(
+                center.x + firstCorner.x,
+                center.y + firstCorner.y
+            );
         }
     }
-}
 
+
+    // Un'unica chiamata GPU/canvas
+    ctx.stroke();
+}
 const tokenImageCache = new Map();
 
 function getCharacterTokenImage(char) {
