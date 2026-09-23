@@ -523,7 +523,7 @@ function centerCameraOn(
         );
 
 
-    render();
+    requestRender();
 }
 
 
@@ -613,7 +613,7 @@ socket.on(
             serverCharacters || [];
 
 
-        render();
+        requestRender();
 
 
         if (statusBar) {
@@ -663,7 +663,7 @@ socket.on(
         drawings =
             serverDrawings || [];
 
-        render();
+        requestRender();
     }
 );
 
@@ -676,7 +676,7 @@ socket.on(
             itemData
         );
 
-        render();
+        requestRender();
     }
 );
 
@@ -687,7 +687,7 @@ socket.on(
 
         drawings = [];
 
-        render();
+        requestRender();
     }
 );
 
@@ -973,7 +973,7 @@ socket.on(
         }
 
 
-        render();
+        requestRender();
     }
 );
 
@@ -1292,11 +1292,11 @@ socket.on(
 
 
         if (
-            typeof render ===
+            typeof requestRender ===
             'function'
         ) {
 
-            render();
+            requestRender();
         }
 
 
@@ -1336,7 +1336,7 @@ socket.on(
         }
 
 
-        render();
+        requestRender();
         updateSheetButton();
     }
 );
@@ -1363,7 +1363,7 @@ socket.on(
                 data.is_hidden;
 
 
-            render();
+            requestRender();
         }
     }
 );
@@ -1390,7 +1390,7 @@ socket.on(
                 data.is_invisible;
 
 
-            render();
+            requestRender();
         }
     }
 );
@@ -2387,6 +2387,10 @@ socket.on(
                 []
             );
 
+        window.fowVersion =
+            (window.fowVersion || 0) + 1;
+        
+
 
         const fowBtn =
             document.getElementById(
@@ -2427,7 +2431,7 @@ socket.on(
                 bgImage.onload =
                     () => {
 
-                        render();
+                        requestRender();
                     };
 
 
@@ -2436,7 +2440,7 @@ socket.on(
 
             } else {
 
-                render();
+                requestRender();
             }
 
         } else {
@@ -2444,7 +2448,7 @@ socket.on(
             bgImage =
                 null;
 
-            render();
+            requestRender();
         }
     }
 );
@@ -2469,7 +2473,7 @@ socket.on(
             drawings[index] =
                 data;
 
-            render();
+            requestRender();
         }
     }
 );
@@ -2498,7 +2502,7 @@ socket.on(
         }
 
 
-        render();
+        requestRender();
     }
 );
 
@@ -2595,7 +2599,7 @@ document.getElementById(
         }
 
 
-        render();
+        requestRender();
     }
 );
 
@@ -2801,7 +2805,7 @@ socket.on(
             data.pa;
 
 
-        render();
+        requestRender();
     }
 );
 
@@ -3015,7 +3019,7 @@ document.querySelectorAll(
                     null;
 
 
-                render();
+                requestRender();
             }
         );
     }
@@ -3049,7 +3053,7 @@ document.getElementById(
                 null;
 
 
-            render();
+            requestRender();
 
         } else {
 
@@ -3105,7 +3109,7 @@ document.addEventListener(
                 null;
 
 
-            render();
+            requestRender();
         }
     }
 );
@@ -3231,7 +3235,11 @@ socket.on(
                 );
 
 
-            render();
+            window.fowVersion =
+                (window.fowVersion || 0) + 1;
+
+
+            requestRender();
         }
     }
 );

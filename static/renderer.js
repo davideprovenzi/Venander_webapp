@@ -494,87 +494,422 @@ function drawRuler() {
 }
 
 
+
 // ==========================================
-// FOG OF WAR (EFFETTO NUVOLE E SFUMATURA)
+// FOG OF WAR - CACHE OTTIMIZZATA
 // ==========================================
+
 let fogCloudTexture = null;
 
-// Funzione che genera una texture a nuvolette una sola volta per non pesare sulla CPU
-function generateCloudTexture() {
-    if (fogCloudTexture) return fogCloudTexture;
+const fogCanvasCache =
+    document.createElement('canvas');
 
-    const offscreen = document.createElement('canvas');
+const fogCtxCache =
+    fogCanvasCache.getContext('2d');
+
+let fogCacheKey = '';
+
+window.fowVersion =
+    window.fowVersion || 0;
+
+
+// ==========================================
+// TEXTURE NUVOLE
+// ==========================================
+
+function generateCloudTexture() {
+
+    if (fogCloudTexture) {
+        return fogCloudTexture;
+    }
+
+
+    const offscreen =
+        document.createElement('canvas');
+
     offscreen.width = 400;
     offscreen.height = 400;
-    const offCtx = offscreen.getContext('2d');
 
-    // Sfondo di base (Blu notte scuro)
-    offCtx.fillStyle = '#0b131a';
-    offCtx.fillRect(0, 0, 400, 400);
 
-    // Disegna 200 "nuvolette" casuali sovrapposte per creare la densità
-    for (let i = 0; i < 200; i++) {
+    const offCtx =
+        offscreen.getContext('2d');
+
+
+    offCtx.fillStyle =
+        '#0b131a';
+
+    offCtx.fillRect(
+        0,
+        0,
+        400,
+        400
+    );
+
+
+    for (
+        let i = 0;
+        i < 200;
+        i++
+    ) {
+
         offCtx.beginPath();
-        const x = Math.random() * 400;
-        const y = Math.random() * 400;
-        const radius = Math.random() * 60 + 20;
-        offCtx.arc(x, y, radius, 0, Math.PI * 2);
-        
-        // Colore delle singole nuvole (grigio/bluastro semitrasparente)
-        offCtx.fillStyle = `rgba(44, 62, 80, ${Math.random() * 0.4})`;
+
+
+        const x =
+            Math.random() * 400;
+
+        const y =
+            Math.random() * 400;
+
+        const radius =
+            Math.random() * 60 + 20;
+
+
+        offCtx.arc(
+            x,
+            y,
+            radius,
+            0,
+            Math.PI * 2
+        );
+
+
+        offCtx.fillStyle =
+            `rgba(
+                44,
+                62,
+                80,
+                ${Math.random() * 0.4}
+            )`;
+
+
         offCtx.fill();
     }
-    
-    fogCloudTexture = offscreen;
+
+
+    fogCloudTexture =
+        offscreen;
+
+
     return fogCloudTexture;
 }
 
+
+// ==========================================
+// INVALIDAZIONE CACHE
+// ==========================================
+
+window.invalidateFogCache =
+    function() {
+
+        window.fowVersion =
+            (window.fowVersion || 0) + 1;
+
+        fogCacheKey = '';
+
+        requestRender();
+    };
+
+
+// ==========================================
+// COSTRUZIONE CACHE
+// ==========================================
+
+function rebuildFogCache() {
+
+    // Assicura che il canvas cache
+    // abbia le stesse dimensioni del canvas principale
+    if (
+        fogCanvasCache.width !== canvas.width ||
+        fogCanvasCache.height !== canvas.height
+    ) {
+
+        fogCanvasCache.width =
+            canvas.width;
+
+        fogCanvasCache.height =
+            canvas.height;
+    }
+
+
+    // Reset completo della trasformazione
+    fogCtxCache.setTransform(
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+    );
+
+
+    fogCtxCache.clearRect(
+        0,
+        0,
+        fogCanvasCache.width,
+        fogCanvasCache.height
+    );
+
+
+    fogCtxCache.globalCompositeOperation =
+        'source-over';
+
+
+    fogCtxCache.globalAlpha =
+        1;
+
+
+    // Coordinate mondo realmente visibili
+    const worldLeft =
+        -camera.x /
+        camera.zoom;
+
+    const worldTop =
+        -camera.y /
+        camera.zoom;
+
+    const worldRight =
+        (
+            canvas.width -
+            camera.x
+        ) /
+        camera.zoom;
+
+    const worldBottom =
+        (
+            canvas.height -
+            camera.y
+        ) /
+        camera.zoom;
+
+
+    // Applica la stessa camera
+    fogCtxCache.translate(
+        camera.x,
+        camera.y
+    );
+
+    fogCtxCache.scale(
+        camera.zoom,
+        camera.zoom
+    );
+
+
+    // ======================================
+    // NEBBIA
+    // ======================================
+
+    const cloudImg =
+        generateCloudTexture();
+
+
+    const pattern =
+        fogCtxCache.createPattern(
+            cloudImg,
+            'repeat'
+        );
+
+
+    fogCtxCache.fillStyle =
+        pattern;
+
+
+    fogCtxCache.globalAlpha =
+        isMaster
+            ? 0.5
+            : 1.0;
+
+
+    // Disegniamo SOLO l'area visibile.
+    // Non più -10000 -> +10000.
+    fogCtxCache.fillRect(
+        worldLeft,
+        worldTop,
+        worldRight - worldLeft,
+        worldBottom - worldTop
+    );
+
+
+    fogCtxCache.globalAlpha =
+        1;
+
+
+    // ======================================
+    // ZONE RIVELATE
+    // ======================================
+
+    fogCtxCache.globalCompositeOperation =
+        'destination-out';
+
+
+    const blurRadius =
+        HEX_SIZE * 2.5;
+
+
+    window.revealedHexes.forEach(
+        hexStr => {
+
+            const parts =
+                hexStr.split(',');
+
+
+            const col =
+                parseInt(
+                    parts[0]
+                );
+
+            const row =
+                parseInt(
+                    parts[1]
+                );
+
+
+            const center =
+                hexToPixel(
+                    col,
+                    row
+                );
+
+
+            // CULLING:
+            // se la radura è completamente
+            // fuori schermo non viene disegnata.
+            if (
+                center.x + blurRadius <
+                    worldLeft ||
+
+                center.x - blurRadius >
+                    worldRight ||
+
+                center.y + blurRadius <
+                    worldTop ||
+
+                center.y - blurRadius >
+                    worldBottom
+            ) {
+
+                return;
+            }
+
+
+            const gradient =
+                fogCtxCache
+                    .createRadialGradient(
+
+                        center.x,
+                        center.y,
+                        HEX_SIZE * 0.5,
+
+                        center.x,
+                        center.y,
+                        blurRadius
+                    );
+
+
+            gradient.addColorStop(
+                0,
+                'rgba(0, 0, 0, 1)'
+            );
+
+            gradient.addColorStop(
+                0.6,
+                'rgba(0, 0, 0, 0.8)'
+            );
+
+            gradient.addColorStop(
+                1,
+                'rgba(0, 0, 0, 0)'
+            );
+
+
+            fogCtxCache.fillStyle =
+                gradient;
+
+
+            fogCtxCache.beginPath();
+
+            fogCtxCache.arc(
+                center.x,
+                center.y,
+                blurRadius,
+                0,
+                Math.PI * 2
+            );
+
+            fogCtxCache.fill();
+        }
+    );
+
+
+    fogCtxCache.globalCompositeOperation =
+        'source-over';
+}
+
+
+// ==========================================
+// RENDER FOG
+// ==========================================
+
 function drawFogOfWar() {
-    if (!window.fowEnabled) return;
 
-    const fogCanvas = document.createElement('canvas');
-    fogCanvas.width = canvas.width;
-    fogCanvas.height = canvas.height;
-    const fogCtx = fogCanvas.getContext('2d');
+    if (!window.fowEnabled) {
+        return;
+    }
 
-    fogCtx.translate(camera.x, camera.y);
-    fogCtx.scale(camera.zoom, camera.zoom);
 
-    // 1. Applica il pattern a nuvole invece del colore piatto
-    const cloudImg = generateCloudTexture();
-    const pattern = fogCtx.createPattern(cloudImg, 'repeat');
-    
-    fogCtx.fillStyle = pattern;
-    fogCtx.globalAlpha = isMaster ? 0.5 : 1.0; // Il Master vede attraverso le nuvole
-    fogCtx.fillRect(-10000, -10000, 20000, 20000);
-    fogCtx.globalAlpha = 1.0; // Ripristina l'opacità per la gomma
+    // La cache viene rigenerata solo se
+    // cambia qualcosa che influenza la FoW.
+    const newCacheKey =
+        [
+            canvas.width,
+            canvas.height,
 
-    // 2. Gomma da cancellare (Sfumatura)
-    fogCtx.globalCompositeOperation = 'destination-out';
+            camera.x,
+            camera.y,
+            camera.zoom,
 
-    window.revealedHexes.forEach(hexStr => {
-        const parts = hexStr.split(',');
-        const col = parseInt(parts[0]);
-        const row = parseInt(parts[1]);
-        const center = hexToPixel(col, row);
+            isMaster
+                ? 1
+                : 0,
 
-        const blurRadius = HEX_SIZE * 2.5; 
+            window.fowVersion || 0
+        ].join('|');
 
-        // Rimuove le nuvole dolcemente creando radure esplorate
-        const gradient = fogCtx.createRadialGradient(center.x, center.y, HEX_SIZE * 0.5, center.x, center.y, blurRadius);
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');       
-        gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.8)');   
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');       
 
-        fogCtx.fillStyle = gradient;
-        fogCtx.beginPath();
-        fogCtx.arc(center.x, center.y, blurRadius, 0, Math.PI * 2);
-        fogCtx.fill();
-    });
+    if (
+        newCacheKey !==
+        fogCacheKey
+    ) {
 
+        rebuildFogCache();
+
+        fogCacheKey =
+            newCacheKey;
+    }
+
+
+    // Disegna la cache direttamente
+    // in coordinate schermo.
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); 
-    ctx.drawImage(fogCanvas, 0, 0);
+
+
+    ctx.setTransform(
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+    );
+
+
+    ctx.drawImage(
+        fogCanvasCache,
+        0,
+        0
+    );
+
+
     ctx.restore();
 }
 

@@ -172,22 +172,75 @@ canvas.addEventListener('click', (event) => {
                         // Chiudi la modale
                         document.getElementById('move-modal').style.display = 'none';
                         
-                        // Sincronizza i tuoi frame con gli altri giocatori sul server
-                        socket.emit('sync_pa', { char_id: window.pendingMove.charId, pa: currentFrames });
-                        
-                        // Esegui il movimento effettivo
-                        socket.emit('declare_move', { char_id: window.pendingMove.charId, target_x: window.pendingMove.x, target_y: window.pendingMove.y });
-                        
-                        // Invia la dichiarazione in chat
-                        const myChar = characters.find(c => c.id === window.pendingMove.charId);
+                       const moveData = {
+                            char_id:
+                                window.pendingMove.charId,
+
+                            target_x:
+                                window.pendingMove.x,
+
+                            target_y:
+                                window.pendingMove.y
+                        };
+
+
+                        const myChar =
+                            characters.find(
+                                c =>
+                                    c.id ===
+                                    window.pendingMove.charId
+                            );
+
+
+                        // ==========================================
+                        // MOVIMENTO LOCALE IMMEDIATO
+                        // ==========================================
+
+                        if (myChar) {
+
+                            myChar.x =
+                                moveData.target_x;
+
+                            myChar.y =
+                                moveData.target_y;
+                        }
+
+
+                        // Chiudi immediatamente la preview
+                        window.pendingMove =
+                            null;
+
+
+                        // Aggiorna subito la mappa,
+                        // senza aspettare il server
+                        requestRender();
+
+
+                        // ==========================================
+                        // SINCRONIZZAZIONE SERVER
+                        // ==========================================
+
+                        socket.emit(
+                            'sync_pa',
+                            {
+                                char_id:
+                                    moveData.char_id,
+
+                                pa:
+                                    window.currentPaMov
+                            }
+                        );
+
+
+                        socket.emit(
+                            'declare_move',
+                            moveData
+                        );
                         if (myChar) {
                             const msg = `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`;
                             socket.emit('combat_msg', { name: myChar.name, message: msg });
                         }
-                        
-                        // Azzera la memoria della mossa e ridisegna la mappa pulita
-                        window.pendingMove = null; 
-                        render(); 
+                    
                     };
                 }
             });
