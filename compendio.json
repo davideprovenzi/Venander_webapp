@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "source": "db_armi.xlsx",
-  "item_count": 83,
+  "item_count": 137,
   "indexes": {
     "brands": [
       "CRAPTERRA",
@@ -19,7 +19,8 @@
       "Gadget",
       "Interfaccia",
       "Kit",
-      "Munizione / consumabile"
+      "Munizione / consumabile",
+      "Armatura"
     ],
     "types": [
       "Controllo",
@@ -82,7 +83,8 @@
       "Supporto / interconnessione",
       "Supporto / munizioni",
       "Utility / drone / demolizione",
-      "Utility / sabotaggio / controllo remoto"
+      "Utility / sabotaggio / controllo remoto",
+      "Armatura"
     ]
   },
   "data_quality": {
@@ -2430,7 +2432,7 @@
           ],
           "occupancy": "one"
         },
-        "cost_eur": null,
+        "cost_eur": 500,
         "weight": null,
         "harmonization": null,
         "hp": null
@@ -7472,6 +7474,4782 @@
         "special_notes": "Il drone usa i PAA dell'utilizzatore per muoversi. Dotazioni: saldatrice; mini demolitore; batteria accessoria; braccia per quadri/apparecchiature ad alta tensione; paracadute; sistema di immersione. È possibile usare una sola dotazione per turno."
       },
       "source": "TORBTECH — Pasted markdown(2).md — riga 51"
+    },
+    {
+      "id": "ARM-SFY-001",
+      "name": "Elmo K100 VI",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Elmo.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Elmo",
+          "family": "elmo",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 500,
+        "weight": 120,
+        "harmonization": 120,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-002",
+      "name": "Guanti X2",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Guanti.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Guanti",
+          "family": "guanto",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "guanto_dx",
+            "guanto_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 300,
+        "weight": 10,
+        "harmonization": 80,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-003",
+      "name": "Avambraccio X2",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Avambraccio.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Avambraccio",
+          "family": "avambraccio",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "avambr_dx",
+            "avambr_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 350,
+        "weight": 25,
+        "harmonization": 80,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-004",
+      "name": "Pettorali X2",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Pettorali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Pettorali",
+          "family": "petto",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "petto"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 700,
+        "weight": 250,
+        "harmonization": 180,
+        "hp": 35
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-005",
+      "name": "Stivali X2",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Stivali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Stivali",
+          "family": "stivale",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 400,
+        "weight": 100,
+        "harmonization": 100,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-006",
+      "name": "Schiena X2",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Schiena.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Schiena",
+          "family": "schiena",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "schiena"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 550,
+        "weight": 200,
+        "harmonization": 180,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-007",
+      "name": "Gambe",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Gambe.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Gambe",
+          "family": "gambe",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "gambe"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 450,
+        "weight": 100,
+        "harmonization": 100,
+        "hp": 20
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-008",
+      "name": "Cintura",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Cintura.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Cintura",
+          "family": "cintura",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "cintura"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 15,
+        "harmonization": 80,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-SFY-009",
+      "name": "Spalla",
+      "brand": "SFYGAA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura SFYGAA per slot Spalla.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Spalla",
+          "family": "spalla",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "spalla_dx",
+            "spalla_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 20,
+        "harmonization": 80,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-001",
+      "name": "Elmo",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Elmo.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Elmo",
+          "family": "elmo",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 550,
+        "weight": 80,
+        "harmonization": 150,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-002",
+      "name": "Guanti",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Guanti.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Guanti",
+          "family": "guanto",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "guanto_dx",
+            "guanto_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 350,
+        "weight": 8,
+        "harmonization": 100,
+        "hp": 5
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-003",
+      "name": "Avambraccio",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Avambraccio.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Avambraccio",
+          "family": "avambraccio",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "avambr_dx",
+            "avambr_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 15,
+        "harmonization": 120,
+        "hp": 8
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-004",
+      "name": "Pettorali",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Pettorali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Pettorali",
+          "family": "petto",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "petto"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 800,
+        "weight": 180,
+        "harmonization": 180,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-005",
+      "name": "Stivali",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Stivali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Stivali",
+          "family": "stivale",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 450,
+        "weight": 70,
+        "harmonization": 120,
+        "hp": 8
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-006",
+      "name": "Schiena",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Schiena.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Schiena",
+          "family": "schiena",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "schiena"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 650,
+        "weight": 120,
+        "harmonization": 200,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-007",
+      "name": "Gambe",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Gambe.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Gambe",
+          "family": "gambe",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "gambe"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 500,
+        "weight": 60,
+        "harmonization": 100,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-008",
+      "name": "Cintura",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Cintura.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Cintura",
+          "family": "cintura",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "cintura"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 10,
+        "harmonization": 150,
+        "hp": 5
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-UMB-009",
+      "name": "Spalla",
+      "brand": "UMBRYLL",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura UMBRYLL per slot Spalla.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Spalla",
+          "family": "spalla",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "spalla_dx",
+            "spalla_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 10,
+        "harmonization": 80,
+        "hp": 5
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-001",
+      "name": "Elmo",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Elmo.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Elmo",
+          "family": "elmo",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 350,
+        "harmonization": 100,
+        "hp": 60
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-002",
+      "name": "Guanti",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Guanti.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Guanti",
+          "family": "guanto",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "guanto_dx",
+            "guanto_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 350,
+        "weight": 70,
+        "harmonization": 110,
+        "hp": 30
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-003",
+      "name": "Avambraccio",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Avambraccio.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Avambraccio",
+          "family": "avambraccio",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "avambr_dx",
+            "avambr_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 140,
+        "harmonization": 100,
+        "hp": 45
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-004",
+      "name": "Pettorali",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Pettorali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Pettorali",
+          "family": "petto",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "petto"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 600,
+        "weight": 700,
+        "harmonization": 180,
+        "hp": 100
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-005",
+      "name": "Stivali",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Stivali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Stivali",
+          "family": "stivale",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 350,
+        "weight": 320,
+        "harmonization": 90,
+        "hp": 45
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-006",
+      "name": "Schiena",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Schiena.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Schiena",
+          "family": "schiena",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "schiena"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 450,
+        "weight": 550,
+        "harmonization": 480,
+        "hp": 80
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-007",
+      "name": "Gambe",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Gambe.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Gambe",
+          "family": "gambe",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "gambe"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 350,
+        "weight": 200,
+        "harmonization": 100,
+        "hp": 50
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-008",
+      "name": "Cintura",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Cintura.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Cintura",
+          "family": "cintura",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "cintura"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 180,
+        "weight": 20,
+        "harmonization": 60,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-CRA-009",
+      "name": "Spalla",
+      "brand": "CRAPTERRA",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura CRAPTERRA per slot Spalla.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Spalla",
+          "family": "spalla",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "spalla_dx",
+            "spalla_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 220,
+        "weight": 50,
+        "harmonization": 90,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-001",
+      "name": "Elmo",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Elmo.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Elmo",
+          "family": "elmo",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 500,
+        "weight": 130,
+        "harmonization": 130,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-002",
+      "name": "Guanti",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Guanti.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Guanti",
+          "family": "guanto",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "guanto_dx",
+            "guanto_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 300,
+        "weight": 15,
+        "harmonization": 90,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-003",
+      "name": "Avambraccio",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Avambraccio.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Avambraccio",
+          "family": "avambraccio",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "avambr_dx",
+            "avambr_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 30,
+        "harmonization": 100,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-004",
+      "name": "Pettorali",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Pettorali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Pettorali",
+          "family": "petto",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "petto"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 700,
+        "weight": 280,
+        "harmonization": 180,
+        "hp": 35
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-005",
+      "name": "Stivali",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Stivali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Stivali",
+          "family": "stivale",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 400,
+        "weight": 110,
+        "harmonization": 100,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-006",
+      "name": "Schiena",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Schiena.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Schiena",
+          "family": "schiena",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "schiena"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 550,
+        "weight": 220,
+        "harmonization": 180,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-007",
+      "name": "Gambe",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Gambe.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Gambe",
+          "family": "gambe",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "gambe"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 450,
+        "weight": 100,
+        "harmonization": 100,
+        "hp": 20
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-008",
+      "name": "Cintura",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Cintura.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Cintura",
+          "family": "cintura",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "cintura"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 20,
+        "harmonization": 70,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MED-009",
+      "name": "Spalla",
+      "brand": "MEDMAD",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MEDMAD per slot Spalla.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Spalla",
+          "family": "spalla",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "spalla_dx",
+            "spalla_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 300,
+        "weight": 25,
+        "harmonization": 70,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-001",
+      "name": "Elmo",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Elmo.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Elmo",
+          "family": "elmo",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 550,
+        "weight": 160,
+        "harmonization": 130,
+        "hp": 30
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-002",
+      "name": "Guanti",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Guanti.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Guanti",
+          "family": "guanto",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "guanto_dx",
+            "guanto_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 350,
+        "weight": 15,
+        "harmonization": 90,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-003",
+      "name": "Avambraccio",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Avambraccio.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Avambraccio",
+          "family": "avambraccio",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "avambr_dx",
+            "avambr_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 450,
+        "weight": 40,
+        "harmonization": 110,
+        "hp": 18
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-004",
+      "name": "Pettorali",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Pettorali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Pettorali",
+          "family": "petto",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "petto"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 800,
+        "weight": 320,
+        "harmonization": 190,
+        "hp": 45
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-005",
+      "name": "Stivali",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Stivali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Stivali",
+          "family": "stivale",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 450,
+        "weight": 140,
+        "harmonization": 100,
+        "hp": 18
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-006",
+      "name": "Schiena",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Schiena.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Schiena",
+          "family": "schiena",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "schiena"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 650,
+        "weight": 260,
+        "harmonization": 210,
+        "hp": 35
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-007",
+      "name": "Gambe",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Gambe.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Gambe",
+          "family": "gambe",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "gambe"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 500,
+        "weight": 120,
+        "harmonization": 110,
+        "hp": 25
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-008",
+      "name": "Cintura",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Cintura.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Cintura",
+          "family": "cintura",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "cintura"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 250,
+        "weight": 20,
+        "harmonization": 70,
+        "hp": 9
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-TOR-009",
+      "name": "Spalla",
+      "brand": "TORBTECH",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura TORBTECH per slot Spalla.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Spalla",
+          "family": "spalla",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "spalla_dx",
+            "spalla_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 250,
+        "weight": 25,
+        "harmonization": 90,
+        "hp": 10
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-001",
+      "name": "Elmo",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Elmo.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Elmo",
+          "family": "elmo",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 700,
+        "weight": 50,
+        "harmonization": 200,
+        "hp": 8
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-002",
+      "name": "Guanti",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Guanti.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Guanti",
+          "family": "guanto",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "guanto_dx",
+            "guanto_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 450,
+        "weight": 5,
+        "harmonization": 130,
+        "hp": 3
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-003",
+      "name": "Avambraccio",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Avambraccio.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Avambraccio",
+          "family": "avambraccio",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "avambr_dx",
+            "avambr_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 550,
+        "weight": 10,
+        "harmonization": 140,
+        "hp": 5
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-004",
+      "name": "Pettorali",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Pettorali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Pettorali",
+          "family": "petto",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "petto"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 1000,
+        "weight": 100,
+        "harmonization": 250,
+        "hp": 15
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-005",
+      "name": "Stivali",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Stivali.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Stivali",
+          "family": "stivale",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": 550,
+        "weight": 45,
+        "harmonization": 140,
+        "hp": 5
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-006",
+      "name": "Schiena",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Schiena.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Schiena",
+          "family": "schiena",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "schiena"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 900,
+        "weight": 80,
+        "harmonization": 250,
+        "hp": 12
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-007",
+      "name": "Gambe",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Gambe.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Gambe",
+          "family": "gambe",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "gambe"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 650,
+        "weight": 35,
+        "harmonization": 140,
+        "hp": 7
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-008",
+      "name": "Cintura",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Cintura.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Cintura",
+          "family": "cintura",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "cintura"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 450,
+        "weight": 10,
+        "harmonization": 130,
+        "hp": 3
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "ARM-MES-009",
+      "name": "Spalla",
+      "brand": "MESMER",
+      "class": "Armatura",
+      "type": "Armatura",
+      "text": {
+        "description": "Componente di armatura MESMER per slot Spalla.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Spalla",
+          "family": "spalla",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "spalla_dx",
+            "spalla_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 10,
+        "harmonization": 120,
+        "hp": 3
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Compendio armature fornito dall’utente — 2026-09-28"
     }
   ]
 }

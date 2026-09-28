@@ -66,6 +66,15 @@ canvas.addEventListener('wheel', (event) => {
 // ==========================================
 // MOVIMENTI E DISEGNI SULLA MAPPA
 // ==========================================
+function isHexOccupied(x, y, excludeCharId = null) {
+    return characters.some(c => {
+        if (!c) return false;
+        if (excludeCharId !== null && Number(c.id) === Number(excludeCharId)) return false;
+
+        return Number(c.x) === Number(x) && Number(c.y) === Number(y);
+    });
+}
+
 canvas.addEventListener('click', (event) => {
     // Se stavamo disegnando o spostando la mappa, ignora il click
     if (justFinishedAction) return;
@@ -87,14 +96,21 @@ canvas.addEventListener('click', (event) => {
 
     // --- POSIZIONAMENTO NPC (MASTER) ---
     if (isMaster && window.isSpawningNpc) {
+        if (isHexOccupied(gridX, gridY)) {
+            statusBar.innerText = "⛔ Non puoi creare una pedina su una casella già occupata.";
+            return;
+        }
+
         const name = document.getElementById('npc-name')?.value || "Mistero";
         const hp = parseInt(document.getElementById('npc-hp')?.value) || 30;
+        const lore = document.getElementById('npc-description')?.value?.trim() || "";
         const color = document.getElementById('npc-color')?.value || "#8e44ad";
         const isHidden = document.getElementById('npc-hidden')?.checked || false;
 
        socket.emit('spawn_npc', {
             name,
             hp,
+            lore,
             color,
             x: gridX,
             y: gridY,
@@ -105,6 +121,7 @@ canvas.addEventListener('click', (event) => {
         canvas.style.cursor = "pointer";
         statusBar.innerText = `[MASTER] Entità evocata in X:${gridX}, Y:${gridY}.`;
         if (document.getElementById('npc-name')) document.getElementById('npc-name').value = '';
+        if (document.getElementById('npc-description')) document.getElementById('npc-description').value = '';
         return;
     }
 
@@ -119,12 +136,46 @@ canvas.addEventListener('click', (event) => {
             }
         }
 
-        const myChar = characters.find(c => c.id === currentCharacterId);
+        // Se il giocatore clicca un NPC visibile, apre solo la sua scheda pubblica.
+        const clickedNpc = characters.find(c =>
+            c.role === 'npc' &&
+            Number(c.x) === Number(gridX) &&
+            Number(c.y) === Number(gridY) &&
+            !c.is_hidden &&
+            !c.is_invisible
+        );
+
+        if (clickedNpc) {
+            if (typeof window.showPublicNpcInfo === 'function') {
+                window.showPublicNpcInfo(clickedNpc);
+            } else if (statusBar) {
+                statusBar.innerText = `👁️ ${clickedNpc.name}${clickedNpc.lore ? ` — ${clickedNpc.lore}` : ''}`;
+            }
+            return;
+        }
+
+        const myChar = characters.find(c => Number(c.id) === Number(currentCharacterId));
+        if (!myChar) return;
+
+        if (window.pendingLocalMoves?.[currentCharacterId]) {
+            statusBar.innerText = "⏳ Movimento in sincronizzazione...";
+            return;
+        }
+
+        if (Number(myChar.x) === Number(gridX) && Number(myChar.y) === Number(gridY)) return;
+
+        if (isHexOccupied(gridX, gridY, currentCharacterId)) {
+            statusBar.innerText = "⛔ Non puoi muoverti in questa casella.";
+            return;
+        }
+
         let isMyTurn = false;
 
         if (combatState.is_active && combatState.turn_order.length > 0) {
             const currentActor = combatState.turn_order[combatState.current_index];
-            if (currentActor && currentActor.id === currentCharacterId) isMyTurn = true;
+            const activeId = currentActor?.id ?? currentActor?.char_id;
+
+            if (Number(activeId) === Number(currentCharacterId)) isMyTurn = true;
         }
 
         // SE SIAMO IN COMBATTIMENTO E TOCCA A ME
@@ -158,78 +209,80 @@ canvas.addEventListener('click', (event) => {
                     btn.style.opacity = '1';
                     btn.style.cursor = 'pointer';
 
-                    // 2. Azione al CLICK (blindata contro i bug)
+                    // 2. Azione al CLICK (blindata contro collisioni e desincronizzazioni)
                     btn.onclick = () => {
                         if (!window.pendingMove) return;
 
-                        // Scala i Frame e aggiorna la memoria del browser
-                        currentFrames -= requiredFrames;
-                        window.currentPaMov = currentFrames;
-                        window.playersPa[window.pendingMove.charId] = currentFrames;
+                        const pending = { ...window.pendingMove };
 
-                        // Chiudi la modale
-                        document.getElementById('move-modal').style.display = 'none';
+                        // Nel tempo trascorso con la modale aperta un'altra pedina
+                        // potrebbe aver occupato la casella.
+                        if (isHexOccupied(pending.x, pending.y, pending.charId)) {
+                            document.getElementById('move-modal').style.display = 'none';
+                            window.pendingMove = null;
+                            statusBar.innerText = "⛔ La casella è stata occupata da un'altra pedina.";
+                            requestRender();
+                            return;
+                        }
 
-                       const moveData = {
-                            char_id:
-                                window.pendingMove.charId,
+                        const framesBefore = parseInt(window.currentPaMov) || 0;
 
-                            target_x:
-                                window.pendingMove.x,
+                        if (requiredFrames > framesBefore) {
+                            statusBar.innerText = "⛔ Non hai abbastanza Frame di movimento.";
+                            return;
+                        }
 
-                            target_y:
-                                window.pendingMove.y
+                        const framesAfter = framesBefore - requiredFrames;
+                        const moveId = `${Date.now()}-${Math.random()}`;
+
+                        const moveData = {
+                            char_id: pending.charId,
+                            target_x: pending.x,
+                            target_y: pending.y,
+                            move_id: moveId
                         };
 
-                        const myChar =
-                            characters.find(
-                                c =>
-                                    c.id ===
-                                    window.pendingMove.charId
-                            );
-
-                        // ==========================================
-                        // MOVIMENTO LOCALE IMMEDIATO
-                        // ==========================================
-
-                        if (myChar) {
-
-                            myChar.x =
-                                moveData.target_x;
-
-                            myChar.y =
-                                moveData.target_y;
-                        }
-
-                        // Chiudi immediatamente la preview
-                        window.pendingMove =
-                            null;
-
-                        // Aggiorna subito la mappa,
-                        // senza aspettare il server
-                        requestRender();
-
-                        // ==========================================
-                        // SINCRONIZZAZIONE SERVER
-                        // ==========================================
-
-                        socket.emit(
-                            'sync_pa',
-                            {
-                                char_id:
-                                    moveData.char_id,
-
-                                pa:
-                                    window.currentPaMov
-                            }
+                        const movingChar = characters.find(
+                            c => Number(c.id) === Number(pending.charId)
                         );
 
-                        socket.emit('declare_move',moveData);
-                        if (myChar) {
-                            const msg = `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`;
-                            socket.emit('combat_msg', { name: myChar.name, message: msg });
+                        if (!movingChar) {
+                            window.pendingMove = null;
+                            document.getElementById('move-modal').style.display = 'none';
+                            return;
                         }
 
+                        window.pendingLocalMoves[pending.charId] = {
+                            moveId,
+                            x: pending.x,
+                            y: pending.y,
+                            fromX: movingChar.x,
+                            fromY: movingChar.y,
+                            combat: true,
+                            paBefore: framesBefore,
+                            paAfter: framesAfter,
+                            combatName: movingChar.name,
+                            combatMessage: `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`
+                        };
+
+                        // Aggiornamento locale immediato. I Frame vengono mostrati
+                        // subito, ma saranno sincronizzati al server solo dopo
+                        // la conferma del movimento.
+                        movingChar.x = moveData.target_x;
+                        movingChar.y = moveData.target_y;
+                        window.currentPaMov = framesAfter;
+                        window.playersPa[pending.charId] = framesAfter;
+
+                        const paEl = document.getElementById('ui-pa-mov');
+                        if (paEl) paEl.innerText = framesAfter;
+
+                        document.getElementById('move-modal').style.display = 'none';
+                        window.pendingMove = null;
+
+                        requestRender();
+
+                        // Il server confermerà o rifiuterà la posizione.
+                        socket.emit('declare_move', moveData);
                     };
                 }
             });
@@ -239,7 +292,29 @@ canvas.addEventListener('click', (event) => {
         }
 
         // Se non siamo in combattimento, muoviti normalmente
-        socket.emit('declare_move', { char_id: currentCharacterId, target_x: gridX, target_y: gridY });
+
+        const moveId = `${Date.now()}-${Math.random()}`;
+
+        window.pendingLocalMoves[currentCharacterId] = {
+            moveId,
+            x: gridX,
+            y: gridY,
+            fromX: myChar.x,
+            fromY: myChar.y,
+            combat: false
+        };
+
+        myChar.x = gridX;
+        myChar.y = gridY;
+        requestRender();
+
+        socket.emit('declare_move', {
+            char_id: currentCharacterId,
+            target_x: gridX,
+            target_y: gridY,
+            move_id: moveId
+        });
+
         return;
     }
 
@@ -261,13 +336,58 @@ canvas.addEventListener('click', (event) => {
         render();
         updateSheetButton();
     } else if (selectedCharacterId !== null) {
-        socket.emit('declare_move', { char_id: selectedCharacterId, target_x: gridX, target_y: gridY });
+
+        // Salva l'ID prima della deselezione
+        const movingCharacterId = selectedCharacterId;
+        const movingChar = characters.find(
+            c => Number(c.id) === Number(movingCharacterId)
+        );
+
+        if (!movingChar) return;
+
+        if (window.pendingLocalMoves?.[movingCharacterId]) {
+            statusBar.innerText = "⏳ Movimento in sincronizzazione...";
+            return;
+        }
+
+        if (Number(movingChar.x) === Number(gridX) && Number(movingChar.y) === Number(gridY)) {
+            return;
+        }
+
+        if (isHexOccupied(gridX, gridY, movingCharacterId)) {
+            statusBar.innerText = "⛔ Questa casella è già occupata.";
+            return;
+        }
+
+        const moveId = `${Date.now()}-${Math.random()}`;
+
+        window.pendingLocalMoves[movingCharacterId] = {
+            moveId,
+            x: gridX,
+            y: gridY,
+            fromX: movingChar.x,
+            fromY: movingChar.y,
+            combat: false
+        };
+
+        // Movimento locale immediato
+        movingChar.x = gridX;
+        movingChar.y = gridY;
+        requestRender();
+
+        // Sincronizzazione con il server
+        socket.emit('declare_move', {
+            char_id: movingCharacterId,
+            target_x: gridX,
+            target_y: gridY,
+            move_id: moveId
+        });
+
         statusBar.innerText = `[MASTER] Spostamento in X:${gridX}, Y:${gridY}`;
 
         // Deseleziona e nasconde i pannelli dopo il movimento
         selectedCharacterId = null;
         updateMasterEditPanel(null);
-        render();
         updateSheetButton();
     }
 });
@@ -529,7 +649,18 @@ canvas.addEventListener('mousemove', (event) => {
         const color = isEraserMode ? '#ffffff' : (document.getElementById('draw-color')?.value || '#000000');
         const width = isEraserMode ? baseWidth * 2 : baseWidth;
 
-        const itemData = { type: 'line', sx: lastX, sy: lastY, ex: currentX, ey: currentY, c: color, w: width };
+        const itemData = {
+            uid: (window.crypto && typeof window.crypto.randomUUID === 'function')
+                ? window.crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            type: 'line',
+            sx: lastX,
+            sy: lastY,
+            ex: currentX,
+            ey: currentY,
+            c: color,
+            w: width
+        };
         drawings.push(itemData);
         render();
         socket.emit('draw_item', itemData);
@@ -584,7 +715,22 @@ canvas.addEventListener('mouseup', () => {
 
         if (isDrawingShape && currentTempShape) {
             drawings.push(currentTempShape); // Salva la forma definita
-            socket.emit('draw_item', currentTempShape);
+
+            // Invia al server solo dati serializzabili.
+            // Il renderer può aver aggiunto imageObj (istanza Image), che non va mai spedita via Socket.IO.
+            const drawingPayload = {
+                uid: currentTempShape.uid,
+                type: currentTempShape.type,
+                sx: currentTempShape.sx,
+                sy: currentTempShape.sy,
+                ex: currentTempShape.ex,
+                ey: currentTempShape.ey,
+                c: currentTempShape.c,
+                w: currentTempShape.w,
+                img: currentTempShape.img || null
+            };
+
+            socket.emit('draw_item', drawingPayload);
             currentTempShape = null;
             render();
         }
@@ -594,7 +740,20 @@ canvas.addEventListener('mouseup', () => {
     }
 
     if (window.draggingDrawing) {
-        socket.emit('update_drawing', window.draggingDrawing); // Salva la nuova posizione sul server
+        // Non inviare imageObj: è un oggetto DOM e non è serializzabile.
+        const drawingPayload = {
+            uid: window.draggingDrawing.uid,
+            type: window.draggingDrawing.type,
+            sx: window.draggingDrawing.sx,
+            sy: window.draggingDrawing.sy,
+            ex: window.draggingDrawing.ex,
+            ey: window.draggingDrawing.ey,
+            c: window.draggingDrawing.c,
+            w: window.draggingDrawing.w,
+            img: window.draggingDrawing.img || null
+        };
+
+        socket.emit('update_drawing', drawingPayload); // Salva la nuova posizione sul server
         window.draggingDrawing = null;
         canvas.style.cursor = "pointer";
         return;

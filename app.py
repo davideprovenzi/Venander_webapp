@@ -10,6 +10,8 @@ import json
 import math
 import uuid
 import html
+from uuid import uuid4
+from threading import Lock
 
 # ==========================================
 # CONFIGURAZIONE FLASK
@@ -26,6 +28,10 @@ socketio = SocketIO(
     max_http_buffer_size=50000000,
     async_mode="threading"
 )
+
+# Serializza i cambi di posizione: evita che due richieste concorrenti
+# occupino lo stesso esagono nello stesso istante.
+movement_lock = Lock()
 
 # ==========================================
 # MODELLI DATABASE
@@ -98,12 +104,24 @@ class WorldState(db.Model):
     fow_enabled = db.Column(db.Boolean, default=False)
     revealed_hexes = db.Column(db.JSON, default=list)
 
+class SideQuest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text, default="")
+    cost = db.Column(db.Integer, default=0)
+    # None = visibile a tutti i giocatori; altrimenti solo al personaggio indicato.
+    target_char_id = db.Column(db.Integer, nullable=True)
+    paid_by = db.Column(db.JSON, default=list)
+    active = db.Column(db.Boolean, default=True)
+
 # ==========================================
 # MEMORIA GLOBALE COMBATTIMENTO E SETUP DB
 # ==========================================
 pending_attacks = {}
 pending_combat_results = {}
 master_sids = set()
+client_roles = {}
+client_character_ids = {}
 
 combat_state = {
     "is_active": False,
@@ -184,6 +202,146 @@ def get_char_data(char):
         "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop, "notes": char.notes
     }
 
+
+def get_public_char_data(char):
+    """Dati visibili a un normale giocatore.
+
+    I personaggi giocanti restano invariati. Degli NPC vengono inviati solo
+    i dati necessari per mappa, targeting e scheda pubblica: mai HP o stats.
+    """
+    if char.role != "npc":
+        return get_char_data(char)
+
+    return {
+        "id": char.id,
+        "name": char.name,
+        "role": char.role,
+        "x": char.pos_x,
+        "y": char.pos_y,
+        "color": char.color,
+        "photo_url": char.photo_url,
+        "token_url": char.token_url,
+        "lore": char.lore,
+        "is_hidden": char.is_hidden,
+        "is_invisible": char.is_invisible
+    }
+
+
+def get_char_data_for_role(char, role):
+    return get_char_data(char) if role == "master" else get_public_char_data(char)
+
+
+def emit_initial_state_to_sid(sid, role):
+    chars = Character.query.order_by(Character.id).all()
+    char_list = [get_char_data_for_role(char, role) for char in chars]
+    socketio.emit("init_state", char_list, to=sid)
+
+
+def emit_character_update(char, extra=None):
+    """Invia l'aggiornamento completo ai Master e quello pubblico ai giocatori."""
+    extra = extra or {}
+
+    for sid, role in list(client_roles.items()):
+        payload = dict(get_char_data_for_role(char, role))
+        payload.update(extra)
+        socketio.emit("update_character", payload, to=sid)
+
+# ==========================================
+# SIDEQUEST / CHAT
+# ==========================================
+def serialize_sidequest(quest):
+    target_name = "Tutti i giocatori"
+    if quest.target_char_id is not None:
+        target = db.session.get(Character, quest.target_char_id)
+        target_name = target.name if target else f"Giocatore #{quest.target_char_id}"
+
+    paid_by = []
+    for raw_id in (quest.paid_by or []):
+        try:
+            paid_by.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    return {
+        "id": quest.id,
+        "title": quest.title,
+        "description": quest.description or "",
+        "cost": max(0, int(quest.cost or 0)),
+        "target_char_id": quest.target_char_id,
+        "target_name": target_name,
+        "paid_by": paid_by,
+        "active": bool(quest.active)
+    }
+
+def sidequest_visible_to(quest, role, char_id):
+    if role == "master":
+        return True
+    if role != "player" or not char_id:
+        return False
+    return quest.target_char_id is None or int(quest.target_char_id) == int(char_id)
+
+def emit_sidequest_list_to_sid(sid, role, char_id):
+    quests = SideQuest.query.filter_by(active=True).order_by(SideQuest.id.asc()).all()
+    visible = [
+        serialize_sidequest(quest)
+        for quest in quests
+        if sidequest_visible_to(quest, role, char_id)
+    ]
+    socketio.emit("sidequest_list", visible, to=sid)
+
+def emit_sidequest_to_viewers(event_name, quest):
+    payload = serialize_sidequest(quest)
+
+    # Una sidequest destinata a tutti viene inviata direttamente a tutti
+    # i client connessi. Non dipende quindi dalla registrazione del ruolo.
+    if quest.target_char_id is None:
+        socketio.emit(event_name, payload)
+        return
+
+    # Sidequest personale: il Master la vede sempre.
+    sent_to = set()
+
+    for sid in list(master_sids):
+        socketio.emit(event_name, payload, to=sid)
+        sent_to.add(sid)
+
+    # La vede anche il personaggio destinatario.
+    for sid, char_id in list(client_character_ids.items()):
+        if sid in sent_to or char_id is None:
+            continue
+
+        try:
+            matches = int(char_id) == int(quest.target_char_id)
+        except (TypeError, ValueError):
+            matches = False
+
+        if matches:
+            socketio.emit(event_name, payload, to=sid)
+
+def emit_to_sidequest_viewers(event_name, payload, quest):
+    # Per una quest globale il relativo evento è globale.
+    if quest.target_char_id is None:
+        socketio.emit(event_name, payload)
+        return
+
+    sent_to = set()
+
+    for sid in list(master_sids):
+        socketio.emit(event_name, payload, to=sid)
+        sent_to.add(sid)
+
+    for sid, char_id in list(client_character_ids.items()):
+        if sid in sent_to or char_id is None:
+            continue
+
+        try:
+            matches = int(char_id) == int(quest.target_char_id)
+        except (TypeError, ValueError):
+            matches = False
+
+        if matches:
+            socketio.emit(event_name, payload, to=sid)
+
 # ==========================================
 # WEBSOCKET - CONNESSIONE / RUOLI SESSIONE
 # ==========================================
@@ -194,8 +352,26 @@ def emit_to_masters(event_name, data):
 
 @socketio.on("register_session_role")
 def handle_register_session_role(data):
-    role = str((data or {}).get("role", "")).strip().lower()
+    data = data or {}
+    role = str(data.get("role", "")).strip().lower()
+    role = "master" if role == "master" else "player"
+    previous_role = client_roles.get(request.sid)
+    previous_char_id = client_character_ids.get(request.sid)
 
+    char_id = None
+    if role == "player":
+        try:
+            candidate = int(data.get("char_id"))
+        except (TypeError, ValueError):
+            candidate = None
+
+        if candidate:
+            char = db.session.get(Character, candidate)
+            if char and char.role == "player":
+                char_id = char.id
+
+    client_roles[request.sid] = role
+    client_character_ids[request.sid] = char_id
     master_sids.discard(request.sid)
 
     if role == "master":
@@ -206,16 +382,24 @@ def handle_register_session_role(data):
         for result in pending_combat_results.values():
             emit("master_pending_combat_result", result, to=request.sid)
 
+    # Invia lo stato corretto solo alla prima registrazione o quando cambia ruolo.
+    if previous_role != role:
+        emit_initial_state_to_sid(request.sid, role)
+
+    # Le sidequest dipendono anche dal personaggio selezionato.
+    if previous_role != role or previous_char_id != char_id:
+        emit_sidequest_list_to_sid(request.sid, role, char_id)
+
 @socketio.on("disconnect")
 def handle_disconnect():
     master_sids.discard(request.sid)
+    client_roles.pop(request.sid, None)
+    client_character_ids.pop(request.sid, None)
 
 @socketio.on("connect")
 def handle_connect():
-    chars = Character.query.order_by(Character.id).all()
-    char_list = [get_char_data(char) for char in chars]
-    emit("init_state", char_list)
-
+    # init_state viene inviato subito dopo register_session_role, così il server
+    # sa se deve fornire dati completi (Master) o pubblici (Giocatore).
     draw_items = DrawItem.query.all()
     draw_list = [{"uid": d.uid, "type": d.type, "sx": d.sx, "sy": d.sy, "ex": d.ex, "ey": d.ey, "c": d.color, "w": d.size, "img": d.img_data} for d in draw_items]
 
@@ -321,7 +505,7 @@ def handle_next_turn():
             char.bonuses = updated_bonuses
             flag_modified(char, "bonuses") # Forza il salvataggio della colonna JSON
             db.session.commit()
-            emit("update_character", get_char_data(char), broadcast=True)
+            emit_character_update(char)
 
             # Invia i messaggi di danno/cura alla chat di tutti
             for msg in chat_messages:
@@ -389,54 +573,114 @@ def handle_register_player(data):
 
     char.name = name
     db.session.commit()
-    emit("update_character", get_char_data(char), broadcast=True)
+    emit_character_update(char)
 
 @socketio.on("declare_move")
 def handle_move(data):
-    char_id = data.get("char_id")
-    char = db.session.get(Character, char_id)
-    if not char or char.role == "master": return
+    try:
+        char_id = int(data.get("char_id"))
+        target_x = int(data.get("target_x"))
+        target_y = int(data.get("target_y"))
+    except (TypeError, ValueError):
+        return
 
-    target_x = data.get("target_x")
-    target_y = data.get("target_y")
-    if target_x is None or target_y is None: return
+    move_id = data.get("move_id")
 
-    char.pos_x = target_x
-    char.pos_y = target_y
-    db.session.commit()
-    emit("update_character", get_char_data(char), broadcast=True)
+    with movement_lock:
+        char = db.session.get(Character, char_id)
+        if not char or char.role == "master":
+            return
+
+        occupied = Character.query.filter(
+            Character.pos_x == target_x,
+            Character.pos_y == target_y,
+            Character.id != char_id
+        ).first()
+
+        if occupied:
+            emit("move_rejected", {
+                "char_id": char_id,
+                "move_id": move_id,
+                "reason": "occupied",
+                "current_x": char.pos_x,
+                "current_y": char.pos_y
+            })
+            return
+
+        char.pos_x = target_x
+        char.pos_y = target_y
+        db.session.commit()
+
+    emit_character_update(char, {"_move_id": move_id})
 
 @socketio.on("spawn_npc")
 def handle_spawn_npc(data):
-    new_npc = Character(
-        name=data.get("name", "Mostro"),
-        role="npc",
-        pos_x=data.get("x", 0),
-        pos_y=data.get("y", 0),
-        color=data.get("color", "#000000"),
-        hp_max=data.get("hp", 30),
-        hp_current=data.get("hp", 30),
-        stats={"Tipo": "NPC / Nemico"}, weapons=[], skills=[], backpack=[], xp=0, shop=[],
-        is_hidden=data.get("is_hidden", False),
-        token_url=data.get("token_url", "")
-    )
-    db.session.add(new_npc)
-    db.session.commit()
-    emit("update_character", get_char_data(new_npc), broadcast=True)
+    if request.sid not in master_sids:
+        return
+
+    try:
+        target_x = int(data.get("x", 0))
+        target_y = int(data.get("y", 0))
+    except (TypeError, ValueError):
+        return
+
+    with movement_lock:
+        occupied = Character.query.filter(
+            Character.pos_x == target_x,
+            Character.pos_y == target_y
+        ).first()
+
+        if occupied:
+            emit("spawn_rejected", {
+                "reason": "occupied",
+                "x": target_x,
+                "y": target_y
+            })
+            return
+
+        new_npc = Character(
+            name=data.get("name", "Mostro"),
+            role="npc",
+            pos_x=target_x,
+            pos_y=target_y,
+            color=data.get("color", "#000000"),
+            hp_max=data.get("hp", 30),
+            hp_current=data.get("hp", 30),
+            stats={"Tipo": "NPC / Nemico"}, weapons=[], skills=[], backpack=[], xp=0, shop=[],
+            is_hidden=data.get("is_hidden", False),
+            token_url=data.get("token_url", ""),
+            lore=str(data.get("lore", "")).strip()
+        )
+        db.session.add(new_npc)
+        db.session.commit()
+    emit_character_update(new_npc)
 
 @socketio.on("update_vitals")
 def handle_update_vitals(data):
+    # I vitali dal pannello Entità sono controlli amministrativi del Master.
+    if request.sid not in master_sids:
+        return
+
     char_id = data.get("char_id")
     char = db.session.get(Character, char_id)
-    if not char: return
+    if not char:
+        return
 
-    if "hp" in data: char.hp_current = max(0, min(char.hp_max, char.hp_current + int(data["hp"])))
-    if "stamina" in data: char.stamina_current = max(0, min(char.stamina_max, char.stamina_current + int(data["stamina"])))
-    if "conc" in data: char.conc_current = max(0, min(char.conc_max, char.conc_current + int(data["conc"])))
-    if "status" in data: char.status = str(data["status"])
+    try:
+        if "hp" in data:
+            char.hp_current = max(0, min(char.hp_max, char.hp_current + int(data["hp"])))
+        if "stamina" in data:
+            char.stamina_current = max(0, min(char.stamina_max, char.stamina_current + int(data["stamina"])))
+        if "conc" in data:
+            char.conc_current = max(0, min(char.conc_max, char.conc_current + int(data["conc"])))
+    except (TypeError, ValueError):
+        return
+
+    if "status" in data:
+        char.status = str(data["status"])
 
     db.session.commit()
-    emit("update_character", get_char_data(char), broadcast=True)
+    emit_character_update(char)
 
 @socketio.on("spend_pa")
 def handle_spend_pa(data):
@@ -458,7 +702,7 @@ def handle_spend_pa(data):
         char.pa_stats = current_pa_stats
 
         db.session.commit()
-        emit("update_character", get_char_data(char), broadcast=True)
+        emit_character_update(char)
         emit("dice_result", {"name": char.name, "message": f"ha speso {actual_spent} PA di <b>{stat_key}</b>.", "is_master_roll": False}, broadcast=True)
 
 @socketio.on("reset_pa")
@@ -487,8 +731,27 @@ def handle_reset_pa(data):
         char.pa_stats = current_pa_stats
 
         db.session.commit()
-        emit("update_character", get_char_data(char), broadcast=True)
+        emit_character_update(char)
         emit("dice_result", {"name": char.name, "message": f"ha speso 15 {msg_cost} per ripristinare i PA di <b>{stat_key}</b>!", "is_master_roll": False}, broadcast=True)
+
+@socketio.on("master_set_bank")
+def handle_master_set_bank(data):
+    # Modifica amministrativa del conto: solo il Master può impostare il saldo.
+    if request.sid not in master_sids:
+        return
+
+    char = db.session.get(Character, data.get("char_id"))
+    if not char or char.role != "player":
+        return
+
+    try:
+        # Nessun clamp a zero: il conto può andare in negativo.
+        char.xp = int(data.get("value", 0))
+    except (TypeError, ValueError):
+        return
+
+    db.session.commit()
+    emit_character_update(char)
 
 @socketio.on("update_xp")
 def handle_update_xp(data):
@@ -497,12 +760,14 @@ def handle_update_xp(data):
     try:
         char.xp = max(0, char.xp + int(data.get("amount", 0)))
         db.session.commit()
-        emit("update_character", get_char_data(char), broadcast=True)
+        emit_character_update(char)
     except (TypeError, ValueError): return
 
 @socketio.on("delete_character")
 def handle_delete_character(data):
     char = db.session.get(Character, data.get("char_id"))
+    if char and char.role == "npc" and request.sid not in master_sids:
+        return
     if char and char.role != "master":
         db.session.delete(char)
         db.session.commit()
@@ -511,6 +776,8 @@ def handle_delete_character(data):
 @socketio.on("toggle_hidden")
 def handle_toggle_hidden(data):
     char = db.session.get(Character, data.get("char_id"))
+    if char and char.role == "npc" and request.sid not in master_sids:
+        return
     if char and char.role != "master":
         char.is_hidden = bool(data.get("is_hidden", False))
         db.session.commit()
@@ -520,6 +787,7 @@ def handle_toggle_hidden(data):
 def handle_update_character_sheet(data):
     char = db.session.get(Character, data.get("char_id"))
     if not char: return
+    if char.role == "npc" and request.sid not in master_sids: return
     if "photo_url" in data: char.photo_url = data["photo_url"]
     if "token_url" in data: char.token_url = data["token_url"]
     if "lore" in data: char.lore = data["lore"]
@@ -531,7 +799,7 @@ def handle_update_character_sheet(data):
     if "shop" in data: char.shop = data["shop"]
     if "notes" in data: char.notes = data["notes"]
     db.session.commit()
-    emit("update_character", get_char_data(char), broadcast=True)
+    emit_character_update(char)
 
 @socketio.on("buy_skill")
 def handle_buy_skill(data):
@@ -557,7 +825,7 @@ def handle_buy_skill(data):
             char.stats = current_stats
 
     db.session.commit()
-    emit("update_character", get_char_data(char), broadcast=True)
+    emit_character_update(char)
 
 def load_compendio():
     path = os.path.join(app.root_path, "compendio.json")
@@ -663,7 +931,9 @@ def compendium_attack_range(item):
     return None
 
 def get_equipped_attack_item(character, source_slot=None, compendium_id=None, weapon_name=None):
-    equipped = ((character.stats or {}).get("equipped") or {})
+    stats = character.stats or {}
+    equipped = stats.get("equipped") or {}
+    equipped_gadgets = stats.get("equipped_gadgets") or {}
 
     def matches(item):
         if not isinstance(item, dict):
@@ -681,13 +951,15 @@ def get_equipped_attack_item(character, source_slot=None, compendium_id=None, we
         return False
 
     if source_slot:
-        item = equipped.get(source_slot)
-        if item and matches(item):
-            return source_slot, item
+        for equipment_map in (equipped, equipped_gadgets):
+            item = equipment_map.get(source_slot)
+            if item and matches(item):
+                return source_slot, item
 
-    for slot, item in equipped.items():
-        if matches(item):
-            return slot, item
+    for equipment_map in (equipped, equipped_gadgets):
+        for slot, item in equipment_map.items():
+            if matches(item):
+                return slot, item
 
     return None, None
 
@@ -957,7 +1229,7 @@ def handle_add_skill_to_shop(data):
     current_shop.append(skill_data)
     char.shop = current_shop
     db.session.commit()
-    emit("update_character", get_char_data(char), broadcast=True)
+    emit_character_update(char)
 
 @socketio.on("roll_dice")
 def handle_roll_dice(data):
@@ -981,6 +1253,293 @@ def handle_roll_dice(data):
 
     result_data = {"name": name, "message": msg, "is_master_roll": is_master}
     emit("dice_result", result_data, to=request.sid if is_master else None, broadcast=not is_master)
+
+@socketio.on("chat_message")
+def handle_chat_message(data):
+    data = data or {}
+
+    raw_message = str(data.get("message", "")).strip()
+    if not raw_message:
+        return
+
+    raw_message = raw_message[:1200]
+
+    role = client_roles.get(request.sid, "player")
+    sender_char_id = client_character_ids.get(request.sid)
+
+    if role == "master":
+        sender_name = "👑 MASTER"
+        sender_plain_name = "MASTER"
+        is_master_message = True
+    else:
+        sender_char = db.session.get(Character, sender_char_id) if sender_char_id else None
+        if not sender_char or sender_char.role != "player":
+            emit(
+                "chat_error",
+                {"message": "Seleziona prima il tuo personaggio."},
+                to=request.sid
+            )
+            return
+
+        sender_name = html.escape(sender_char.name)
+        sender_plain_name = sender_char.name
+        is_master_message = False
+
+    safe_message = html.escape(raw_message).replace("\n", "<br>")
+    target = str(data.get("target", "all") or "all").strip().lower()
+
+    # ======================================
+    # CHAT GLOBALE
+    # ======================================
+    if target == "all":
+        socketio.emit(
+            "chat_message",
+            {
+                "name": sender_name,
+                "message": safe_message,
+                "is_master": is_master_message,
+                "is_system": False,
+                "channel": "global",
+                "is_private": False,
+                "target_label": "Tutti"
+            }
+        )
+        return
+
+    # ======================================
+    # PRIVATO CON IL MASTER
+    # ======================================
+    if target == "master":
+        if role == "master":
+            emit(
+                "chat_error",
+                {"message": "Seleziona un giocatore come destinatario."},
+                to=request.sid
+            )
+            return
+
+        payload = {
+            "name": sender_name,
+            "message": safe_message,
+            "is_master": False,
+            "is_system": False,
+            "channel": "private",
+            "is_private": True,
+            "target_label": "Master",
+            "private_route": f"{html.escape(sender_plain_name)} → 👑 Master"
+        }
+
+        recipient_sids = set(master_sids)
+
+        # Il mittente vede il proprio messaggio su tutte le sue sessioni.
+        for sid, char_id in list(client_character_ids.items()):
+            if char_id is not None and int(char_id) == int(sender_char_id):
+                recipient_sids.add(sid)
+
+        recipient_sids.add(request.sid)
+
+        for sid in recipient_sids:
+            socketio.emit("chat_message", payload, to=sid)
+
+        return
+
+    # ======================================
+    # PRIVATO VERSO UN GIOCATORE
+    # target = player:<id>
+    # ======================================
+    if target.startswith("player:"):
+        try:
+            target_char_id = int(target.split(":", 1)[1])
+        except (TypeError, ValueError, IndexError):
+            emit(
+                "chat_error",
+                {"message": "Destinatario non valido."},
+                to=request.sid
+            )
+            return
+
+        target_char = db.session.get(Character, target_char_id)
+        if not target_char or target_char.role != "player":
+            emit(
+                "chat_error",
+                {"message": "Destinatario non valido."},
+                to=request.sid
+            )
+            return
+
+        # Un giocatore non ha bisogno di scrivere in privato a sé stesso.
+        if role == "player" and int(sender_char_id) == int(target_char_id):
+            emit(
+                "chat_error",
+                {"message": "Seleziona un altro destinatario."},
+                to=request.sid
+            )
+            return
+
+        target_name = html.escape(target_char.name)
+
+        payload = {
+            "name": sender_name,
+            "message": safe_message,
+            "is_master": is_master_message,
+            "is_system": False,
+            "channel": "private",
+            "is_private": True,
+            "target_label": target_name,
+            "private_route": (
+                f"👑 Master → {target_name}"
+                if role == "master"
+                else f"{html.escape(sender_plain_name)} → {target_name}"
+            )
+        }
+
+        recipient_sids = set()
+
+        # Destinatario.
+        for sid, char_id in list(client_character_ids.items()):
+            if char_id is not None and int(char_id) == int(target_char_id):
+                recipient_sids.add(sid)
+
+        if role == "master":
+            # Chat Master ↔ giocatore: la vedono il Master e il giocatore.
+            recipient_sids.update(master_sids)
+            recipient_sids.add(request.sid)
+        else:
+            # Chat giocatore ↔ giocatore: davvero privata.
+            # Il Master NON riceve il messaggio.
+            for sid, char_id in list(client_character_ids.items()):
+                if char_id is not None and int(char_id) == int(sender_char_id):
+                    recipient_sids.add(sid)
+            recipient_sids.add(request.sid)
+
+        for sid in recipient_sids:
+            socketio.emit("chat_message", payload, to=sid)
+
+        return
+
+    emit(
+        "chat_error",
+        {"message": "Destinatario chat non riconosciuto."},
+        to=request.sid
+    )
+
+@socketio.on("create_sidequest")
+def handle_create_sidequest(data):
+    if request.sid not in master_sids:
+        return
+
+    data = data or {}
+    title = str(data.get("title", "")).strip()[:160]
+    description = str(data.get("description", "")).strip()[:3000]
+
+    if not title:
+        emit("sidequest_error", {"message": "Inserisci un titolo per la sidequest."}, to=request.sid)
+        return
+
+    try:
+        cost = max(0, int(data.get("cost", 0)))
+    except (TypeError, ValueError):
+        emit("sidequest_error", {"message": "Il costo della sidequest non è valido."}, to=request.sid)
+        return
+
+    target_char_id = None
+    raw_target = data.get("target_char_id")
+    if raw_target not in (None, "", "all", 0, "0"):
+        try:
+            candidate = int(raw_target)
+        except (TypeError, ValueError):
+            candidate = None
+
+        target = db.session.get(Character, candidate) if candidate else None
+        if not target or target.role != "player":
+            emit("sidequest_error", {"message": "Destinatario non valido."}, to=request.sid)
+            return
+        target_char_id = target.id
+
+    quest = SideQuest(
+        title=title,
+        description=description,
+        cost=cost,
+        target_char_id=target_char_id,
+        paid_by=[],
+        active=True
+    )
+    db.session.add(quest)
+    db.session.commit()
+
+    emit_sidequest_to_viewers("sidequest_created", quest)
+
+@socketio.on("pay_sidequest")
+def handle_pay_sidequest(data):
+    if client_roles.get(request.sid) != "player":
+        return
+
+    char_id = client_character_ids.get(request.sid)
+    char = db.session.get(Character, char_id) if char_id else None
+    quest = db.session.get(SideQuest, (data or {}).get("quest_id"))
+
+    if not char or char.role != "player":
+        emit("sidequest_error", {"message": "Personaggio non valido."}, to=request.sid)
+        return
+
+    if not quest or not quest.active or not sidequest_visible_to(quest, "player", char.id):
+        emit("sidequest_error", {"message": "Questa sidequest non è disponibile."}, to=request.sid)
+        return
+
+    paid_by = []
+    for raw_id in (quest.paid_by or []):
+        try:
+            paid_by.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    if char.id in paid_by:
+        emit("sidequest_error", {"message": "Hai già pagato questa sidequest."}, to=request.sid)
+        return
+
+    cost = max(0, int(quest.cost or 0))
+    if int(char.xp or 0) < cost:
+        emit(
+            "sidequest_error",
+            {"message": f"Fondi insufficienti: servono {cost} €, ma sul conto hai {int(char.xp or 0)} €."},
+            to=request.sid
+        )
+        return
+
+    char.xp = int(char.xp or 0) - cost
+    paid_by.append(char.id)
+    quest.paid_by = paid_by
+    db.session.commit()
+
+    emit_character_update(char)
+    emit_sidequest_to_viewers("sidequest_update", quest)
+
+    payment_message = {
+        "name": "📜 SIDEQUEST",
+        "message": (
+            f"<b>{html.escape(char.name)}</b> ha pagato <b>{cost} €</b> "
+            f"per <b>{html.escape(quest.title)}</b>."
+        ),
+        "is_master": False,
+        "is_system": True
+    }
+    emit_to_sidequest_viewers("chat_message", payment_message, quest)
+
+@socketio.on("close_sidequest")
+def handle_close_sidequest(data):
+    if request.sid not in master_sids:
+        return
+
+    quest = db.session.get(SideQuest, (data or {}).get("quest_id"))
+    if not quest or not quest.active:
+        return
+
+    # Prima notifichiamo i client che al momento possono vederla.
+    payload = {"id": quest.id}
+    emit_to_sidequest_viewers("sidequest_removed", payload, quest)
+
+    quest.active = False
+    db.session.commit()
 
 @socketio.on("clear_drawings")
 def handle_clear_drawings():
@@ -1016,32 +1575,99 @@ def handle_draw_laser(data):
 @socketio.on("draw_item")
 def handle_draw_item(data):
     try:
+        data = dict(data or {})
+
+        uid = str(data.get("uid") or uuid4())
+
         new_item = DrawItem(
-            uid=data.get("uid", ""),
+            uid=uid,
             type=data.get("type", "line"),
-            sx=data["sx"], sy=data["sy"],
-            ex=data.get("ex", 0), ey=data.get("ey", 0),
+            sx=data["sx"],
+            sy=data["sy"],
+            ex=data.get("ex", 0),
+            ey=data.get("ey", 0),
             color=data.get("c", "#000000"),
             size=data.get("w", 3),
             img_data=data.get("img", None)
         )
+
         db.session.add(new_item)
         db.session.commit()
-        emit("draw_item", data, broadcast=True, include_self=False)
+
+        # Ritrasmette solo dati JSON puliti.
+        payload = {
+            "uid": new_item.uid,
+            "type": new_item.type,
+            "sx": new_item.sx,
+            "sy": new_item.sy,
+            "ex": new_item.ex,
+            "ey": new_item.ey,
+            "c": new_item.color,
+            "w": new_item.size,
+            "img": new_item.img_data
+        }
+
+        socketio.emit(
+            "draw_item",
+            payload,
+            skip_sid=request.sid
+        )
+
     except Exception as e:
+        db.session.rollback()
         print("Errore nel salvataggio disegno:", e)
+
 
 @socketio.on("update_drawing")
 def handle_update_drawing(data):
-    # Aggiorna le coordinate di un disegno esistente (trascinamento)
-    item = DrawItem.query.filter_by(uid=data.get("uid")).first()
-    if item:
+    try:
+        data = dict(data or {})
+
+        item = DrawItem.query.filter_by(
+            uid=data.get("uid")
+        ).first()
+
+        if not item:
+            return
+
         item.sx = data.get("sx", item.sx)
         item.sy = data.get("sy", item.sy)
         item.ex = data.get("ex", item.ex)
         item.ey = data.get("ey", item.ey)
+
+        # Manteniamo anche gli altri campi se vengono inviati.
+        if data.get("type") is not None:
+            item.type = data.get("type")
+        if data.get("c") is not None:
+            item.color = data.get("c")
+        if data.get("w") is not None:
+            item.size = data.get("w")
+        if "img" in data:
+            item.img_data = data.get("img")
+
         db.session.commit()
-        emit("drawing_updated", data, broadcast=True, include_self=False)
+
+        payload = {
+            "uid": item.uid,
+            "type": item.type,
+            "sx": item.sx,
+            "sy": item.sy,
+            "ex": item.ex,
+            "ey": item.ey,
+            "c": item.color,
+            "w": item.size,
+            "img": item.img_data
+        }
+
+        socketio.emit(
+            "drawing_updated",
+            payload,
+            skip_sid=request.sid
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        print("Errore aggiornamento disegno:", e)
 
 # ==========================================
 # MESSAGGI DI COMBATTIMENTO PERSONALIZZATI
@@ -1421,10 +2047,16 @@ def handle_master_publish_combat_result(data):
             )
         else:
             defender.hp_current = max(0, defender.hp_current - damage)
-            resolution_lines.append(
-                f"🩸 Schivata fallita! <b>{html.escape(defender.name)}</b> subisce "
-                f"<b>{damage} danni</b> (HP Rimanenti: {defender.hp_current})."
-            )
+            if defender.role == "npc":
+                resolution_lines.append(
+                    f"🩸 Schivata fallita! <b>{html.escape(defender.name)}</b> subisce "
+                    f"<b>{damage} danni</b>."
+                )
+            else:
+                resolution_lines.append(
+                    f"🩸 Schivata fallita! <b>{html.escape(defender.name)}</b> subisce "
+                    f"<b>{damage} danni</b> (HP Rimanenti: {defender.hp_current})."
+                )
 
     elif reaction == "Parata":
         if def_roll >= att_roll:
@@ -1450,25 +2082,37 @@ def handle_master_publish_combat_result(data):
 
             if damage_to_player > 0:
                 defender.hp_current = max(0, defender.hp_current - damage_to_player)
-                resolution_lines.append(
-                    f"🩸 L'attacco trapassa la guardia! <b>{html.escape(defender.name)}</b> "
-                    f"subisce <b>{damage_to_player} danni</b> "
-                    f"(HP Rimanenti: {defender.hp_current})."
-                )
+                if defender.role == "npc":
+                    resolution_lines.append(
+                        f"🩸 L'attacco trapassa la guardia! <b>{html.escape(defender.name)}</b> "
+                        f"subisce <b>{damage_to_player} danni</b>."
+                    )
+                else:
+                    resolution_lines.append(
+                        f"🩸 L'attacco trapassa la guardia! <b>{html.escape(defender.name)}</b> "
+                        f"subisce <b>{damage_to_player} danni</b> "
+                        f"(HP Rimanenti: {defender.hp_current})."
+                    )
             elif damage == 0:
                 resolution_lines.append("🛡️ Nessun danno da applicare.")
 
     elif reaction == "Scambio":
         defender.hp_current = max(0, defender.hp_current - damage)
-        resolution_lines.append(
-            f"⚔️ Nessuna difesa! <b>{html.escape(defender.name)}</b> accetta "
-            f"<b>{damage} danni</b> per colpire a sua volta "
-            f"(HP Rimanenti: {defender.hp_current})."
-        )
+        if defender.role == "npc":
+            resolution_lines.append(
+                f"⚔️ Nessuna difesa! <b>{html.escape(defender.name)}</b> accetta "
+                f"<b>{damage} danni</b> per colpire a sua volta."
+            )
+        else:
+            resolution_lines.append(
+                f"⚔️ Nessuna difesa! <b>{html.escape(defender.name)}</b> accetta "
+                f"<b>{damage} danni</b> per colpire a sua volta "
+                f"(HP Rimanenti: {defender.hp_current})."
+            )
 
     db.session.commit()
 
-    emit("update_character", get_char_data(defender), broadcast=True)
+    emit_character_update(defender)
 
     public_message = str(data.get("message", "")).strip()
 

@@ -337,10 +337,18 @@ function populatePlayerSheetUI(myChar) {
         const currentUserId = parseInt(userSelect?.value);
         const canEdit = isMaster || currentUserId === myChar.id;
 
+        // I gadget hanno una sezione dedicata: nello Zaino mostriamo solo il resto.
+        const visibleBackpackEntries = bpList
+            .map((item, index) => ({ item, index }))
+            .filter(entry => !isGadgetInventoryItem(entry.item));
+
         // Disegna ogni oggetto
-        bpList.forEach((item, index) => {
+        visibleBackpackEntries.forEach(({ item, index }) => {
             // Retrocompatibilità se c'erano vecchie stringhe nel database
             if (typeof item === 'string') item = { name: item, desc: "Nessuna descrizione", qty: 1 };
+
+            const displayCompItem = findCompendioItem(item);
+            const displayBrand = displayCompItem?.brand || item.brand || '';
 
             const li = document.createElement('li');
             li.style.background = '#fff';
@@ -447,8 +455,11 @@ function populatePlayerSheetUI(myChar) {
                 `;
             }
             li.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                    <strong style="color: #2c3e50; font-size: 15px;">${item.name}</strong>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap:8px;">
+                    <div>
+                        <strong style="color: #2c3e50; font-size: 15px;">${item.name}</strong>
+                        ${displayBrand ? `<span style="margin-left:6px; font-size:10px; font-weight:bold; color:#8e44ad;">${displayBrand}</span>` : ''}
+                    </div>
                     <span style="font-weight: bold; color: #8e44ad; background: #f4ecf7; padding: 2px 6px; border-radius: 4px; font-size: 12px;">x${item.qty}</span>
                 </div>
                 <div style="font-size: 12px; color: #7f8c8d; margin-top: 4px; font-style: italic; line-height: 1.3;">${item.desc}</div>
@@ -457,7 +468,7 @@ function populatePlayerSheetUI(myChar) {
             backpackContainer.appendChild(li);
         });
 
-        if (bpList.length === 0) backpackContainer.innerHTML = `<li style="color:#7f8c8d; font-size:13px; padding: 5px; text-align: center;"><em>Lo zaino è vuoto.</em></li>`;
+        if (visibleBackpackEntries.length === 0) backpackContainer.innerHTML = `<li style="color:#7f8c8d; font-size:13px; padding: 5px; text-align: center;"><em>Lo zaino non contiene oggetti non-gadget.</em></li>`;
 
         // Gestione form aggiunta oggetto
         if (canEdit) {
@@ -489,6 +500,8 @@ function populatePlayerSheetUI(myChar) {
             addItemForm.style.display = 'none';
         }
     }
+
+    renderGadgetSheetSection(myChar);
 
     const shopAvail = document.getElementById('ui-shop-available');
     const statsSubtabsContainer = document.getElementById('stats-subtabs-container');
@@ -586,14 +599,33 @@ function populatePlayerSheetUI(myChar) {
             // Controlla quanti ne possiede già nello zaino
             let ownedQty = 0;
             (myChar.backpack || []).forEach(b => {
-                if (b.name === item.name) ownedQty += (b.qty || 1);
+                if (typeof b === 'string') {
+                    if (b === item.name) ownedQty += 1;
+                    return;
+                }
+
+                const sameItem = b.compendium_id
+                    ? b.compendium_id === item.id
+                    : b.name === item.name;
+
+                if (sameItem) ownedQty += (b.qty || 1);
             });
             const ownedText = ownedQty > 0 ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px; font-weight:bold;">Nello Zaino: x${ownedQty}</span>` : "";
 
             const itemCost = getCompendioCost(item);
             const itemDesc = getCompendioDescription(item);
+            const brandHtml = item.brand
+                ? `<span style="display:inline-block; font-size:10px; font-weight:bold; color:#8e44ad; margin-top:3px;">${item.brand}</span>`
+                : '';
+            const armorStatsHtml = item.class === 'Armatura'
+                ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 10px 0; font-size:11px;">
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Peso: <b>${item.equipment?.weight ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Armonizzazione: <b>${item.equipment?.harmonization ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Vita: <b>${item.equipment?.hp ?? '-'}</b></span>
+                   </div>`
+                : '';
 
-            li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${itemCost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 12px 0; line-height:1.4;">${itemDesc}</p>${ownedText}</div>`;
+            li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><div><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><br>${brandHtml}</div><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${itemCost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 8px 0; line-height:1.4;">${itemDesc}</p>${armorStatsHtml}${ownedText}</div>`;
 
             const btn = document.createElement('button');
             btn.style.padding = '8px'; btn.style.borderRadius = '4px'; btn.style.fontWeight = 'bold'; btn.style.width = '100%'; btn.style.border = 'none'; btn.style.marginTop = '10px';
@@ -621,7 +653,7 @@ function populatePlayerSheetUI(myChar) {
                             if (existingIndex !== -1) {
                                 bp[existingIndex].qty = (bp[existingIndex].qty || 1) + 1;
                             } else {
-                                bp.push({ compendium_id: item.id, name: item.name, desc: item.desc, qty: 1, img: item.img || "" });
+                                bp.push({ compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 1, img: item.img || "" });
                             }
                             socket.emit('update_character_sheet', { char_id: myChar.id, backpack: bp });
                         }
@@ -743,6 +775,17 @@ const chatStatus = document.getElementById('chat-status');
 const dicePanelHeader = document.getElementById('dice-panel-header');
 const dicePanelContent = document.getElementById('dice-panel-content');
 const diceToggleIcon = document.getElementById('dice-toggle-icon');
+const chatInput = document.getElementById('chat-input');
+const sendChatBtn = document.getElementById('btn-send-chat');
+const chatCompose = document.getElementById('chat-compose');
+let chatRecipient = document.getElementById('chat-recipient');
+const sidequestComposer = document.getElementById('sidequest-composer');
+const sidequestTarget = document.getElementById('sidequest-target');
+const sidequestTitle = document.getElementById('sidequest-title');
+const sidequestDescription = document.getElementById('sidequest-description');
+const sidequestCost = document.getElementById('sidequest-cost');
+const sendSidequestBtn = document.getElementById('btn-send-sidequest');
+const sidequestStore = new Map();
 
 // --- 1. APERTURA E CHIUSURA TENDINA ---
 dicePanelHeader?.addEventListener('click', () => {
@@ -758,10 +801,94 @@ dicePanelHeader?.addEventListener('click', () => {
     }
 });
 
+function ensureChatRecipientSelect() {
+    if (chatRecipient || !chatCompose) return chatRecipient;
+
+    const recipientRow = document.createElement('div');
+    recipientRow.id = 'chat-recipient-row';
+    recipientRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+
+    const label = document.createElement('span');
+    label.textContent = 'A:';
+    label.style.cssText = 'font-size:11px;font-weight:bold;color:#7f8c8d;white-space:nowrap;';
+
+    chatRecipient = document.createElement('select');
+    chatRecipient.id = 'chat-recipient';
+    chatRecipient.style.cssText = 'flex:1;min-width:0;padding:6px;border:1px solid #bdc3c7;border-radius:4px;background:#fff;';
+
+    recipientRow.appendChild(label);
+    recipientRow.appendChild(chatRecipient);
+    chatCompose.insertBefore(recipientRow, chatCompose.firstChild);
+
+    chatRecipient.addEventListener('change', () => {
+        updateChatStatus();
+    });
+
+    return chatRecipient;
+}
+
+function refreshChatRecipientOptions() {
+    const select = ensureChatRecipientSelect();
+    if (!select) return;
+
+    const previousValue = select.value || 'all';
+    const myCharId = Number.parseInt(userSelect?.value || '', 10);
+
+    select.innerHTML = '';
+
+    const globalOption = document.createElement('option');
+    globalOption.value = 'all';
+    globalOption.textContent = '🌐 Tutti';
+    select.appendChild(globalOption);
+
+    if (!isMaster) {
+        const masterOption = document.createElement('option');
+        masterOption.value = 'master';
+        masterOption.textContent = '👑 Master';
+        select.appendChild(masterOption);
+    }
+
+    (characters || [])
+        .filter(char => char.role === 'player')
+        .filter(char => isMaster || Number(char.id) !== myCharId)
+        .forEach(char => {
+            const option = document.createElement('option');
+            option.value = `player:${char.id}`;
+            option.textContent = `👤 ${char.name}`;
+            select.appendChild(option);
+        });
+
+    if ([...select.options].some(opt => opt.value === previousValue)) {
+        select.value = previousValue;
+    } else {
+        select.value = 'all';
+    }
+}
+
+window.refreshChatRecipientOptions = refreshChatRecipientOptions;
+
 function updateChatStatus() {
-    if (!chatStatus) return;
-    if (isMaster) { chatStatus.innerText = "Privato (Solo tu)"; chatStatus.style.color = "#e74c3c"; }
-    else { chatStatus.innerText = "Pubblico"; chatStatus.style.color = "#1abc9c"; }
+    refreshChatRecipientOptions();
+
+    if (chatStatus) {
+        const target = chatRecipient?.value || 'all';
+        const targetText = chatRecipient?.selectedOptions?.[0]?.textContent || '🌐 Tutti';
+
+        if (target === 'all') {
+            chatStatus.innerText = isMaster ? 'Master • Globale' : 'Globale';
+            chatStatus.style.color = isMaster ? '#f1c40f' : '#1abc9c';
+        } else {
+            chatStatus.innerText = `🔒 ${targetText.replace(/^👤\s*|^👑\s*/, '')}`;
+            chatStatus.style.color = '#f1c40f';
+        }
+    }
+
+    if (sidequestComposer) {
+        sidequestComposer.style.display = isMaster ? 'block' : 'none';
+    }
+
+    refreshSidequestTargetOptions();
+    refreshSidequestCards();
 }
 
 // --- 2. RICEZIONE MESSAGGI E DADI DAL SERVER ---
@@ -783,7 +910,287 @@ socket.on('dice_result', (data) => {
     chatLog.scrollTop = chatLog.scrollHeight;
 });
 
-// --- 3. INVIO LANCIO DADI (BOTTONI E TASTIERA) ---
+// --- 3. CHAT TESTUALE E SIDEQUEST ---
+function ensureChatOpen() {
+    if (!dicePanelContent) return;
+    if (dicePanelContent.style.display === 'none') {
+        dicePanelContent.style.display = 'flex';
+        if (diceToggleIcon) diceToggleIcon.innerText = '▼';
+        if (dicePanelHeader) dicePanelHeader.style.borderRadius = '6px 6px 0 0';
+    }
+    if (chatLog) chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function appendChatMessage(data) {
+    if (!chatLog) return;
+
+    const div = document.createElement('div');
+    div.style.padding = '8px 10px';
+    div.style.borderRadius = '5px';
+    div.style.lineHeight = '1.4';
+    div.dataset.chatChannel = data.is_private ? 'private' : 'global';
+
+    if (data.is_system) {
+        div.style.background = '#fef9e7';
+        div.style.borderLeft = '4px solid #f1c40f';
+        div.style.color = '#7d6608';
+    } else if (data.is_private) {
+        div.style.background = '#fff8e1';
+        div.style.borderLeft = '4px solid #f39c12';
+        div.style.color = '#5d4037';
+    } else if (data.is_master) {
+        div.style.background = '#f5eef8';
+        div.style.borderLeft = '4px solid #8e44ad';
+        div.style.color = '#512e5f';
+    } else {
+        div.style.background = '#ebf5fb';
+        div.style.borderLeft = '4px solid #3498db';
+        div.style.color = '#2c3e50';
+    }
+
+    const privateLabel = data.is_private
+        ? `<div style="font-size:10px;font-weight:bold;color:#b9770e;margin-bottom:3px;">🔒 PRIVATO • ${data.private_route || data.target_label || ''}</div>`
+        : '';
+
+    div.innerHTML = `${privateLabel}<strong style="display:block;font-size:13px;margin-bottom:2px;">${data.name}</strong>${data.message}`;
+    chatLog.appendChild(div);
+    ensureChatOpen();
+}
+
+socket.on('chat_message', appendChatMessage);
+socket.on('chat_error', data => alert(data?.message || 'Errore chat.'));
+
+function sendChatMessage() {
+    const message = chatInput?.value.trim();
+    if (!message) return;
+
+    const target = chatRecipient?.value || 'all';
+
+    socket.emit('chat_message', {
+        message,
+        target
+    });
+
+    chatInput.value = '';
+}
+
+sendChatBtn?.addEventListener('click', sendChatMessage);
+chatInput?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+    }
+});
+
+// Mantiene aggiornata la lista dei destinatari quando cambiano i personaggi.
+socket.on('init_state', () => {
+    setTimeout(refreshChatRecipientOptions, 0);
+});
+
+socket.on('update_character', () => {
+    setTimeout(refreshChatRecipientOptions, 0);
+});
+
+socket.on('character_deleted', () => {
+    setTimeout(refreshChatRecipientOptions, 0);
+});
+
+function refreshSidequestTargetOptions() {
+    if (!sidequestTarget) return;
+
+    const previousValue = sidequestTarget.value || 'all';
+    sidequestTarget.innerHTML = '';
+
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '🌐 Tutti i giocatori';
+    sidequestTarget.appendChild(allOption);
+
+    (characters || [])
+        .filter(char => char.role === 'player')
+        .forEach(char => {
+            const option = document.createElement('option');
+            option.value = String(char.id);
+            option.textContent = `👤 ${char.name}`;
+            sidequestTarget.appendChild(option);
+        });
+
+    if ([...sidequestTarget.options].some(opt => opt.value === previousValue)) {
+        sidequestTarget.value = previousValue;
+    }
+}
+window.refreshSidequestTargetOptions = refreshSidequestTargetOptions;
+
+function sidequestPlayerName(charId) {
+    const character = (characters || []).find(char => Number(char.id) === Number(charId));
+    return character?.name || `Giocatore #${charId}`;
+}
+
+function renderSidequestCard(quest) {
+    if (!chatLog || !quest?.id) return;
+
+    let card = document.getElementById(`sidequest-card-${quest.id}`);
+    if (!card) {
+        card = document.createElement('div');
+        card.id = `sidequest-card-${quest.id}`;
+        card.className = 'sidequest-card';
+        chatLog.appendChild(card);
+    }
+
+    card.innerHTML = '';
+    card.style.cssText = 'padding:10px;border-radius:7px;border:2px solid #8e44ad;background:#f8f4fb;color:#2c3e50;box-shadow:0 2px 5px rgba(0,0,0,.08);';
+
+    const heading = document.createElement('div');
+    heading.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px;';
+
+    const title = document.createElement('strong');
+    title.style.cssText = 'color:#6c3483;font-size:14px;';
+    title.textContent = `📜 ${quest.title}`;
+    heading.appendChild(title);
+
+    const cost = document.createElement('span');
+    cost.style.cssText = 'white-space:nowrap;background:#6c3483;color:white;border-radius:12px;padding:3px 7px;font-size:11px;font-weight:bold;';
+    cost.textContent = `${Number(quest.cost || 0)} €`;
+    heading.appendChild(cost);
+    card.appendChild(heading);
+
+    const target = document.createElement('div');
+    target.style.cssText = 'font-size:10px;color:#8e44ad;font-weight:bold;margin-bottom:6px;';
+    target.textContent = `Destinatario: ${quest.target_name || 'Tutti i giocatori'}`;
+    card.appendChild(target);
+
+    if (quest.description) {
+        const description = document.createElement('div');
+        description.style.cssText = 'font-size:12px;line-height:1.4;white-space:pre-wrap;margin-bottom:8px;';
+        description.textContent = quest.description;
+        card.appendChild(description);
+    }
+
+    const paidBy = Array.isArray(quest.paid_by) ? quest.paid_by.map(Number) : [];
+
+    if (isMaster) {
+        const paymentInfo = document.createElement('div');
+        paymentInfo.style.cssText = 'font-size:11px;color:#566573;margin-top:5px;';
+        paymentInfo.textContent = paidBy.length
+            ? `✅ Pagato da: ${paidBy.map(sidequestPlayerName).join(', ')}`
+            : '⏳ Nessun pagamento ancora.';
+        card.appendChild(paymentInfo);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = 'Chiudi sidequest';
+        closeBtn.style.cssText = 'margin-top:8px;width:100%;padding:5px;background:#7f8c8d;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;';
+        closeBtn.addEventListener('click', () => {
+            socket.emit('close_sidequest', { quest_id: quest.id });
+        });
+        card.appendChild(closeBtn);
+    } else {
+        const myId = parseInt(userSelect?.value);
+        const myChar = (characters || []).find(char => Number(char.id) === Number(myId));
+        const alreadyPaid = paidBy.includes(Number(myId));
+
+        if (alreadyPaid) {
+            const paid = document.createElement('div');
+            paid.style.cssText = 'margin-top:7px;padding:6px;text-align:center;background:#d5f5e3;color:#196f3d;border-radius:4px;font-weight:bold;font-size:12px;';
+            paid.textContent = '✅ PAGATO';
+            card.appendChild(paid);
+        } else {
+            const payBtn = document.createElement('button');
+            payBtn.type = 'button';
+            payBtn.style.cssText = 'margin-top:7px;width:100%;padding:7px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;';
+
+            const balance = Number(myChar?.xp ?? 0);
+            const questCost = Number(quest.cost || 0);
+            const enoughFunds = balance >= questCost;
+
+            payBtn.textContent = enoughFunds
+                ? `💰 Paga ${questCost} €`
+                : `⛔ Servono ${questCost} € • Saldo ${balance} €`;
+            payBtn.disabled = !enoughFunds;
+            if (!enoughFunds) {
+                payBtn.style.background = '#95a5a6';
+                payBtn.style.cursor = 'not-allowed';
+            }
+
+            payBtn.addEventListener('click', () => {
+                if (!confirm(`Pagare ${questCost} € per "${quest.title}"?`)) return;
+                payBtn.disabled = true;
+                socket.emit('pay_sidequest', { quest_id: quest.id });
+            });
+            card.appendChild(payBtn);
+        }
+    }
+}
+
+function refreshSidequestCards() {
+    for (const quest of sidequestStore.values()) {
+        renderSidequestCard(quest);
+    }
+}
+window.refreshSidequestCards = refreshSidequestCards;
+
+socket.on('sidequest_list', quests => {
+    sidequestStore.clear();
+    document.querySelectorAll('.sidequest-card').forEach(card => card.remove());
+    (quests || []).forEach(quest => {
+        sidequestStore.set(Number(quest.id), quest);
+        renderSidequestCard(quest);
+    });
+    if ((quests || []).length) ensureChatOpen();
+});
+
+socket.on('sidequest_created', quest => {
+    sidequestStore.set(Number(quest.id), quest);
+    renderSidequestCard(quest);
+    ensureChatOpen();
+});
+
+socket.on('sidequest_update', quest => {
+    sidequestStore.set(Number(quest.id), quest);
+    renderSidequestCard(quest);
+});
+
+socket.on('sidequest_removed', data => {
+    const questId = Number(data?.id);
+    sidequestStore.delete(questId);
+    document.getElementById(`sidequest-card-${questId}`)?.remove();
+});
+
+socket.on('sidequest_error', data => {
+    alert(data?.message || 'Operazione sidequest non riuscita.');
+    refreshSidequestCards();
+});
+
+sendSidequestBtn?.addEventListener('click', () => {
+    if (!isMaster) return;
+
+    const title = sidequestTitle?.value.trim() || '';
+    const description = sidequestDescription?.value.trim() || '';
+    const cost = parseInt(sidequestCost?.value || '0');
+    const targetValue = sidequestTarget?.value || 'all';
+
+    if (!title) {
+        alert('Inserisci un titolo per la sidequest.');
+        return;
+    }
+    if (!Number.isFinite(cost) || cost < 0) {
+        alert('Inserisci un costo valido.');
+        return;
+    }
+
+    socket.emit('create_sidequest', {
+        title,
+        description,
+        cost,
+        target_char_id: targetValue === 'all' ? null : parseInt(targetValue)
+    });
+
+    if (sidequestTitle) sidequestTitle.value = '';
+    if (sidequestDescription) sidequestDescription.value = '';
+    if (sidequestCost) sidequestCost.value = '0';
+});
+
+// --- 4. INVIO LANCIO DADI (BOTTONI E TASTIERA) ---
 document.querySelectorAll('.dice-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const diceExpr = e.target.getAttribute('data-dice');
@@ -811,6 +1218,178 @@ document.getElementById('custom-dice')?.addEventListener('keypress', (e) => {
         document.getElementById('btn-custom-dice').click();
     }
 });
+
+// ==========================================
+// SEZIONE GADGET DELLA SCHEDA GIOCATORE
+// ==========================================
+function renderGadgetSheetSection(myChar) {
+    const availableContainer = document.getElementById('ui-gadgets');
+    const equippedContainer = document.getElementById('ui-gadgets-equipped');
+
+    if (!availableContainer || !equippedContainer || !myChar) return;
+
+    availableContainer.innerHTML = '';
+    equippedContainer.innerHTML = '';
+
+    const backpack = myChar.backpack || [];
+    const currentUserId = parseInt(userSelect?.value);
+    const canEdit = isMaster || currentUserId === myChar.id;
+    const equippedGadgets = myChar.stats?.equipped_gadgets || {};
+
+    // ---------------- Equipaggiati ----------------
+    const seenGroups = new Set();
+    let equippedCount = 0;
+
+    Object.entries(equippedGadgets).forEach(([slot, item]) => {
+        if (!item) return;
+
+        const groupKey = item.equip_group_id || `${slot}-${item.compendium_id || item.name}`;
+        if (seenGroups.has(groupKey)) return;
+        seenGroups.add(groupKey);
+        equippedCount += 1;
+
+        const linkedSlots = Object.keys(equippedGadgets).filter(key => {
+            const candidate = equippedGadgets[key];
+            if (!candidate) return false;
+            if (item.equip_group_id) return candidate.equip_group_id === item.equip_group_id;
+            return key === slot;
+        });
+
+        const compItem = findCompendioItem(item);
+        const brand = compItem?.brand || '';
+        const li = document.createElement('li');
+        li.style.cssText = 'background:#f4ecf7;border:1px solid #d2b4de;border-radius:5px;padding:8px;';
+
+        li.innerHTML = `
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+                <div>
+                    <strong style="color:#6c3483;">${item.name || 'Gadget'}</strong>
+                    ${brand ? `<span style="margin-left:6px;font-size:10px;font-weight:bold;color:#8e44ad;">${brand}</span>` : ''}
+                    <div style="font-size:11px;color:#7f8c8d;margin-top:3px;">
+                        Montato su: ${linkedSlots.map(s => equipmentSlotLabels[s] || s).join(' + ')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (canEdit) {
+            const btn = document.createElement('button');
+            btn.textContent = 'Sgancia';
+            btn.style.cssText = 'margin-top:6px;width:100%;padding:5px;background:#8e44ad;color:white;border:none;border-radius:3px;cursor:pointer;font-weight:bold;';
+            btn.onclick = () => window.unequipGadgetFromSlot(myChar.id, slot);
+            li.appendChild(btn);
+        }
+
+        equippedContainer.appendChild(li);
+    });
+
+    if (equippedCount === 0) {
+        equippedContainer.innerHTML = '<li style="color:#7f8c8d;font-size:12px;"><em>Nessun gadget equipaggiato.</em></li>';
+    }
+
+    // ---------------- Disponibili ----------------
+    const gadgetEntries = backpack
+        .map((item, index) => ({ item, index }))
+        .filter(entry => isGadgetInventoryItem(entry.item));
+
+    gadgetEntries.forEach(({ item: rawItem, index }) => {
+        const item = typeof rawItem === 'string'
+            ? { name: rawItem, desc: 'Nessuna descrizione', qty: 1 }
+            : rawItem;
+
+        const compItem = findCompendioItem(item);
+        const brand = compItem?.brand || item.brand || '';
+        const allowedSlots = compItem?.equipment?.slot?.allowed_slots || [];
+        const usableSlots = getAvailableGadgetSlots(myChar, compItem);
+        const missingArmor = getMissingArmorLabelsForGadget(myChar, compItem);
+        const occupancy = compItem?.equipment?.slot?.occupancy || 'one';
+
+        const li = document.createElement('li');
+        li.style.cssText = 'background:#fff;border:1px solid #ccc;border-radius:5px;padding:8px;';
+        li.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+                <div>
+                    <strong style="color:#2c3e50;font-size:14px;">${item.name}</strong>
+                    ${brand ? `<span style="margin-left:6px;font-size:10px;font-weight:bold;color:#8e44ad;">${brand}</span>` : ''}
+                </div>
+                <span style="font-weight:bold;color:#8e44ad;background:#f4ecf7;padding:2px 6px;border-radius:4px;font-size:12px;">x${item.qty || 1}</span>
+            </div>
+            <div style="font-size:12px;color:#7f8c8d;margin-top:4px;font-style:italic;line-height:1.3;">${item.desc || getCompendioDescription(compItem)}</div>
+        `;
+
+        if (canEdit) {
+            const controls = document.createElement('div');
+            controls.style.cssText = 'display:flex;gap:5px;margin-top:6px;border-top:1px dashed #eee;padding-top:6px;align-items:center;flex-wrap:wrap;';
+
+            if (allowedSlots.length > 0 && usableSlots.length > 0) {
+                const select = document.createElement('select');
+                select.style.cssText = 'padding:3px;border-radius:3px;font-size:11px;flex:1;min-width:140px;border:1px solid #ccc;';
+                select.innerHTML = '<option value="">-- Monta su armatura --</option>';
+
+                if (occupancy === 'all' && allowedSlots.length > 1) {
+                    const option = document.createElement('option');
+                    option.value = allowedSlots[0];
+                    option.textContent = allowedSlots.map(s => equipmentSlotLabels[s] || s).join(' + ');
+                    select.appendChild(option);
+                } else {
+                    usableSlots.forEach(slot => {
+                        const option = document.createElement('option');
+                        option.value = slot;
+                        option.textContent = equipmentSlotLabels[slot] || slot;
+                        select.appendChild(option);
+                    });
+                }
+
+                select.onchange = () => {
+                    if (!select.value) return;
+                    window.equipGadget(
+                        myChar.id,
+                        item.name,
+                        item.desc || getCompendioDescription(compItem),
+                        select.value,
+                        item.compendium_id || compItem?.id || null
+                    );
+                };
+
+                controls.appendChild(select);
+            } else if (allowedSlots.length > 0) {
+                const warning = document.createElement('div');
+                warning.style.cssText = 'flex:1;min-width:100%;font-size:11px;color:#c0392b;font-weight:bold;';
+                warning.textContent = missingArmor.length > 0
+                    ? `Richiede armatura: ${[...new Set(missingArmor)].join(' / ')}`
+                    : 'Nessuno slot armatura compatibile disponibile.';
+                controls.appendChild(warning);
+            }
+
+            const minus = document.createElement('button');
+            minus.textContent = '-';
+            minus.style.cssText = 'padding:2px 8px;background:#e74c3c;color:white;border:none;border-radius:3px;cursor:pointer;font-weight:bold;';
+            minus.onclick = () => window.updateBackpackItem(myChar.id, index, -1);
+
+            const plus = document.createElement('button');
+            plus.textContent = '+';
+            plus.style.cssText = 'padding:2px 8px;background:#2ecc71;color:white;border:none;border-radius:3px;cursor:pointer;font-weight:bold;';
+            plus.onclick = () => window.updateBackpackItem(myChar.id, index, 1);
+
+            const trash = document.createElement('button');
+            trash.textContent = '🗑️';
+            trash.style.cssText = 'padding:2px 8px;background:#7f8c8d;color:white;border:none;border-radius:3px;cursor:pointer;margin-left:auto;';
+            trash.onclick = () => window.removeBackpackItem(myChar.id, index);
+
+            controls.appendChild(minus);
+            controls.appendChild(plus);
+            controls.appendChild(trash);
+            li.appendChild(controls);
+        }
+
+        availableContainer.appendChild(li);
+    });
+
+    if (gadgetEntries.length === 0) {
+        availableContainer.innerHTML = '<li style="color:#7f8c8d;font-size:12px;"><em>Nessun gadget disponibile.</em></li>';
+    }
+}
+
 // ==========================================
 // COMPENDIO SHOP (LOGICA)
 // ==========================================
@@ -917,6 +1496,92 @@ function getAllowedSlots(inventoryItem) {
     if (!compItem) return [];
 
     return compItem?.equipment?.slot?.allowed_slots || [];
+}
+
+
+const gadgetArmorRequirementMap = {
+    visore: 'elmo',
+    elmo: 'elmo',
+    schiena: 'schiena',
+    spalla_dx: 'spalla_dx',
+    petto: 'petto',
+    spalla_sx: 'spalla_sx',
+    avambr_dx: 'avambr_dx',
+    cintura: 'cintura',
+    avambr_sx: 'avambr_sx',
+    guanto_dx: 'guanto_dx',
+    gambe: 'gambe',
+    guanto_sx: 'guanto_sx',
+    stivale_dx: 'stivale_dx',
+    stivale_sx: 'stivale_sx'
+};
+
+const equipmentSlotLabels = {
+    visore: 'Visore',
+    elmo: 'Elmo',
+    schiena: 'Schiena',
+    spalla_dx: 'Spalla Dx',
+    spalla_sx: 'Spalla Sx',
+    petto: 'Pettorali',
+    avambr_dx: 'Avambraccio Dx',
+    avambr_sx: 'Avambraccio Sx',
+    cintura: 'Cintura',
+    guanto_dx: 'Guanto Dx',
+    guanto_sx: 'Guanto Sx',
+    gambe: 'Gambe',
+    stivale_dx: 'Stivale Dx',
+    stivale_sx: 'Stivale Sx',
+    mano_dx: 'Arma Dx',
+    mano_sx: 'Arma Sx'
+};
+
+function isGadgetCompendiumItem(compItem) {
+    return !!compItem && getShopGroup(compItem) === 'Gadget';
+}
+
+function isGadgetInventoryItem(inventoryItem) {
+    return isGadgetCompendiumItem(
+        findCompendioItem(inventoryItem)
+    );
+}
+
+function getRequiredArmorSlotForGadgetSlot(gadgetSlot) {
+    return gadgetArmorRequirementMap[gadgetSlot] || gadgetSlot;
+}
+
+function hasArmorForGadgetSlot(char, gadgetSlot) {
+    const armorSlot = getRequiredArmorSlotForGadgetSlot(gadgetSlot);
+    const armorItem = char?.stats?.equipped?.[armorSlot];
+
+    if (!armorItem) return false;
+
+    const compItem = findCompendioItem(armorItem);
+
+    // Gli oggetti moderni devono essere vere armature. Per vecchi salvataggi
+    // senza voce nel compendio consideriamo comunque lo slot come occupato.
+    return !compItem || compItem.class === 'Armatura';
+}
+
+function getAvailableGadgetSlots(char, compItem) {
+    const slotInfo = compItem?.equipment?.slot || {};
+    const allowedSlots = slotInfo.allowed_slots || [];
+
+    if (slotInfo.occupancy === 'all' && allowedSlots.length > 1) {
+        return allowedSlots.every(slot => hasArmorForGadgetSlot(char, slot))
+            ? [allowedSlots[0]]
+            : [];
+    }
+
+    return allowedSlots.filter(slot => hasArmorForGadgetSlot(char, slot));
+}
+
+function getMissingArmorLabelsForGadget(char, compItem) {
+    const slotInfo = compItem?.equipment?.slot || {};
+    const allowedSlots = slotInfo.allowed_slots || [];
+
+    return allowedSlots
+        .filter(slot => !hasArmorForGadgetSlot(char, slot))
+        .map(slot => equipmentSlotLabels[getRequiredArmorSlotForGadgetSlot(slot)] || slot);
 }
 
 socket.on('compendio_data', (data) => {
@@ -1038,6 +1703,8 @@ document.getElementById('compendio-category')?.addEventListener(
                         ${item.name}
                     </strong>
 
+                    ${item.brand ? `<span style="color:#8e44ad; font-size:10px; font-weight:bold; margin-left:5px;">${item.brand}</span>` : ''}
+
                     <span style="
                         color:#8e44ad;
                         font-weight:bold;
@@ -1131,6 +1798,7 @@ document.getElementById('compendio-category')?.addEventListener(
                         backpack[existingIndex] = {
                             compendium_id: item.id,
                             name: item.name,
+                            brand: item.brand || null,
                             desc: description,
                             qty: 2
                         };
@@ -1149,6 +1817,7 @@ document.getElementById('compendio-category')?.addEventListener(
                     backpack.push({
                         compendium_id: item.id,
                         name: item.name,
+                        brand: item.brand || null,
                         desc: description,
                         qty: 1
                     });
@@ -1447,6 +2116,12 @@ let dragEquipOffsetY = 0;
 
 if (equipHeader && equipPanel) {
     equipHeader.addEventListener('mousedown', (e) => {
+        // Il pulsante della tendina non deve avviare il trascinamento.
+        if (e.target?.id === 'equip-toggle') {
+            e.stopPropagation();
+            return;
+        }
+
         isDraggingEquip = true;
         // Calcola dove hai cliccato rispetto al bordo del pannello
         dragEquipOffsetX = e.clientX - equipPanel.getBoundingClientRect().left;
@@ -1468,6 +2143,66 @@ if (equipHeader && equipPanel) {
         equipHeader.style.cursor = 'grab';
     });
 }
+
+
+// ==========================================
+// TRASCINAMENTO PANNELLO GADGET
+// ==========================================
+const gadgetPanel = document.getElementById('gadget-panel');
+const gadgetHeader = document.getElementById('gadget-header');
+
+let isDraggingGadget = false;
+let dragGadgetOffsetX = 0;
+let dragGadgetOffsetY = 0;
+
+if (gadgetHeader && gadgetPanel) {
+    gadgetHeader.addEventListener('mousedown', (e) => {
+        if (e.target?.id === 'gadget-toggle') return;
+        isDraggingGadget = true;
+        dragGadgetOffsetX = e.clientX - gadgetPanel.getBoundingClientRect().left;
+        dragGadgetOffsetY = e.clientY - gadgetPanel.getBoundingClientRect().top;
+        gadgetHeader.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingGadget) return;
+        gadgetPanel.style.left = (e.clientX - dragGadgetOffsetX) + 'px';
+        gadgetPanel.style.top = (e.clientY - dragGadgetOffsetY) + 'px';
+        gadgetPanel.style.bottom = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDraggingGadget = false;
+        gadgetHeader.style.cursor = 'grab';
+    });
+}
+
+// I due pannelli possono essere ridotti senza nascondere la doll all'avvio.
+function bindPanelToggle(toggleId, contentId) {
+    const toggle = document.getElementById(toggleId);
+    const content = document.getElementById(contentId);
+    if (!toggle || !content) return;
+
+    // Uso onclick per avere un solo handler anche dopo eventuali refresh UI.
+    toggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isOpen = content.style.display !== 'none';
+        content.style.display = isOpen ? 'none' : 'block';
+        toggle.textContent = isOpen ? '▶' : '▼';
+        toggle.title = isOpen ? 'Espandi' : 'Riduci a icona';
+    };
+
+    // Evita che il click sulla freccia venga interpretato come drag.
+    toggle.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+}
+
+bindPanelToggle('equip-toggle', 'equip-content');
+bindPanelToggle('gadget-toggle', 'gadget-content');
 
 // ==========================================
 // TRASCINAMENTO PANNELLO AZIONE COMBATTIMENTO
@@ -1555,6 +2290,7 @@ function buildEquipmentTooltip(itemData) {
 
     const rows = [];
 
+    const brand = compItem?.brand;
     const slot = compItem?.equipment?.slot?.raw;
     const weight = compItem?.equipment?.weight;
     const harmonization = compItem?.equipment?.harmonization;
@@ -1563,6 +2299,10 @@ function buildEquipmentTooltip(itemData) {
     const speed = formatEquipmentSpeed(compItem);
     const range = formatEquipmentRange(compItem);
     const damage = formatEquipmentDamage(compItem);
+
+    if (brand) {
+        rows.push(`<b>Brand:</b> ${brand}`);
+    }
 
     if (slot) {
         rows.push(`<b>Slot:</b> ${slot}`);
@@ -1617,24 +2357,34 @@ function buildEquipmentTooltip(itemData) {
 
 window.updateEquippedPanel = function(char) {
     const panel = document.getElementById('equipped-panel');
+    const gadgetPanelEl = document.getElementById('gadget-panel');
     if (!panel) return;
 
-    // Il Master vede il pannello solo del personaggio selezionato
+    // Il Master vede le doll solo quando ha selezionato un'entità.
+    // Il giocatore invece vede subito le doll, anche completamente vuote.
     if (
-        !char ||
+        typeof isMaster !== 'undefined' &&
+        isMaster &&
         (
-            typeof isMaster !== 'undefined' &&
-            isMaster &&
+            !char ||
             char.id !== selectedCharacterId
         )
     ) {
         panel.style.display = 'none';
+        if (gadgetPanelEl) gadgetPanelEl.style.display = 'none';
         return;
     }
 
     panel.style.display = 'block';
+    if (gadgetPanelEl) gadgetPanelEl.style.display = 'block';
 
-    const equipped = char.stats?.equipped || {};
+    // Nessuna migrazione/scrittura automatica durante il caricamento.
+    // Le modifiche all'equipaggiamento partono solo da azioni esplicite dell'utente.
+    const equipped = char?.stats?.equipped || {};
+
+    if (typeof window.updateGadgetPanel === 'function') {
+        window.updateGadgetPanel(char || null);
+    }
 
     // ==========================================
     // SLOT DISPONIBILI
@@ -2247,6 +2997,9 @@ function returnEquippedItemToInventory(item, backpack, weapons) {
         desc:
             item.desc || "Nessuna descrizione",
 
+        brand:
+            item.brand || findCompendioItem(item)?.brand || null,
+
         qty: 1,
 
         img:
@@ -2340,6 +3093,321 @@ function removeEquippedInstance(equipped, slotKey, backpack, weapons) {
     });
 }
 
+
+function getLinkedGadgetSlots(equippedGadgets, slotKey) {
+    const item = equippedGadgets?.[slotKey];
+    if (!item) return [];
+
+    if (item.equip_group_id) {
+        return Object.keys(equippedGadgets).filter(key => {
+            return equippedGadgets[key]?.equip_group_id === item.equip_group_id;
+        });
+    }
+
+    return [slotKey];
+}
+
+function removeEquippedGadgetInstance(equippedGadgets, slotKey, backpack) {
+    const item = equippedGadgets?.[slotKey];
+    if (!item) return;
+
+    const linkedSlots = getLinkedGadgetSlots(equippedGadgets, slotKey);
+    returnEquippedItemToInventory(item, backpack, []);
+
+    linkedSlots.forEach(key => {
+        equippedGadgets[key] = null;
+    });
+}
+
+function cleanupGadgetsWithoutArmor(stats, backpack) {
+    if (!stats) return;
+
+    const gadgets = stats.equipped_gadgets || {};
+    const pseudoChar = { stats };
+    const processed = new Set();
+
+    Object.keys(gadgets).forEach(slot => {
+        const item = gadgets[slot];
+        if (!item) return;
+
+        const groupKey = item.equip_group_id || `${slot}-${item.compendium_id || item.name}`;
+        if (processed.has(groupKey)) return;
+        processed.add(groupKey);
+
+        const linkedSlots = getLinkedGadgetSlots(gadgets, slot);
+        const hasAllArmor = linkedSlots.every(linkedSlot =>
+            hasArmorForGadgetSlot(pseudoChar, linkedSlot)
+        );
+
+        if (!hasAllArmor) {
+            removeEquippedGadgetInstance(gadgets, slot, backpack);
+        }
+    });
+
+    stats.equipped_gadgets = gadgets;
+}
+
+function migrateLegacyGadgets(char) {
+    if (!char?.stats?.equipped) return false;
+
+    const equipped = char.stats.equipped;
+    const gadgets = char.stats.equipped_gadgets || {};
+    let changed = false;
+
+    Object.keys(equipped).forEach(slot => {
+        const item = equipped[slot];
+        if (!item) return;
+
+        const compItem = findCompendioItem(item);
+        if (!isGadgetCompendiumItem(compItem)) return;
+
+        gadgets[slot] = item;
+        equipped[slot] = null;
+        changed = true;
+    });
+
+    if (!changed) return false;
+
+    char.stats.equipped_gadgets = gadgets;
+    const backpack = char.backpack || [];
+    cleanupGadgetsWithoutArmor(char.stats, backpack);
+
+    socket.emit('update_character_sheet', {
+        char_id: char.id,
+        stats: char.stats,
+        backpack: backpack,
+        weapons: char.weapons || []
+    });
+
+    return true;
+}
+
+window.equipGadget = function(
+    charId,
+    itemName,
+    itemDesc,
+    slot,
+    compendiumId = null
+) {
+    if (!slot) return;
+
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+
+    const stats = char.stats || {};
+    stats.equipped = stats.equipped || {};
+    stats.equipped_gadgets = stats.equipped_gadgets || {};
+
+    const gadgets = stats.equipped_gadgets;
+    const backpack = char.backpack || [];
+    const compItem = findCompendioItem({
+        compendium_id: compendiumId,
+        name: itemName
+    });
+
+    if (!isGadgetCompendiumItem(compItem)) {
+        alert(`"${itemName}" non è classificato come gadget.`);
+        return;
+    }
+
+    const slotInfo = compItem?.equipment?.slot || {};
+    const allowedSlots = slotInfo.allowed_slots || [];
+
+    if (!allowedSlots.includes(slot)) {
+        alert(`"${itemName}" non può essere montato in questo punto.`);
+        return;
+    }
+
+    let targetSlots = [slot];
+    if (slotInfo.occupancy === 'all' && allowedSlots.length > 1) {
+        targetSlots = [...allowedSlots];
+    }
+
+    const missing = targetSlots.filter(targetSlot =>
+        !hasArmorForGadgetSlot(char, targetSlot)
+    );
+
+    if (missing.length > 0) {
+        const required = [...new Set(
+            missing.map(targetSlot =>
+                equipmentSlotLabels[getRequiredArmorSlotForGadgetSlot(targetSlot)] || targetSlot
+            )
+        )];
+        alert(`Prima devi equipaggiare l'armatura richiesta: ${required.join(' / ')}.`);
+        return;
+    }
+
+    const backpackIndex = backpack.findIndex(b => {
+        if (typeof b === 'string') return b === itemName;
+        if (compendiumId && b.compendium_id) return b.compendium_id === compendiumId;
+        return b.name === itemName;
+    });
+
+    if (backpackIndex === -1) {
+        alert(`Gadget "${itemName}" non trovato.`);
+        return;
+    }
+
+    const rawItem = backpack[backpackIndex];
+    const sourceItem = typeof rawItem === 'string'
+        ? { name: rawItem, desc: itemDesc, qty: 1 }
+        : { ...rawItem };
+
+    if (typeof rawItem !== 'string' && (rawItem.qty || 1) > 1) {
+        rawItem.qty -= 1;
+    } else {
+        backpack.splice(backpackIndex, 1);
+    }
+
+    // Un solo gadget per punto armatura. Se c'è già, torna nello zaino.
+    const removedGroups = new Set();
+    targetSlots.forEach(targetSlot => {
+        const oldItem = gadgets[targetSlot];
+        if (!oldItem) return;
+
+        const groupKey = oldItem.equip_group_id || `legacy-${targetSlot}`;
+        if (removedGroups.has(groupKey)) return;
+        removedGroups.add(groupKey);
+        removeEquippedGadgetInstance(gadgets, targetSlot, backpack);
+    });
+
+    const equipGroupId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const equippedItem = {
+        compendium_id: compendiumId || sourceItem.compendium_id || compItem?.id || null,
+        name: itemName,
+        desc: itemDesc || sourceItem.desc || getCompendioDescription(compItem),
+        qty: 1,
+        img: sourceItem.img || '',
+        original_type: 'gadget',
+        equip_group_id: equipGroupId,
+        equipped_slots: [...targetSlots]
+    };
+
+    targetSlots.forEach(targetSlot => {
+        gadgets[targetSlot] = { ...equippedItem };
+    });
+
+    stats.equipped_gadgets = gadgets;
+
+    socket.emit('update_character_sheet', {
+        char_id: charId,
+        stats: stats,
+        backpack: backpack,
+        weapons: char.weapons || []
+    });
+};
+
+window.unequipGadgetFromSlot = function(charId, slotKey) {
+    const char = characters.find(c => c.id === charId);
+    const gadgets = char?.stats?.equipped_gadgets;
+
+    if (!char || !gadgets?.[slotKey]) return;
+
+    const backpack = char.backpack || [];
+    removeEquippedGadgetInstance(gadgets, slotKey, backpack);
+    char.stats.equipped_gadgets = gadgets;
+
+    socket.emit('update_character_sheet', {
+        char_id: charId,
+        stats: char.stats,
+        backpack: backpack,
+        weapons: char.weapons || []
+    });
+};
+
+window.updateGadgetPanel = function(char) {
+    const panel = document.getElementById('gadget-panel');
+    if (!panel) return;
+
+    const slotKeys = [
+        'visore', 'elmo', 'schiena',
+        'spalla_dx', 'petto', 'spalla_sx',
+        'avambr_dx', 'cintura', 'avambr_sx',
+        'guanto_dx', 'gambe', 'guanto_sx',
+        'stivale_dx', 'stivale_sx'
+    ];
+
+    const gadgets = char?.stats?.equipped_gadgets || {};
+    const gadgetEmoji = '🧩';
+
+    slotKeys.forEach(slot => {
+        const el = document.getElementById(`gadget-slot-${slot}`);
+        if (!el) return;
+
+        const itemData = gadgets[slot];
+        const armorReady = char ? hasArmorForGadgetSlot(char, slot) : false;
+        const nameEl = el.querySelector('.doll-name');
+        const iconEl = el.querySelector('.doll-icon');
+        if (!nameEl || !iconEl) return;
+
+        el.classList.toggle('armor-missing', !armorReady);
+        el.classList.toggle('filled', !!itemData);
+
+        if (itemData) {
+            nameEl.textContent = itemData.name || 'Gadget';
+            nameEl.style.color = '#d7bde2';
+            iconEl.style.backgroundImage = itemData.img ? `url('${itemData.img}')` : 'none';
+            iconEl.style.backgroundSize = 'contain';
+            iconEl.style.backgroundRepeat = 'no-repeat';
+            iconEl.style.backgroundPosition = 'center';
+            iconEl.innerHTML = itemData.img ? '' : `<span style="font-size:22px;">${gadgetEmoji}</span>`;
+
+            const compItem = findCompendioItem(itemData);
+            const brand = compItem?.brand ? `<b>Brand:</b> ${compItem.brand}<br>` : '';
+            const rules = compItem ? getCompendioDescription(compItem) : (itemData.desc || 'Nessuna descrizione.');
+            el.dataset.tooltipHtml = `${brand}<b>Montaggio:</b> ${equipmentSlotLabels[slot] || slot}<br><div style="margin-top:6px;">${rules}</div>`;
+        } else {
+            nameEl.textContent = armorReady ? 'Vuoto' : 'Serve armatura';
+            nameEl.style.color = armorReady ? '#7f8c8d' : '#e74c3c';
+            iconEl.style.backgroundImage = 'none';
+            iconEl.innerHTML = `<span style="font-size:10px;font-weight:bold;color:${armorReady ? 'rgba(155,89,182,.55)' : 'rgba(231,76,60,.65)'};text-transform:uppercase;text-align:center;">${armorReady ? (equipmentSlotLabels[slot] || slot) : 'LOCK'}</span>`;
+            el.dataset.tooltipHtml = '';
+        }
+
+        const newEl = el.cloneNode(true);
+        el.parentNode.replaceChild(newEl, el);
+
+        newEl.addEventListener('mouseenter', (e) => {
+            if (!itemData) return;
+            const tt = document.getElementById('equip-tooltip');
+            if (!tt) return;
+            const ttName = document.getElementById('tt-name');
+            const ttDesc = document.getElementById('tt-desc');
+            if (ttName) ttName.textContent = itemData.name || 'Gadget';
+            if (ttDesc) ttDesc.innerHTML = newEl.dataset.tooltipHtml || itemData.desc || '';
+            tt.style.display = 'block';
+            tt.style.left = (e.pageX + 15) + 'px';
+            tt.style.top = (e.pageY - 15) + 'px';
+        });
+
+        newEl.addEventListener('mousemove', (e) => {
+            if (!itemData) return;
+            const tt = document.getElementById('equip-tooltip');
+            if (!tt) return;
+            tt.style.left = (e.pageX + 15) + 'px';
+            tt.style.top = (e.pageY - 15) + 'px';
+        });
+
+        newEl.addEventListener('mouseleave', () => {
+            const tt = document.getElementById('equip-tooltip');
+            if (tt) tt.style.display = 'none';
+        });
+
+        newEl.addEventListener('click', () => {
+            if (!itemData || !char) return;
+            if (confirm(`Vuoi sganciare "${itemData.name}" dall'armatura?`)) {
+                const tt = document.getElementById('equip-tooltip');
+                if (tt) tt.style.display = 'none';
+                window.unequipGadgetFromSlot(char.id, slot);
+            }
+        });
+    });
+};
+
 window.equipItem = function(
     charId,
     itemName,
@@ -2353,9 +3421,12 @@ window.equipItem = function(
     const char = characters.find(c => c.id === charId);
     if (!char) return;
 
-    let stats = char.stats || {};
+    // Lavoriamo su copie indipendenti: in questo modo la UI non resta in uno
+    // stato intermedio e il payload inviato al server contiene sempre la nuova
+    // struttura completa dell'equipaggiamento.
+    let stats = JSON.parse(JSON.stringify(char.stats || {}));
 
-    if (!stats.equipped) {
+    if (!stats.equipped || typeof stats.equipped !== 'object') {
         stats.equipped = {};
     }
 
@@ -2381,8 +3452,8 @@ window.equipItem = function(
         equipped.stivali = null;
     }
 
-    let backpack = char.backpack || [];
-    let weapons = char.weapons || [];
+    let backpack = JSON.parse(JSON.stringify(char.backpack || []));
+    let weapons = JSON.parse(JSON.stringify(char.weapons || []));
 
     // ==========================================
     // TROVA L'OGGETTO NEL NUOVO COMPENDIO
@@ -2401,6 +3472,18 @@ window.equipItem = function(
 
     const occupancy =
         slotInfo?.occupancy || 'one';
+
+    // I gadget usano una doll separata e non possono più sostituire l'armatura.
+    if (isGadgetCompendiumItem(compItem)) {
+        window.equipGadget(
+            charId,
+            itemName,
+            itemDesc,
+            slot,
+            compendiumId || compItem?.id || null
+        );
+        return;
+    }
 
     // ==========================================
     // RIMUOVI MANUALMENTE
@@ -2436,6 +3519,8 @@ window.equipItem = function(
                 weapons
             );
         });
+
+        cleanupGadgetsWithoutArmor(stats, backpack);
 
         socket.emit('update_character_sheet', {
             char_id: charId,
@@ -2624,6 +3709,9 @@ window.equipItem = function(
 
         name: itemName,
 
+        brand:
+            sourceItem?.brand || compItem?.brand || null,
+
         desc:
             itemDesc ||
             sourceItem?.desc ||
@@ -2668,6 +3756,29 @@ window.equipItem = function(
 
     });
 
+    // Se il nuovo assetto ha lasciato qualche gadget senza armatura,
+    // lo rimettiamo automaticamente nello zaino.
+    stats.equipped = equipped;
+    cleanupGadgetsWithoutArmor(stats, backpack);
+
+    // Aggiornamento ottimistico locale: la doll reagisce subito al cambio
+    // della tendina, senza attendere il round-trip Socket.IO.
+    char.stats = stats;
+    char.backpack = backpack;
+    char.weapons = weapons;
+
+    if (typeof window.updateEquippedPanel === 'function') {
+        window.updateEquippedPanel(char);
+    }
+
+    if (
+        typeof populatePlayerSheetUI === 'function' &&
+        sheetModal &&
+        sheetModal.style.display === 'flex'
+    ) {
+        populatePlayerSheetUI(char);
+    }
+
     // ==========================================
     // SALVATAGGIO
     // ==========================================
@@ -2700,14 +3811,10 @@ window.unequipFromSlot = function(
         return;
     }
 
-    const equipped =
-        char.stats.equipped;
-
-    const backpack =
-        char.backpack || [];
-
-    const weapons =
-        char.weapons || [];
+    const stats = JSON.parse(JSON.stringify(char.stats || {}));
+    const equipped = stats.equipped || {};
+    const backpack = JSON.parse(JSON.stringify(char.backpack || []));
+    const weapons = JSON.parse(JSON.stringify(char.weapons || []));
 
     removeEquippedInstance(
         equipped,
@@ -2716,11 +3823,30 @@ window.unequipFromSlot = function(
         weapons
     );
 
+    stats.equipped = equipped;
+    cleanupGadgetsWithoutArmor(stats, backpack);
+
+    char.stats = stats;
+    char.backpack = backpack;
+    char.weapons = weapons;
+
+    if (typeof window.updateEquippedPanel === 'function') {
+        window.updateEquippedPanel(char);
+    }
+
+    if (
+        typeof populatePlayerSheetUI === 'function' &&
+        sheetModal &&
+        sheetModal.style.display === 'flex'
+    ) {
+        populatePlayerSheetUI(char);
+    }
+
     socket.emit(
         'update_character_sheet',
         {
             char_id: charId,
-            stats: char.stats,
+            stats: stats,
             backpack: backpack,
             weapons: weapons
         }
@@ -3173,6 +4299,9 @@ function collectCombatActions(char) {
     const equipped =
         char?.stats?.equipped || {};
 
+    const equippedGadgets =
+        char?.stats?.equipped_gadgets || {};
+
     const actions = [];
 
     const seenGroups = new Set();
@@ -3202,10 +4331,14 @@ function collectCombatActions(char) {
         'gambe'
     ];
 
-    slotOrder.forEach(slot => {
+    const actionSources = [
+        ...slotOrder.map(slot => ({ slot, item: equipped[slot] })),
+        ...slotOrder
+            .filter(slot => slot !== 'mano_dx' && slot !== 'mano_sx')
+            .map(slot => ({ slot, item: equippedGadgets[slot] }))
+    ];
 
-        const item =
-            equipped[slot];
+    actionSources.forEach(({ slot, item }) => {
 
         if (!item) return;
 
@@ -4255,7 +5388,7 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
 // ==========================================
 // RIDUZIONE A TENDINA DELLE FINESTRE HUD
 // ==========================================
-['tracker', 'equip', 'action', 'notes'].forEach(prefix => {
+['tracker', 'action', 'notes'].forEach(prefix => {
     const toggleBtn = document.getElementById(`${prefix}-toggle`);
     const contentDiv = document.getElementById(`${prefix}-content`);
     const headerDiv = document.getElementById(`${prefix}-header`);

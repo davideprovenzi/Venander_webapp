@@ -31,13 +31,44 @@ function drawSingleItem(item) {
         ctx.closePath();
         ctx.stroke();
     } else if (item.type === 'icon' && item.img) {
-        if (!item.imageObj) {
-            item.imageObj = new Image();
-            item.imageObj.src = item.img;
+        // imageObj è solo cache locale del browser: non arriva dal server.
+        // Se per errore è un oggetto vuoto/non valido, ricreiamo l'immagine.
+        const imageIsValid =
+            item.imageObj &&
+            typeof item.imageObj.complete === 'boolean' &&
+            typeof item.imageObj.naturalWidth === 'number';
+
+        if (!imageIsValid) {
+            const img = new Image();
+
+            img.onload = () => {
+                if (typeof requestRender === 'function') {
+                    requestRender();
+                } else if (typeof render === 'function') {
+                    render();
+                }
+            };
+
+            img.onerror = () => {
+                console.warn('Impossibile caricare lo sticker:', item.uid);
+            };
+
+            item.imageObj = img;
+            img.src = item.img;
         }
-        if (item.imageObj.complete) {
+
+        if (
+            item.imageObj.complete &&
+            item.imageObj.naturalWidth > 0
+        ) {
             const size = item.w * 2;
-            ctx.drawImage(item.imageObj, item.sx - size/2, item.sy - size/2, size, size);
+            ctx.drawImage(
+                item.imageObj,
+                item.sx - size / 2,
+                item.sy - size / 2,
+                size,
+                size
+            );
         }
     }
 }
@@ -322,8 +353,8 @@ function drawTokens() {
         ctx.strokeStyle = isSelected ? '#ffeb3b' : '#000000';
         ctx.stroke();
 
-        // --- NUOVO: Mostra gli HP durante il combattimento ---
-        if (combatState.is_active) {
+        // Mostra gli HP durante il combattimento, ma gli NPC sono segreti ai giocatori.
+        if (combatState.is_active && (isMaster || char.role !== 'npc')) {
             const hpCurrent = char.hp_current !== undefined ? char.hp_current : '?';
             const hpMax = char.hp_max || '?';
             const hpText = `${hpCurrent} / ${hpMax}`;

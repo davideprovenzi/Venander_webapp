@@ -28,7 +28,7 @@
                 <option value="master" data-role="master">👑 Master</option>
                 <!-- CICLO PYTHON CHE CARICA I GIOCATORI -->
                 {% for char in characters %}
-                    {% if char.role != 'master' and not char.is_npc %}
+                    {% if char.role == 'player' %}
                         <option value="{{ char.id }}">{{ char.name }}</option>
                     {% endif %}
                 {% endfor %}
@@ -79,7 +79,7 @@
     <!-- ==========================================
          2. PANNELLO EQUIPAGGIAMENTO (PAPER DOLL)
          ========================================== -->
-    <div id="equipped-panel" style="display: none; position: absolute; bottom: 40px; left: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
+    <div id="equipped-panel" style="display: block; position: absolute; bottom: 40px; left: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
 
         <div id="equip-header" style="background: #1a252f; color: #3498db; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #3498db; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -118,6 +118,42 @@
                 <div class="doll-slot" id="slot-stivale_dx"><div class="doll-icon"></div><div class="doll-name">Stivale Dx</div></div>
                 <div style="visibility: hidden;"></div>
                 <div class="doll-slot" id="slot-stivale_sx"><div class="doll-icon"></div><div class="doll-name">Stivale Sx</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         3. PANNELLO GADGET (PAPER DOLL SEPARATA)
+         ========================================== -->
+    <div id="gadget-panel" style="display: block; position: absolute; bottom: 40px; left: 320px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #9b59b6; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(155, 89, 182, 0.2);">
+
+        <div id="gadget-header" style="background: #1a252f; color: #bb8fce; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #9b59b6; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="visibility: hidden; padding: 0 5px;">▼</span>
+            <span>Gadget 🧩</span>
+            <span id="gadget-toggle" style="cursor: pointer; padding: 0 5px;" title="Riduci a icona">▼</span>
+        </div>
+
+        <div id="gadget-content" style="display: block;">
+            <div class="paper-doll-layout gadget-doll-layout">
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-visore"><div class="doll-icon"></div><div class="doll-name">Visore</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-elmo"><div class="doll-icon"></div><div class="doll-name">Elmo</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-schiena"><div class="doll-icon"></div><div class="doll-name">Schiena</div></div>
+
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-spalla_dx"><div class="doll-icon"></div><div class="doll-name">Spalla Dx</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-petto"><div class="doll-icon"></div><div class="doll-name">Petto</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-spalla_sx"><div class="doll-icon"></div><div class="doll-name">Spalla Sx</div></div>
+
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-avambr_dx"><div class="doll-icon"></div><div class="doll-name">Avambr. Dx</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-cintura"><div class="doll-icon"></div><div class="doll-name">Cintura</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-avambr_sx"><div class="doll-icon"></div><div class="doll-name">Avambr. Sx</div></div>
+
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-guanto_dx"><div class="doll-icon"></div><div class="doll-name">Guanto Dx</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-gambe"><div class="doll-icon"></div><div class="doll-name">Gambe</div></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-guanto_sx"><div class="doll-icon"></div><div class="doll-name">Guanto Sx</div></div>
+
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-stivale_dx"><div class="doll-icon"></div><div class="doll-name">Stivale Dx</div></div>
+                <div style="visibility: hidden;"></div>
+                <div class="doll-slot gadget-doll-slot" id="gadget-slot-stivale_sx"><div class="doll-icon"></div><div class="doll-name">Stivale Sx</div></div>
             </div>
         </div>
     </div>
@@ -206,6 +242,19 @@
                         box-sizing: border-box;
                     "
                 >
+
+                <textarea
+                    id="npc-description"
+                    placeholder="Descrizione pubblica (visibile ai giocatori)"
+                    style="
+                        width: 100%;
+                        min-height: 65px;
+                        margin-bottom: 5px;
+                        padding: 5px;
+                        box-sizing: border-box;
+                        resize: vertical;
+                    "
+                ></textarea>
 
                 <div style="
                     display: flex;
@@ -374,27 +423,39 @@
                 <p id="sel-name" style="margin: 0 0 10px 0; font-weight: bold; font-size: 16px; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px;">Nessuna selezione</p>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                    <div style="display: flex; flex-direction: column; align-items: center; background: #fdf2e9; padding: 5px; border-radius: 4px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; background: #fdf2e9; padding: 7px; border-radius: 4px;">
                         <span style="font-size: 12px; font-weight: bold; color: #d35400;">HP: <span id="sel-hp">--</span></span>
-                        <div style="display: flex; gap: 2px; margin-top: 5px;">
-                            <button class="vital-btn" data-type="hp" data-val="-1" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">-</button>
-                            <button class="vital-btn" data-type="hp" data-val="1" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer;">+</button>
+                        <div style="display: flex; gap: 3px; margin-top: 5px; width: 100%; justify-content: center;">
+                            <button class="vital-btn" data-type="hp" data-direction="-1" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer; width:28px;">−</button>
+                            <input id="vital-amount-hp" type="number" min="1" step="1" value="1" style="width:52px; text-align:center; padding:3px; box-sizing:border-box;">
+                            <button class="vital-btn" data-type="hp" data-direction="1" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer; width:28px;">+</button>
                         </div>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center; background: #fef9e7; padding: 5px; border-radius: 4px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; background: #fef9e7; padding: 7px; border-radius: 4px;">
                         <span style="font-size: 12px; font-weight: bold; color: #f39c12;">STM: <span id="sel-stam">--</span></span>
-                        <div style="display: flex; gap: 2px; margin-top: 5px;">
-                            <button class="vital-btn" data-type="stamina" data-val="-5" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">-</button>
-                            <button class="vital-btn" data-type="stamina" data-val="5" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer;">+</button>
+                        <div style="display: flex; gap: 3px; margin-top: 5px; width: 100%; justify-content: center;">
+                            <button class="vital-btn" data-type="stamina" data-direction="-1" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer; width:28px;">−</button>
+                            <input id="vital-amount-stamina" type="number" min="1" step="1" value="5" style="width:52px; text-align:center; padding:3px; box-sizing:border-box;">
+                            <button class="vital-btn" data-type="stamina" data-direction="1" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer; width:28px;">+</button>
                         </div>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: center; background: #ebf5fb; padding: 5px; border-radius: 4px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; background: #ebf5fb; padding: 7px; border-radius: 4px;">
                         <span style="font-size: 12px; font-weight: bold; color: #2980b9;">CONC: <span id="sel-conc">--</span></span>
-                        <div style="display: flex; gap: 2px; margin-top: 5px;">
-                            <button class="vital-btn" data-type="conc" data-val="-5" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">-</button>
-                            <button class="vital-btn" data-type="conc" data-val="5" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer;">+</button>
+                        <div style="display: flex; gap: 3px; margin-top: 5px; width: 100%; justify-content: center;">
+                            <button class="vital-btn" data-type="conc" data-direction="-1" style="background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer; width:28px;">−</button>
+                            <input id="vital-amount-conc" type="number" min="1" step="1" value="5" style="width:52px; text-align:center; padding:3px; box-sizing:border-box;">
+                            <button class="vital-btn" data-type="conc" data-direction="1" style="background:#2ecc71; color:white; border:none; border-radius:3px; cursor:pointer; width:28px;">+</button>
                         </div>
                     </div>
+                </div>
+
+                <div id="master-bank-control" style="display:none; margin-bottom:12px; padding:8px; background:#f4ecf7; border:1px solid #d7bde2; border-radius:5px;">
+                    <label for="sel-bank" style="font-size:12px; font-weight:bold; color:#6c3483;">💰 Conto in banca</label>
+                    <div style="display:flex; gap:5px; margin-top:5px;">
+                        <input id="sel-bank" type="number" step="1" value="0" style="flex:1; min-width:0; padding:5px; box-sizing:border-box; border:1px solid #bbb; border-radius:3px;">
+                        <button id="btn-set-bank" type="button" style="padding:5px 9px; background:#8e44ad; color:white; border:none; border-radius:3px; cursor:pointer; font-weight:bold;">Salva</button>
+                    </div>
+                    <div style="font-size:10px; color:#666; margin-top:4px;">Sono ammessi anche valori negativi.</div>
                 </div>
 
                 <div style="margin-bottom: 12px; text-align: center;">
@@ -548,6 +609,17 @@
                 </div>
 
                 <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">🧩 Gadget <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        <h4 style="margin: 0 0 6px 0; color:#8e44ad; font-size:13px;">Equipaggiati sulla doll</h4>
+                        <ul id="ui-gadgets-equipped" style="list-style-type:none; padding:0; margin:0 0 12px 0; display:flex; flex-direction:column; gap:6px;"></ul>
+
+                        <h4 style="margin: 0 0 6px 0; color:#2c3e50; font-size:13px;">Disponibili</h4>
+                        <ul id="ui-gadgets" style="list-style-type:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+                    </div>
+                </div>
+
+                <div class="sheet-section">
                     <h3 class="collapsible-header" onclick="toggleSection(this)">Abilità <span style="font-size:12px;">▶</span></h3>
                     <div class="collapsible-content" style="display: none;"><ul id="ui-skills" style="padding-left: 20px; margin: 0; font-size: 14px;"></ul></div>
                 </div>
@@ -660,11 +732,11 @@
          CHAT E DADI
          ========================================== -->
 
-    <div id="dice-panel" style="position: fixed; right: 20px; top: 20px; width: 300px; background: white; border: 2px solid #ccc; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 40;">
+    <div id="dice-panel" style="position: fixed; right: 20px; top: 20px; width: 340px; background: white; border: 2px solid #ccc; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 40;">
 
         <!-- Intestazione Cliccabile -->
         <h3 id="dice-panel-header" style="margin: 0; padding: 12px; background: #34495e; color: white; border-radius: 6px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
-            <span>🎲 Lancio Dadi <span id="dice-toggle-icon" style="font-size:12px; margin-left:5px;">▶</span></span>
+            <span>💬 Chat & Dadi <span id="dice-toggle-icon" style="font-size:12px; margin-left:5px;">▶</span></span>
             <span id="chat-status" style="font-size: 11px; color: #1abc9c;">Pubblico</span>
         </h3>
 
@@ -674,7 +746,28 @@
                 <div style="text-align: center; color: #95a5a6; font-size: 12px; margin-top: 10px;">Inizio sessione</div>
             </div>
 
+            <div id="chat-compose" style="padding:10px; border-top:1px solid #dcdde1; background:#fff;">
+                <div style="display:flex; gap:6px;">
+                    <input id="chat-input" type="text" maxlength="1200" placeholder="Scrivi un messaggio..." style="flex:1; min-width:0; padding:7px; border:1px solid #bdc3c7; border-radius:4px;">
+                    <button id="btn-send-chat" type="button" style="padding:7px 10px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Invia</button>
+                </div>
+            </div>
+
+            <div id="sidequest-composer" style="display:none; padding:10px; border-top:2px solid #8e44ad; background:#f5eef8;">
+                <div style="font-size:12px; font-weight:bold; color:#6c3483; margin-bottom:7px;">📜 INVIA SIDEQUEST</div>
+                <select id="sidequest-target" style="width:100%; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;">
+                    <option value="all">🌐 Tutti i giocatori</option>
+                </select>
+                <input id="sidequest-title" type="text" maxlength="160" placeholder="Titolo della sidequest" style="width:100%; box-sizing:border-box; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;">
+                <textarea id="sidequest-description" maxlength="3000" rows="3" placeholder="Cosa devono fare / cosa stanno pagando..." style="width:100%; box-sizing:border-box; resize:vertical; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;"></textarea>
+                <div style="display:flex; gap:6px;">
+                    <input id="sidequest-cost" type="number" min="0" step="1" value="0" placeholder="Costo €" style="width:105px; padding:6px; border:1px solid #c39bd3; border-radius:4px;">
+                    <button id="btn-send-sidequest" type="button" style="flex:1; padding:7px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📜 Invia Sidequest</button>
+                </div>
+            </div>
+
             <div style="padding: 12px; border-top: 1px solid #ccc; background: #eee; border-radius: 0 0 6px 6px;">
+                <div style="font-size:11px; font-weight:bold; color:#7f8c8d; margin-bottom:6px;">🎲 DADI</div>
                 <div style="display: flex; gap: 5px; margin-bottom: 8px;">
                     <button class="dice-btn" data-dice="1d20" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d20</button>
                     <button class="dice-btn" data-dice="1d10" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d10</button>

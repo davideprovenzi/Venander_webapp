@@ -531,3 +531,58 @@ canvas {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+
+/* ==========================================
+   PAPER DOLL GADGET
+   ========================================== */
+#gadget-panel {
+    pointer-events: auto;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.gadget-doll-layout {
+    grid-template-rows: repeat(5, 65px);
+    grid-template-areas:
+        "visore      elmo       schiena"
+        "spalla_dx   petto      spalla_sx"
+        "avambr_dx   cintura    avambr_sx"
+        "guanto_dx   gambe      guanto_sx"
+        "stivale_dx  .          stivale_sx";
+}
+
+#gadget-slot-visore    { grid-area: visore; }
+#gadget-slot-elmo      { grid-area: elmo; }
+#gadget-slot-schiena   { grid-area: schiena; }
+#gadget-slot-spalla_dx { grid-area: spalla_dx; }
+#gadget-slot-petto     { grid-area: petto; }
+#gadget-slot-spalla_sx { grid-area: spalla_sx; }
+#gadget-slot-avambr_dx { grid-area: avambr_dx; }
+#gadget-slot-cintura   { grid-area: cintura; }
+#gadget-slot-avambr_sx { grid-area: avambr_sx; }
+#gadget-slot-guanto_dx { grid-area: guanto_dx; }
+#gadget-slot-gambe     { grid-area: gambe; }
+#gadget-slot-guanto_sx { grid-area: guanto_sx; }
+#gadget-slot-stivale_dx { grid-area: stivale_dx; }
+#gadget-slot-stivale_sx { grid-area: stivale_sx; }
+
+.gadget-doll-slot {
+    border-color: rgba(155, 89, 182, 0.45);
+}
+
+.gadget-doll-slot:hover {
+    border-color: #9b59b6;
+    box-shadow: 0 0 8px rgba(155, 89, 182, 0.65), inset 0 0 10px rgba(0,0,0,0.8);
+}
+
+.gadget-doll-slot.filled {
+    border-color: #bb8fce;
+    background: rgba(155, 89, 182, 0.12);
+}
+
+.gadget-doll-slot.armor-missing {
+    opacity: 0.46;
+    border-style: dashed;
+    border-color: rgba(231, 76, 60, 0.55);
+    cursor: not-allowed;
+}

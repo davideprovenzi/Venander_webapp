@@ -71,6 +71,7 @@ const ROWS =
     canvas.height / TILE_SIZE;
 
 let characters = [];
+window.pendingLocalMoves = {};
 let drawings = [];
 
 let currentIconBase64 = null;
@@ -145,10 +146,20 @@ function registerCurrentSessionRole() {
     currentRole =
         sessionRole;
 
+    let sessionCharId = null;
+
+    if (sessionRole === 'player') {
+        const parsedId = parseInt(value);
+        if (Number.isFinite(parsedId) && parsedId > 0) {
+            sessionCharId = parsedId;
+        }
+    }
+
     socket.emit(
         'register_session_role',
         {
-            role: sessionRole
+            role: sessionRole,
+            char_id: sessionCharId
         }
     );
 }
@@ -313,6 +324,63 @@ function getSelectedCharacter() {
         ) || null
     );
 }
+
+// Scheda pubblica degli NPC per i giocatori: mostra solo nome, immagine e descrizione.
+window.showPublicNpcInfo = function(npc) {
+    if (!npc || npc.role !== 'npc') return;
+
+    let modal = document.getElementById('npc-public-info-modal');
+
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'npc-public-info-modal';
+        modal.style.cssText = `
+            display:none; position:fixed; inset:0; z-index:10000;
+            background:rgba(0,0,0,0.55); align-items:center; justify-content:center;
+            padding:20px; box-sizing:border-box;
+        `;
+
+        modal.innerHTML = `
+            <div style="width:min(440px, 95vw); max-height:80vh; overflow:auto; background:#fff; border-radius:10px; padding:18px; box-shadow:0 10px 35px rgba(0,0,0,.35); position:relative;">
+                <button id="npc-public-close" type="button" style="position:absolute; right:10px; top:8px; border:none; background:transparent; font-size:24px; cursor:pointer;">×</button>
+                <div style="display:flex; gap:14px; align-items:flex-start; padding-right:25px;">
+                    <img id="npc-public-image" alt="" style="display:none; width:90px; height:90px; object-fit:contain; border-radius:50%; border:2px solid #333; flex:0 0 auto;">
+                    <div style="min-width:0;">
+                        <h2 id="npc-public-name" style="margin:0 0 8px 0; font-size:22px;"></h2>
+                        <div style="font-size:12px; font-weight:bold; color:#7f8c8d; margin-bottom:10px;">ENTITÀ</div>
+                        <p id="npc-public-lore" style="margin:0; white-space:pre-wrap; line-height:1.5; color:#444;"></p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const close = () => { modal.style.display = 'none'; };
+        modal.querySelector('#npc-public-close')?.addEventListener('click', close);
+        modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    }
+
+    const nameEl = modal.querySelector('#npc-public-name');
+    const loreEl = modal.querySelector('#npc-public-lore');
+    const imageEl = modal.querySelector('#npc-public-image');
+
+    if (nameEl) nameEl.textContent = npc.name || 'Entità sconosciuta';
+    if (loreEl) loreEl.textContent = (npc.lore || '').trim() || 'Nessuna descrizione disponibile.';
+
+    const imageUrl = npc.token_url || npc.photo_url || '';
+    if (imageEl) {
+        if (imageUrl) {
+            imageEl.src = imageUrl;
+            imageEl.style.display = 'block';
+        } else {
+            imageEl.removeAttribute('src');
+            imageEl.style.display = 'none';
+        }
+    }
+
+    modal.style.display = 'flex';
+};
 
 function updateSheetButton() {
 
@@ -555,8 +623,20 @@ socket.on(
     'init_state',
     (serverCharacters) => {
 
+        // Un init_state è autoritativo: eventuali movimenti rimasti
+        // pendenti dopo una riconnessione non devono bloccare il client.
+        window.pendingLocalMoves = {};
+        window.pendingMove = null;
+
         characters =
             serverCharacters || [];
+
+        if (window.refreshSidequestTargetOptions) {
+            window.refreshSidequestTargetOptions();
+        }
+        if (window.refreshSidequestCards) {
+            window.refreshSidequestCards();
+        }
 
         requestRender();
 
@@ -567,6 +647,18 @@ socket.on(
         }
 
         updateSheetButton();
+
+        if (window.updateEquippedPanel) {
+            const initialViewedId = isMaster
+                ? selectedCharacterId
+                : parseInt(userSelect?.value);
+
+            const initialViewedChar = characters.find(
+                c => c.id === initialViewedId
+            );
+
+            window.updateEquippedPanel(initialViewedChar || null);
+        }
 
         if (
             selectedCharacterId !==
@@ -1004,6 +1096,59 @@ socket.on(
     'update_character',
     (updatedChar) => {
 
+        const serverMoveId = updatedChar._move_id || null;
+
+        // Non vogliamo salvare _move_id dentro il personaggio
+        delete updatedChar._move_id;
+
+        const pendingMove =
+            window.pendingLocalMoves?.[updatedChar.id];
+
+        if (pendingMove) {
+            const sameMoveId =
+                serverMoveId !== null &&
+                serverMoveId === pendingMove.moveId;
+
+            // Fallback compatibile con un server che non restituisce ancora
+            // _move_id: se la posizione autoritativa coincide col bersaglio,
+            // consideriamo il movimento confermato.
+            const sameAuthoritativePosition =
+                serverMoveId === null &&
+                Number(updatedChar.x) === Number(pendingMove.x) &&
+                Number(updatedChar.y) === Number(pendingMove.y);
+
+            if (sameMoveId || sameAuthoritativePosition) {
+
+                // I costi di combattimento vengono inviati al server solo
+                // dopo che il movimento è stato accettato.
+                if (pendingMove.combat) {
+                    if (pendingMove.paAfter !== undefined) {
+                        socket.emit('sync_pa', {
+                            char_id: updatedChar.id,
+                            pa: pendingMove.paAfter
+                        });
+                    }
+
+                    if (pendingMove.combatName && pendingMove.combatMessage) {
+                        socket.emit('combat_msg', {
+                            name: pendingMove.combatName,
+                            message: pendingMove.combatMessage
+                        });
+                    }
+                }
+
+                delete window.pendingLocalMoves[updatedChar.id];
+
+            } else {
+
+                // È arrivato un aggiornamento precedente al movimento locale.
+                // Gli altri dati vengono aggiornati, ma la posizione locale
+                // resta quella dell'ultimo movimento ancora pendente.
+                updatedChar.x = pendingMove.x;
+                updatedChar.y = pendingMove.y;
+            }
+        }
+
         const index =
             characters.findIndex(
                 c =>
@@ -1172,6 +1317,13 @@ socket.on(
             }
         }
 
+        if (window.refreshSidequestTargetOptions) {
+            window.refreshSidequestTargetOptions();
+        }
+        if (window.refreshSidequestCards) {
+            window.refreshSidequestCards();
+        }
+
         if (
             typeof requestRender ===
             'function'
@@ -1183,6 +1335,59 @@ socket.on(
         updateSheetButton();
     }
 );
+
+// ==========================================
+// MOVIMENTO RIFIUTATO DAL SERVER
+// ==========================================
+
+socket.on('move_rejected', (data) => {
+    const charId = Number(data?.char_id);
+    const pendingMove = window.pendingLocalMoves?.[charId];
+
+    if (!pendingMove) return;
+
+    // Se il rifiuto riguarda un movimento vecchio, non deve annullare
+    // un movimento più recente.
+    if (data?.move_id && data.move_id !== pendingMove.moveId) return;
+
+    const char = characters.find(c => Number(c.id) === charId);
+
+    if (char) {
+        char.x = data?.current_x ?? pendingMove.fromX;
+        char.y = data?.current_y ?? pendingMove.fromY;
+    }
+
+    // Ripristina i Frame soltanto se questo era un movimento di combattimento.
+    if (pendingMove.combat && pendingMove.paBefore !== undefined) {
+        window.currentPaMov = pendingMove.paBefore;
+        window.playersPa[charId] = pendingMove.paBefore;
+
+        const paEl = document.getElementById('ui-pa-mov');
+        if (paEl) paEl.innerText = pendingMove.paBefore;
+    }
+
+    delete window.pendingLocalMoves[charId];
+    window.pendingMove = null;
+
+    const reason = data?.reason;
+    if (statusBar) {
+        statusBar.innerText =
+            reason === 'occupied'
+                ? "⛔ Movimento annullato: la casella è già occupata."
+                : "⛔ Movimento rifiutato dal server.";
+    }
+
+    requestRender();
+});
+
+socket.on('spawn_rejected', (data) => {
+    if (!statusBar) return;
+
+    statusBar.innerText =
+        data?.reason === 'occupied'
+            ? "⛔ Impossibile creare la pedina: la casella è già occupata."
+            : "⛔ Creazione della pedina rifiutata dal server.";
+});
 
 // ==========================================
 // CANCELLAZIONE PERSONAGGIO
@@ -1311,6 +1516,16 @@ function updateMasterEditPanel(
                 'sel-conc'
             );
 
+        const bankControl =
+            document.getElementById(
+                'master-bank-control'
+            );
+
+        const bankInput =
+            document.getElementById(
+                'sel-bank'
+            );
+
         if (nameEl) {
 
             nameEl.innerText =
@@ -1345,6 +1560,21 @@ function updateMasterEditPanel(
 
                     ? char.conc_current
                     : "?";
+        }
+
+        // Il conto in banca appartiene solo ai personaggi giocanti.
+        if (bankControl) {
+            bankControl.style.display =
+                char.role === 'player'
+                    ? 'block'
+                    : 'none';
+        }
+
+        if (bankInput && char.role === 'player') {
+            bankInput.value =
+                char.xp !== undefined
+                    ? char.xp
+                    : 0;
         }
 
         const statusSelect =
@@ -1446,14 +1676,34 @@ function updateMasterEditPanel(
         panel.style.display =
             'none';
 
+        const bankControl =
+            document.getElementById(
+                'master-bank-control'
+            );
+
+        if (bankControl) {
+            bankControl.style.display = 'none';
+        }
+
         const equipPanelEl =
             document.getElementById(
                 'equipped-panel'
             );
 
+        const gadgetPanelEl =
+            document.getElementById(
+                'gadget-panel'
+            );
+
         if (equipPanelEl) {
 
             equipPanelEl.style.display =
+                'none';
+        }
+
+        if (gadgetPanelEl) {
+
+            gadgetPanelEl.style.display =
                 'none';
         }
     }
@@ -1472,9 +1722,7 @@ document.querySelectorAll(
             'click',
             () => {
 
-                if (
-                    !selectedCharacterId
-                ) {
+                if (!selectedCharacterId) {
                     return;
                 }
 
@@ -1483,25 +1731,84 @@ document.querySelectorAll(
                         'data-type'
                     );
 
-                const val =
+                const direction =
                     parseInt(
                         btn.getAttribute(
-                            'data-val'
+                            'data-direction'
                         )
+                    ) || 0;
+
+                const amountInput =
+                    document.getElementById(
+                        `vital-amount-${type}`
                     );
 
-                const payload = {
-                    char_id:
-                        selectedCharacterId
-                };
+                const amount =
+                    Math.abs(
+                        parseInt(
+                            amountInput?.value
+                        ) || 0
+                    );
 
-                payload[type] =
-                    val;
+                if (amount <= 0 || direction === 0) {
+                    return;
+                }
 
                 socket.emit(
                     'update_vitals',
-                    payload
+                    {
+                        char_id: selectedCharacterId,
+                        [type]: amount * direction
+                    }
                 );
+            }
+        );
+    }
+);
+
+// ==========================================
+// CONTO IN BANCA - SOLO MASTER
+// ==========================================
+
+document.getElementById(
+    'btn-set-bank'
+)?.addEventListener(
+    'click',
+    () => {
+
+        if (!isMaster || !selectedCharacterId) {
+            return;
+        }
+
+        const selectedChar =
+            characters.find(
+                c => c.id === selectedCharacterId
+            );
+
+        if (!selectedChar || selectedChar.role !== 'player') {
+            return;
+        }
+
+        const bankInput =
+            document.getElementById(
+                'sel-bank'
+            );
+
+        const value =
+            Number.parseInt(
+                bankInput?.value,
+                10
+            );
+
+        if (!Number.isFinite(value)) {
+            return;
+        }
+
+        socket.emit(
+            'master_set_bank',
+            {
+                char_id: selectedCharacterId,
+                value: value
             }
         );
     }
@@ -2226,8 +2533,15 @@ socket.on(
             index !== -1
         ) {
 
-            drawings[index] =
-                data;
+            const previous =
+                drawings[index];
+
+            // Mantiene la cache Image locale dello sticker e aggiorna solo i dati sincronizzati.
+            drawings[index] = {
+                ...previous,
+                ...data,
+                imageObj: previous?.imageObj
+            };
 
             requestRender();
         }
@@ -2590,154 +2904,13 @@ document.getElementById(
     }
 );
 
-// ==========================================
-// MOVIMENTO
-// ==========================================
-
-document.querySelectorAll(
-    '.move-btn'
-).forEach(
-    btn => {
-
-        btn.addEventListener(
-            'click',
-            (e) => {
-
-                if (
-                    !window.pendingMove
-                ) {
-                    return;
-                }
-
-                const framesPerStep =
-                    parseInt(
-                        e.target.getAttribute(
-                            'data-cost'
-                        )
-                    );
-
-                const modeName =
-                    e.target.getAttribute(
-                        'data-name'
-                    );
-
-                const dist =
-                    window.pendingMove.dist;
-
-                let requiredFrames =
-                    dist *
-                    framesPerStep;
-
-                if (
-                    requiredFrames >
-                    window.currentPaMov
-                ) {
-
-                    alert(
-                        `Azione Impossibile! ` +
-                        `Servono ${requiredFrames} Frame, ` +
-                        `ma ne hai solo ${window.currentPaMov} ` +
-                        `a disposizione per muoverti.`
-                    );
-
-                    return;
-                }
-
-                window.currentPaMov -=
-                    requiredFrames;
-
-                window.playersPa[
-                    window.pendingMove.charId
-                ] =
-                    window.currentPaMov;
-
-                const moveModal =
-                    document.getElementById(
-                        'move-modal'
-                    );
-
-                if (moveModal) {
-
-                    moveModal.style.display =
-                        'none';
-                }
-
-                socket.emit(
-                    'sync_pa',
-                    {
-                        char_id:
-                            window.pendingMove.charId,
-
-                        pa:
-                            window.currentPaMov
-                    }
-                );
-
-                socket.emit(
-                    'declare_move',
-                    {
-                        char_id:
-                            window.pendingMove.charId,
-
-                        target_x:
-                            window.pendingMove.x,
-
-                        target_y:
-                            window.pendingMove.y
-                    }
-                );
-
-                const myChar =
-                    characters.find(
-                        c =>
-                            c.id ===
-                            window.pendingMove.charId
-                    );
-
-                if (myChar) {
-
-                    const msg =
-                        `si sposta di ` +
-                        `<b>${dist} passi</b> ` +
-                        `(${modeName}) ` +
-                        `consumando ` +
-                        `<b>${requiredFrames} Frame</b> ` +
-                        `movimento.`;
-
-                    socket.emit(
-                        'combat_msg',
-                        {
-                            name:
-                                myChar.name,
-
-                            message:
-                                msg
-                        }
-                    );
-                }
-
-                window.pendingMove =
-                    null;
-
-                requestRender();
-            }
-        );
-    }
-);
 
 // ==========================================
 // CANCELLA DISEGNO
 // ==========================================
 
-document.getElementById(
-    'delete-selected-draw-btn'
-)?.addEventListener(
-    'click',
-    () => {
-
-        if (
-            window.selectedDrawing
-        ) {
+document.getElementById('delete-selected-draw-btn')?.addEventListener('click',() => {
+        if (window.selectedDrawing) {
 
             socket.emit(
                 'delete_drawing',
