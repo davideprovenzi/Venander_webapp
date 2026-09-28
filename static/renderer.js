@@ -79,10 +79,8 @@ function drawGrid() {
             HEX_W
         ) + 1;
 
-
     // Un solo path per tutta la griglia
     ctx.beginPath();
-
 
     for (
         let row = startRow;
@@ -102,7 +100,6 @@ function drawGrid() {
                     row
                 );
 
-
             for (
                 let i = 0;
                 i < 6;
@@ -120,7 +117,6 @@ function drawGrid() {
                     center.y +
                     corner.y;
 
-
                 if (i === 0) {
 
                     ctx.moveTo(
@@ -137,7 +133,6 @@ function drawGrid() {
                 }
             }
 
-
             // Chiude geometricamente l'esagono
             const firstCorner =
                 HEX_CORNERS[0];
@@ -148,7 +143,6 @@ function drawGrid() {
             );
         }
     }
-
 
     // Un'unica chiamata GPU/canvas
     ctx.stroke();
@@ -186,7 +180,7 @@ function drawTokens() {
         const epCenter = hexToPixel(combatState.epicenter.x, combatState.epicenter.y);
         const ex = epCenter.x;
         const ey = epCenter.y;
-        
+
         ctx.beginPath();
         ctx.arc(ex, ey, HEX_SIZE - 5, 0, 2 * Math.PI);
         ctx.strokeStyle = 'rgba(231, 76, 60, 0.8)';
@@ -198,18 +192,17 @@ function drawTokens() {
         ctx.font = '20px Arial';
         ctx.fillText("🎯", ex, ey);
     }
-    
 
     characters.forEach(char => {
         // I giocatori non vedono NULLA né se in FoW né se Invisibili. Il Master procede.
-        if ((char.is_hidden || char.is_invisible) && !isMaster) return; 
+        if ((char.is_hidden || char.is_invisible) && !isMaster) return;
 
         // --- NUOVO: Nascondi pedine se sono dentro la Fog of War non esplorata ---
         const hexStr = `${char.x},${char.y}`;
         if (!isMaster && window.fowEnabled && !window.revealedHexes.has(hexStr)) return;
 
-        ctx.save(); 
-        
+        ctx.save();
+
         // Differenza visiva per il Master
         if (isMaster) {
             if (char.is_hidden) {
@@ -235,10 +228,10 @@ function drawTokens() {
                 ctx.strokeStyle = '#f1c40f';
                 ctx.lineWidth = 3;
                 ctx.stroke();
-                
+
                 // CALCOLO PASSI SU GRIGLIA ESAGONALE
                 const steps = hexDistance(char.x, char.y, currentActor.start_x, currentActor.start_y);
-                
+
                 ctx.font = 'bold 14px Arial';
                 // Contorno nero per il testo dei passi (leggibile sulle mappe)
                 ctx.lineWidth = 2;
@@ -251,18 +244,18 @@ function drawTokens() {
                 if (combatState.is_active) {
                     let framesToShow = window.playersPa[char.id];
                     if (framesToShow === undefined) framesToShow = 120;
-                    
+
                     const frameText = `Mov: ${framesToShow}/120f`;
                     ctx.font = 'bold 14px Arial';
                     ctx.lineWidth = 3;
                     ctx.strokeStyle = '#000000';
                     ctx.strokeText(frameText, centerX, centerY - radius - 35);
-                    
+
                     // Colore dinamico: Verde, Arancione (sotto 60), Rosso (sotto 25)
                     let frameColor = '#2ecc71';
                     if (framesToShow < 25) frameColor = '#e74c3c';
                     else if (framesToShow < 60) frameColor = '#f39c12';
-                    
+
                     ctx.fillStyle = frameColor;
                     ctx.fillText(frameText, centerX, centerY - radius - 35);
                 }
@@ -334,26 +327,26 @@ function drawTokens() {
             const hpCurrent = char.hp_current !== undefined ? char.hp_current : '?';
             const hpMax = char.hp_max || '?';
             const hpText = `${hpCurrent} / ${hpMax}`;
-            
+
             ctx.font = 'bold 11px Arial';
-            
+
             // Applica un contorno nero al testo in modo che spicchi su mappe chiare o scure
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#000000';
             ctx.strokeText(hpText, centerX, centerY + radius + 12);
-            
+
             // Calcola il colore in base alla percentuale di HP
             let hpColor = '#2ecc71'; // Verde (Sopra il 50%)
             const hpPercent = hpCurrent / (char.hp_max || 1);
             if (hpPercent <= 0.25) hpColor = '#e74c3c'; // Rosso (In fin di vita)
             else if (hpPercent <= 0.50) hpColor = '#f39c12'; // Arancione (Metà vita)
-            
+
             ctx.fillStyle = hpColor;
             ctx.fillText(hpText, centerX, centerY + radius + 12);
         }
-        
-        ctx.restore(); 
-        
+
+        ctx.restore();
+
     });
 }
 
@@ -361,7 +354,7 @@ function drawTokens() {
 function addLaserSegment(segment) {
     laserLines.push(segment);
     requestRender();
-    
+
     setTimeout(() => {
         const index = laserLines.indexOf(segment);
         if (index > -1) {
@@ -397,7 +390,7 @@ function drawMovementPath() {
     if (!combatState.is_active) return;
     const myCharId = parseInt(userSelect?.value);
     const myChar = characters.find(c => c.id === myCharId);
-    
+
     let isMyTurn = false;
     if (combatState.turn_order && combatState.turn_order.length > 0) {
         const currentActor = combatState.turn_order[combatState.current_index];
@@ -418,7 +411,7 @@ function drawMovementPath() {
         if (dist > 0) {
             const startPixel = hexToPixel(myChar.x, myChar.y);
             const endPixel = hexToPixel(targetHex.col, targetHex.row);
-            
+
             // Disegna la linea tratteggiata blu
             ctx.beginPath();
             ctx.moveTo(startPixel.x, startPixel.y);
@@ -429,7 +422,7 @@ function drawMovementPath() {
             ctx.setLineDash([8, 8]);
             ctx.stroke();
             ctx.setLineDash([]);
-            
+
             // Evidenzia l'esagono di arrivo
             ctx.beginPath();
             ctx.arc(endPixel.x, endPixel.y, HEX_SIZE * 0.7, 0, 2 * Math.PI);
@@ -438,7 +431,7 @@ function drawMovementPath() {
             ctx.strokeStyle = '#2980b9';
             ctx.lineWidth = 2;
             ctx.stroke();
-            
+
             // Scrivi i metri sulla linea
             const midX = (startPixel.x + endPixel.x) / 2;
             const midY = (startPixel.y + endPixel.y) / 2;
@@ -462,7 +455,7 @@ function drawRuler() {
         const dist = hexDistance(startHex.col, startHex.row, endHex.col, endHex.row);
 
         ctx.save();
-        
+
         // Disegna la linea tratteggiata
         ctx.beginPath();
         ctx.moveTo(window.rulerStart.x, window.rulerStart.y);
@@ -488,12 +481,10 @@ function drawRuler() {
         ctx.strokeText(`${dist}m`, midX, midY - 15);
         ctx.fillStyle = '#d35400';
         ctx.fillText(`${dist}m`, midX, midY - 15);
-        
+
         ctx.restore();
     }
 }
-
-
 
 // ==========================================
 // FOG OF WAR - CACHE OTTIMIZZATA
@@ -512,7 +503,6 @@ let fogCacheKey = '';
 window.fowVersion =
     window.fowVersion || 0;
 
-
 // ==========================================
 // TEXTURE NUVOLE
 // ==========================================
@@ -523,17 +513,14 @@ function generateCloudTexture() {
         return fogCloudTexture;
     }
 
-
     const offscreen =
         document.createElement('canvas');
 
     offscreen.width = 400;
     offscreen.height = 400;
 
-
     const offCtx =
         offscreen.getContext('2d');
-
 
     offCtx.fillStyle =
         '#0b131a';
@@ -545,7 +532,6 @@ function generateCloudTexture() {
         400
     );
 
-
     for (
         let i = 0;
         i < 200;
@@ -553,7 +539,6 @@ function generateCloudTexture() {
     ) {
 
         offCtx.beginPath();
-
 
         const x =
             Math.random() * 400;
@@ -564,7 +549,6 @@ function generateCloudTexture() {
         const radius =
             Math.random() * 60 + 20;
 
-
         offCtx.arc(
             x,
             y,
@@ -572,7 +556,6 @@ function generateCloudTexture() {
             0,
             Math.PI * 2
         );
-
 
         offCtx.fillStyle =
             `rgba(
@@ -582,18 +565,14 @@ function generateCloudTexture() {
                 ${Math.random() * 0.4}
             )`;
 
-
         offCtx.fill();
     }
-
 
     fogCloudTexture =
         offscreen;
 
-
     return fogCloudTexture;
 }
-
 
 // ==========================================
 // INVALIDAZIONE CACHE
@@ -609,7 +588,6 @@ window.invalidateFogCache =
 
         requestRender();
     };
-
 
 // ==========================================
 // COSTRUZIONE CACHE
@@ -631,7 +609,6 @@ function rebuildFogCache() {
             canvas.height;
     }
 
-
     // Reset completo della trasformazione
     fogCtxCache.setTransform(
         1,
@@ -642,7 +619,6 @@ function rebuildFogCache() {
         0
     );
 
-
     fogCtxCache.clearRect(
         0,
         0,
@@ -650,14 +626,11 @@ function rebuildFogCache() {
         fogCanvasCache.height
     );
 
-
     fogCtxCache.globalCompositeOperation =
         'source-over';
 
-
     fogCtxCache.globalAlpha =
         1;
-
 
     // Coordinate mondo realmente visibili
     const worldLeft =
@@ -682,7 +655,6 @@ function rebuildFogCache() {
         ) /
         camera.zoom;
 
-
     // Applica la stessa camera
     fogCtxCache.translate(
         camera.x,
@@ -694,7 +666,6 @@ function rebuildFogCache() {
         camera.zoom
     );
 
-
     // ======================================
     // NEBBIA
     // ======================================
@@ -702,23 +673,19 @@ function rebuildFogCache() {
     const cloudImg =
         generateCloudTexture();
 
-
     const pattern =
         fogCtxCache.createPattern(
             cloudImg,
             'repeat'
         );
 
-
     fogCtxCache.fillStyle =
         pattern;
-
 
     fogCtxCache.globalAlpha =
         isMaster
             ? 0.5
             : 1.0;
-
 
     // Disegniamo SOLO l'area visibile.
     // Non più -10000 -> +10000.
@@ -729,10 +696,8 @@ function rebuildFogCache() {
         worldBottom - worldTop
     );
 
-
     fogCtxCache.globalAlpha =
         1;
-
 
     // ======================================
     // ZONE RIVELATE
@@ -741,17 +706,14 @@ function rebuildFogCache() {
     fogCtxCache.globalCompositeOperation =
         'destination-out';
 
-
     const blurRadius =
         HEX_SIZE * 2.5;
-
 
     window.revealedHexes.forEach(
         hexStr => {
 
             const parts =
                 hexStr.split(',');
-
 
             const col =
                 parseInt(
@@ -763,13 +725,11 @@ function rebuildFogCache() {
                     parts[1]
                 );
 
-
             const center =
                 hexToPixel(
                     col,
                     row
                 );
-
 
             // CULLING:
             // se la radura è completamente
@@ -791,7 +751,6 @@ function rebuildFogCache() {
                 return;
             }
 
-
             const gradient =
                 fogCtxCache
                     .createRadialGradient(
@@ -804,7 +763,6 @@ function rebuildFogCache() {
                         center.y,
                         blurRadius
                     );
-
 
             gradient.addColorStop(
                 0,
@@ -821,10 +779,8 @@ function rebuildFogCache() {
                 'rgba(0, 0, 0, 0)'
             );
 
-
             fogCtxCache.fillStyle =
                 gradient;
-
 
             fogCtxCache.beginPath();
 
@@ -840,11 +796,9 @@ function rebuildFogCache() {
         }
     );
 
-
     fogCtxCache.globalCompositeOperation =
         'source-over';
 }
-
 
 // ==========================================
 // RENDER FOG
@@ -855,7 +809,6 @@ function drawFogOfWar() {
     if (!window.fowEnabled) {
         return;
     }
-
 
     // La cache viene rigenerata solo se
     // cambia qualcosa che influenza la FoW.
@@ -875,7 +828,6 @@ function drawFogOfWar() {
             window.fowVersion || 0
         ].join('|');
 
-
     if (
         newCacheKey !==
         fogCacheKey
@@ -887,11 +839,9 @@ function drawFogOfWar() {
             newCacheKey;
     }
 
-
     // Disegna la cache direttamente
     // in coordinate schermo.
     ctx.save();
-
 
     ctx.setTransform(
         1,
@@ -902,13 +852,11 @@ function drawFogOfWar() {
         0
     );
 
-
     ctx.drawImage(
         fogCanvasCache,
         0,
         0
     );
-
 
     ctx.restore();
 }
@@ -933,18 +881,18 @@ function requestRender() {
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     ctx.save();
-    
+
     ctx.translate(camera.x, camera.y);
     ctx.scale(camera.zoom, camera.zoom);
-    
+
     // 1. Sfondo con offset e scaling
     if (bgImage && bgImage.complete) {
         const mapW = bgImage.width * mapScale;
         const mapH = bgImage.height * mapScale;
         ctx.drawImage(bgImage, mapDx, mapDy, mapW, mapH);
-        
+
         // --- HUD MODIFICA MAPPA VISIVA ---
         if (typeof isMaster !== 'undefined' && isMaster && window.isEditingMap) {
             ctx.save();
@@ -952,17 +900,17 @@ function render() {
             ctx.lineWidth = 4 / camera.zoom;
             ctx.setLineDash([10 / camera.zoom, 10 / camera.zoom]);
             ctx.strokeRect(mapDx, mapDy, mapW, mapH);
-            
+
             ctx.setLineDash([]);
             ctx.fillStyle = '#f1c40f';
             ctx.strokeStyle = '#000';
             ctx.lineWidth = 2 / camera.zoom;
             const hSize = 15 / camera.zoom; // Dimensione quadratino ancoraggio
-            
+
             // Quadratino in basso a destra (Ridimensionamento)
             ctx.fillRect(mapDx + mapW - hSize, mapDy + mapH - hSize, hSize*2, hSize*2);
             ctx.strokeRect(mapDx + mapW - hSize, mapDy + mapH - hSize, hSize*2, hSize*2);
-            
+
             // Etichetta centrale
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.fillRect(mapDx + mapW/2 - 60/camera.zoom, mapDy + mapH/2 - 15/camera.zoom, 120/camera.zoom, 30/camera.zoom);
@@ -1008,10 +956,10 @@ function render() {
     drawTokens();
 
     // 5. Puntatori Laser Temporanei (Sempre in primissimo piano)
-    drawLaserLines(); 
+    drawLaserLines();
 
     // --- NUOVO: Disegna il Righello in cima a tutto ---
     drawRuler();
-    
-    ctx.restore(); 
+
+    ctx.restore();
 }

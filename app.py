@@ -38,7 +38,7 @@ class Character(db.Model):
     pos_y = db.Column(db.Integer, default=0)
     color = db.Column(db.String(20), default="#000000")
 
-    photo_url = db.Column(db.Text, default="") 
+    photo_url = db.Column(db.Text, default="")
     token_url = db.Column(db.Text, default="")
     lore = db.Column(db.Text, default="")
 
@@ -77,7 +77,6 @@ class Line(db.Model):
     color = db.Column(db.String(20), default="#000000")
     width = db.Column(db.Integer, default=2)
 
-
 class DrawItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String(50), nullable=False, unique=True)
@@ -98,7 +97,6 @@ class WorldState(db.Model):
     map_dy = db.Column(db.Integer, default=0)
     fow_enabled = db.Column(db.Boolean, default=False)
     revealed_hexes = db.Column(db.JSON, default=list)
-
 
 # ==========================================
 # MEMORIA GLOBALE COMBATTIMENTO E SETUP DB
@@ -127,7 +125,6 @@ def get_world_state():
         "fow_enabled": ws.fow_enabled,
         "revealed_hexes": ws.revealed_hexes
     }
-
 
 with app.app_context():
     db.create_all()
@@ -183,7 +180,7 @@ def get_char_data(char):
         "stamina_current": char.stamina_current, "stamina_max": char.stamina_max,
         "conc_current": char.conc_current, "conc_max": char.conc_max, "pa_stats": char.pa_stats,
         "status": char.status, "stats": char.stats, "weapons": char.weapons,
-        "skills": char.skills, "backpack": char.backpack, "bonuses": char.bonuses, "is_hidden": char.is_hidden, 
+        "skills": char.skills, "backpack": char.backpack, "bonuses": char.bonuses, "is_hidden": char.is_hidden,
         "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop, "notes": char.notes
     }
 
@@ -194,7 +191,6 @@ def emit_to_masters(event_name, data):
     """Invia un evento solo ai socket registrati come Master."""
     for sid in list(master_sids):
         socketio.emit(event_name, data, to=sid)
-
 
 @socketio.on("register_session_role")
 def handle_register_session_role(data):
@@ -210,18 +206,16 @@ def handle_register_session_role(data):
         for result in pending_combat_results.values():
             emit("master_pending_combat_result", result, to=request.sid)
 
-
 @socketio.on("disconnect")
 def handle_disconnect():
     master_sids.discard(request.sid)
-
 
 @socketio.on("connect")
 def handle_connect():
     chars = Character.query.order_by(Character.id).all()
     char_list = [get_char_data(char) for char in chars]
     emit("init_state", char_list)
-    
+
     draw_items = DrawItem.query.all()
     draw_list = [{"uid": d.uid, "type": d.type, "sx": d.sx, "sy": d.sy, "ex": d.ex, "ey": d.ey, "c": d.color, "w": d.size, "img": d.img_data} for d in draw_items]
 
@@ -240,7 +234,7 @@ def handle_toggle_combat():
     # Un nuovo stato di combattimento invalida richieste e risultati precedenti.
     pending_attacks.clear()
     pending_combat_results.clear()
-    
+
     if combat_state["is_active"]:
         characters = Character.query.filter_by(is_hidden=False).all()
         if not characters:
@@ -252,7 +246,7 @@ def handle_toggle_combat():
         sum_y = sum(c.pos_y for c in characters)
         ep_x = round(sum_x / len(characters))
         ep_y = round(sum_y / len(characters))
-        
+
         combat_state["epicenter"] = {
             "x": ep_x,
             "y": ep_y
@@ -269,13 +263,13 @@ def handle_toggle_combat():
             })
             combat_state["players_pa"][str(c.id)] = 120 # Dà a tutti 120 frames
             combat_state["players_limbs"][str(c.id)] = {"bd": 60, "bs": 60, "gd": 60, "gs": 60} # 60 frames per arto
-        
+
         # Ordina l'array dal più vicino (distanza minore) al più lontano
         turn_order.sort(key=lambda x: x["distance"])
-        
+
         combat_state["turn_order"] = turn_order
         combat_state["current_index"] = 0
-        
+
         emit("dice_result", {"name": "SISTEMA", "message": "⚔️ <b>COMBATTIMENTO INIZIATO!</b> L'ordine di turno è calcolato in base alla vicinanza all'epicentro.", "is_master_roll": True}, broadcast=True)
     else:
         combat_state["turn_order"] = []
@@ -286,35 +280,35 @@ def handle_toggle_combat():
 @socketio.on("next_turn")
 def handle_next_turn():
     global combat_state
-    if not combat_state["is_active"] or not combat_state["turn_order"]: 
+    if not combat_state["is_active"] or not combat_state["turn_order"]:
         return
-        
+
     # Scala effetti per turno
     current_actor_info = combat_state["turn_order"][combat_state["current_index"]]
     char = db.session.get(Character, current_actor_info["id"])
-    
+
     if char and char.bonuses:
         if isinstance(char.bonuses, list):
             updated_bonuses = []
             expired_effects = []
-            chat_messages = [] 
-            
+            chat_messages = []
+
             for b in char.bonuses:
                 if isinstance(b, dict) and "turns" in b:
                     # Crea una copia fresca del dizionario per assicurarsi che SQLAlchemy rilevi il cambiamento
                     new_b = dict(b)
-                    
+
                     hp_change = int(new_b.get("hpChange", 0))
                     if hp_change != 0:
                         old_hp = char.hp_current
                         char.hp_current = max(0, min(char.hp_max, char.hp_current + hp_change))
                         actual_change = char.hp_current - old_hp
-                        
+
                         if actual_change < 0:
                             chat_messages.append(f"ha subito {-actual_change} danni da <b>{new_b['name']}</b>")
                         elif actual_change > 0:
                             chat_messages.append(f"ha recuperato {actual_change} HP grazie a <b>{new_b['name']}</b>")
-                    
+
                     # SCALA I TURNI SULLA COPIA
                     new_b["turns"] -= 1
                     if new_b["turns"] > 0:
@@ -323,16 +317,16 @@ def handle_next_turn():
                         expired_effects.append(new_b["name"])
                 else:
                     updated_bonuses.append(b)
-            
+
             char.bonuses = updated_bonuses
             flag_modified(char, "bonuses") # Forza il salvataggio della colonna JSON
             db.session.commit()
             emit("update_character", get_char_data(char), broadcast=True)
-            
+
             # Invia i messaggi di danno/cura alla chat di tutti
             for msg in chat_messages:
                 emit("dice_result", {"name": char.name, "message": msg, "is_master_roll": False}, broadcast=True)
-                
+
             # Avvisa se un effetto svanisce
             if expired_effects:
                 msg = f"Effetti terminati: <b>{', '.join(expired_effects)}</b>"
@@ -340,7 +334,7 @@ def handle_next_turn():
 
     # --- PROCEDI AL PROSSIMO ATTORE ---
     next_index = combat_state["current_index"] + 1
-    
+
     if next_index >= len(combat_state["turn_order"]):
         characters = Character.query.filter_by(is_hidden=False).all()
         if not characters:
@@ -350,7 +344,7 @@ def handle_next_turn():
         sum_y = sum(c.pos_y for c in characters)
         ep_x = round(sum_x / len(characters))
         ep_y = round(sum_y / len(characters))
-        
+
         combat_state["epicenter"] = {"x": ep_x, "y": ep_y}
 
         turn_order = []
@@ -362,13 +356,13 @@ def handle_next_turn():
             })
             # NUOVO ROUND: RESETTA GLI ARTI A TUTTI
             combat_state["players_limbs"][str(c.id)] = {"bd": 60, "bs": 60, "gd": 60, "gs": 60}
-        
+
         turn_order.sort(key=lambda x: x["distance"])
         combat_state["turn_order"] = turn_order
         combat_state["current_index"] = 0
-        
+
         emit("dice_result", {"name": "SISTEMA", "message": "🔄 <b>NUOVO ROUND!</b> L'epicentro si è spostato e l'ordine di turno è stato ricalcolato.", "is_master_roll": True}, broadcast=True)
-        
+
     else:
         combat_state["current_index"] = next_index
         next_char_id = combat_state["turn_order"][combat_state["current_index"]]["id"]
@@ -389,10 +383,10 @@ def handle_register_player(data):
     if not char_id or not name: return
     char = db.session.get(Character, char_id)
     if not char or char.role != "player": return
-    
+
     existing = Character.query.filter(Character.name == name, Character.id != char_id).first()
     if existing: return
-    
+
     char.name = name
     db.session.commit()
     emit("update_character", get_char_data(char), broadcast=True)
@@ -415,12 +409,12 @@ def handle_move(data):
 @socketio.on("spawn_npc")
 def handle_spawn_npc(data):
     new_npc = Character(
-        name=data.get("name", "Mostro"), 
-        role="npc", 
+        name=data.get("name", "Mostro"),
+        role="npc",
         pos_x=data.get("x", 0),
         pos_y=data.get("y", 0),
-        color=data.get("color", "#000000"), 
-        hp_max=data.get("hp", 30), 
+        color=data.get("color", "#000000"),
+        hp_max=data.get("hp", 30),
         hp_current=data.get("hp", 30),
         stats={"Tipo": "NPC / Nemico"}, weapons=[], skills=[], backpack=[], xp=0, shop=[],
         is_hidden=data.get("is_hidden", False),
@@ -429,7 +423,7 @@ def handle_spawn_npc(data):
     db.session.add(new_npc)
     db.session.commit()
     emit("update_character", get_char_data(new_npc), broadcast=True)
-    
+
 @socketio.on("update_vitals")
 def handle_update_vitals(data):
     char_id = data.get("char_id")
@@ -449,7 +443,7 @@ def handle_spend_pa(data):
     char_id = data.get("char_id")
     stat_key = data.get("stat")
     amount = int(data.get("amount", 1))
-    
+
     char = db.session.get(Character, char_id)
     if not char: return
 
@@ -457,12 +451,12 @@ def handle_spend_pa(data):
     if stat_key not in current_pa_stats:
         stat_val = int(char.stats.get(stat_key, 1))
         current_pa_stats[stat_key] = 6 + (stat_val - 1) * 3
-        
+
     if current_pa_stats[stat_key] > 0 and amount > 0:
         actual_spent = min(amount, current_pa_stats[stat_key])
         current_pa_stats[stat_key] -= actual_spent
         char.pa_stats = current_pa_stats
-        
+
         db.session.commit()
         emit("update_character", get_char_data(char), broadcast=True)
         emit("dice_result", {"name": char.name, "message": f"ha speso {actual_spent} PA di <b>{stat_key}</b>.", "is_master_roll": False}, broadcast=True)
@@ -472,7 +466,7 @@ def handle_reset_pa(data):
     char_id = data.get("char_id")
     stat_key = data.get("stat")
     cost_type = data.get("cost_type")
-    
+
     char = db.session.get(Character, char_id)
     if not char: return
 
@@ -485,13 +479,13 @@ def handle_reset_pa(data):
         char.conc_current -= 15
         can_reset = True
         msg_cost = "Concentrazione 🧠"
-        
+
     if can_reset:
         current_pa_stats = dict(char.pa_stats) if char.pa_stats else {}
         stat_val = int(char.stats.get(stat_key, 1))
         current_pa_stats[stat_key] = 6 + (stat_val - 1) * 3
         char.pa_stats = current_pa_stats
-        
+
         db.session.commit()
         emit("update_character", get_char_data(char), broadcast=True)
         emit("dice_result", {"name": char.name, "message": f"ha speso 15 {msg_cost} per ripristinare i PA di <b>{stat_key}</b>!", "is_master_roll": False}, broadcast=True)
@@ -546,7 +540,7 @@ def handle_buy_skill(data):
 
     cost = int(data.get("cost", 0))
     skill_name = data.get("skill_name")
-    
+
     current_skills = list(char.skills) if char.skills else []
     if char.xp < cost or not skill_name or skill_name in current_skills: return
 
@@ -576,7 +570,6 @@ def load_compendio():
 def handle_get_compendio():
     emit("compendio_data", load_compendio())
 
-
 # ==========================================
 # HELPERS COMBATTIMENTO / COMPENDIO V2
 # ==========================================
@@ -598,14 +591,12 @@ def get_compendium_item(compendium_id=None, name=None):
 
     return None
 
-
 def offset_to_cube(col, row):
     """Conversione Odd-R identica a static/utils.js."""
     q = col - (row - (row & 1)) // 2
     r = row
     s = -q - r
     return q, r, s
-
 
 def hex_distance(x1, y1, x2, y2):
     a = offset_to_cube(int(x1), int(y1))
@@ -615,7 +606,6 @@ def hex_distance(x1, y1, x2, y2):
         abs(a[1] - b[1]),
         abs(a[2] - b[2])
     )
-
 
 def numeric_speed(value):
     if value is None or value == "":
@@ -630,7 +620,6 @@ def numeric_speed(value):
 
     return int(float(match.group(0).replace(",", ".")))
 
-
 def compendium_attack_speed(item):
     if not item:
         return None
@@ -642,7 +631,6 @@ def compendium_attack_speed(item):
         raw = speed.get("activation")
 
     return numeric_speed(raw)
-
 
 def compendium_attack_range(item):
     if not item:
@@ -674,7 +662,6 @@ def compendium_attack_range(item):
 
     return None
 
-
 def get_equipped_attack_item(character, source_slot=None, compendium_id=None, weapon_name=None):
     equipped = ((character.stats or {}).get("equipped") or {})
 
@@ -704,7 +691,6 @@ def get_equipped_attack_item(character, source_slot=None, compendium_id=None, we
 
     return None, None
 
-
 def character_stat(character, stat_name):
     stats = character.stats or {}
     wanted = str(stat_name).strip().casefold()
@@ -717,7 +703,6 @@ def character_stat(character, stat_name):
                 return 0.0
 
     return 0.0
-
 
 def calculate_basic_damage(formula, attacker, weapon_name=""):
     """Calcola solo formule deterministiche semplici."""
@@ -776,7 +761,6 @@ def calculate_basic_damage(formula, attacker, weapon_name=""):
         return None
 
     return int(round(result))
-
 
 def resolve_attack_damage(comp_item, attacker, distance, weapon_name=""):
     """
@@ -878,7 +862,6 @@ def resolve_attack_damage(comp_item, attacker, distance, weapon_name=""):
         "automatic": basic_damage is not None
     }
 
-
 def get_equipment_hp(item):
     if not isinstance(item, dict):
         return 0, 0
@@ -908,7 +891,6 @@ def get_equipment_hp(item):
 
     return current_hp, max_hp
 
-
 def get_defense_equipment(character, limb_key):
     equipped = ((character.stats or {}).get("equipped") or {})
 
@@ -934,7 +916,6 @@ def get_defense_equipment(character, limb_key):
             return slot, item
 
     return fallback
-
 
 def set_equipment_current_hp(character, slot_key, new_hp):
     stats = dict(character.stats or {})
@@ -1001,14 +982,12 @@ def handle_roll_dice(data):
     result_data = {"name": name, "message": msg, "is_master_roll": is_master}
     emit("dice_result", result_data, to=request.sid if is_master else None, broadcast=not is_master)
 
-
 @socketio.on("clear_drawings")
 def handle_clear_drawings():
     db.session.query(DrawItem).delete()
     db.session.query(Line).delete() # Puliamo anche le vecchie linee per sicurezza
     db.session.commit()
     emit("clear_lines", broadcast=True)
-
 
 @socketio.on("delete_drawing")
 def handle_delete_drawing(data):
@@ -1017,7 +996,6 @@ def handle_delete_drawing(data):
         DrawItem.query.filter_by(uid=uid).delete()
         db.session.commit()
         emit("drawing_deleted", {"uid": uid}, broadcast=True)
-
 
 # ==========================================
 # PING
@@ -1035,7 +1013,6 @@ def handle_draw_laser(data):
     # Ritrasmette la scia del laser a tutti gli altri giocatori
     emit("show_laser", data, broadcast=True, include_self=False)
 
-
 @socketio.on("draw_item")
 def handle_draw_item(data):
     try:
@@ -1051,7 +1028,7 @@ def handle_draw_item(data):
         db.session.add(new_item)
         db.session.commit()
         emit("draw_item", data, broadcast=True, include_self=False)
-    except Exception as e: 
+    except Exception as e:
         print("Errore nel salvataggio disegno:", e)
 
 @socketio.on("update_drawing")
@@ -1066,7 +1043,6 @@ def handle_update_drawing(data):
         db.session.commit()
         emit("drawing_updated", data, broadcast=True, include_self=False)
 
-
 # ==========================================
 # MESSAGGI DI COMBATTIMENTO PERSONALIZZATI
 # ==========================================
@@ -1074,8 +1050,6 @@ def handle_update_drawing(data):
 def handle_combat_msg(data):
     # Questo invia un messaggio di sistema senza attivare il controllo dadi!
     emit("dice_result", {"name": data["name"], "message": data["message"], "is_master_roll": False}, broadcast=True)
-
-
 
 @socketio.on("sync_pa")
 def handle_sync_pa(data):
@@ -1090,7 +1064,6 @@ def handle_toggle_invisible(data):
         char.is_invisible = bool(data.get("is_invisible", False))
         db.session.commit()
         emit("character_invisible_update", {"id": char.id, "is_invisible": char.is_invisible}, broadcast=True)
-
 
 @socketio.on("set_map")
 def handle_set_map(data):
@@ -1136,13 +1109,11 @@ def handle_sync_fow(hex_list):
     db.session.commit()
     emit("update_fow_hexes", hex_list, broadcast=True)
 
-
 # Gestione attacco limbs
 @socketio.on("sync_limbs")
 def handle_sync_limbs(data):
     combat_state["players_limbs"][str(data["char_id"])] = data["limbs"]
     emit("sync_limbs", data, broadcast=True, include_self=False)
-
 
 @socketio.on("declare_attack")
 def handle_declare_attack(data):
@@ -1313,7 +1284,6 @@ def handle_declare_attack(data):
 
     emit("incoming_attack", incoming_attack, broadcast=True)
 
-
 @socketio.on("resolve_reaction")
 def handle_resolve_reaction(data):
     data = data or {}
@@ -1396,7 +1366,6 @@ def handle_resolve_reaction(data):
 
     # Nessun HP viene modificato e nessun tiro viene pubblicato qui.
     emit_to_masters("master_pending_combat_result", result)
-
 
 @socketio.on("master_publish_combat_result")
 def handle_master_publish_combat_result(data):
@@ -1529,7 +1498,6 @@ def handle_master_publish_combat_result(data):
 
     pending_combat_results.pop(result_id, None)
 
-
 @socketio.on("master_discard_combat_result")
 def handle_master_discard_combat_result(data):
     data = data or {}
@@ -1539,7 +1507,6 @@ def handle_master_discard_combat_result(data):
 
     result_id = data.get("result_id")
     pending_combat_results.pop(result_id, None)
-
 
 def get_npc_token_library():
     tokens = NpcTokenPreset.query.order_by(NpcTokenPreset.name).all()
@@ -1553,11 +1520,9 @@ def get_npc_token_library():
         for token in tokens
     ]
 
-
 @socketio.on("get_npc_tokens")
 def handle_get_npc_tokens():
     emit("npc_token_library", get_npc_token_library())
-
 
 @socketio.on("save_npc_token")
 def handle_save_npc_token(data):
@@ -1580,7 +1545,6 @@ def handle_save_npc_token(data):
         get_npc_token_library(),
         broadcast=True
     )
-
 
 if __name__ == "__main__":
     socketio.run(

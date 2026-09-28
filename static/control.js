@@ -3,11 +3,11 @@ window.keysDown = {};
 
 window.addEventListener('keydown', e => {
     window.keysDown[e.key.toLowerCase()] = true;
-    
+
     // --- Tasto Esc per Annullare Selezioni e Strumenti ---
     if (e.key === 'Escape') {
         let changed = false;
-        
+
         // Svuota completamente l'interfaccia Master
         if (isMaster && selectedCharacterId !== null) {
             selectedCharacterId = null;
@@ -17,30 +17,29 @@ window.addEventListener('keydown', e => {
             if (typeof statusBar !== 'undefined') statusBar.innerText = `[MASTER] Selezione annullata.`;
             changed = true;
         }
-        
+
         if (window.selectedDrawing) {
             window.selectedDrawing = null;
             changed = true;
         }
-        
+
         if (window.isRulerMode) {
             window.isRulerMode = false;
             window.rulerStart = null;
             window.rulerCurrent = null;
             changed = true;
         }
-        
+
         if (changed && typeof render === 'function') render();
     }
 });
 
 window.addEventListener('keyup', e => window.keysDown[e.key.toLowerCase()] = false);
 
-
 // --- ZOOM (Rotellina) ---
 canvas.addEventListener('wheel', (event) => {
     event.preventDefault(); // Evita che la pagina web scorra in giù
-    
+
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
@@ -64,14 +63,13 @@ canvas.addEventListener('wheel', (event) => {
     render();
 });
 
-
 // ==========================================
 // MOVIMENTI E DISEGNI SULLA MAPPA
 // ==========================================
 canvas.addEventListener('click', (event) => {
     // Se stavamo disegnando o spostando la mappa, ignora il click
     if (justFinishedAction) return;
-    if (event.shiftKey || isDrawingMode) return; 
+    if (event.shiftKey || isDrawingMode) return;
 
     // ==========================================
     // LOGICA NORMALE: SELEZIONE E MOVIMENTO PEDINE
@@ -81,7 +79,7 @@ canvas.addEventListener('click', (event) => {
         alert("Devi prima selezionare il tuo personaggio dal menu!");
         return;
     }
-    
+
     const pos = getWorldPos(event);
     const hex = pixelToHex(pos.x, pos.y);
     const gridX = hex.col;
@@ -93,7 +91,7 @@ canvas.addEventListener('click', (event) => {
         const hp = parseInt(document.getElementById('npc-hp')?.value) || 30;
         const color = document.getElementById('npc-color')?.value || "#8e44ad";
         const isHidden = document.getElementById('npc-hidden')?.checked || false;
-        
+
        socket.emit('spawn_npc', {
             name,
             hp,
@@ -123,7 +121,7 @@ canvas.addEventListener('click', (event) => {
 
         const myChar = characters.find(c => c.id === currentCharacterId);
         let isMyTurn = false;
-        
+
         if (combatState.is_active && combatState.turn_order.length > 0) {
             const currentActor = combatState.turn_order[combatState.current_index];
             if (currentActor && currentActor.id === currentCharacterId) isMyTurn = true;
@@ -133,25 +131,25 @@ canvas.addEventListener('click', (event) => {
         if (combatState.is_active && isMyTurn && myChar) {
             const dist = hexDistance(myChar.x, myChar.y, gridX, gridY);
             if (dist === 0) return; // Ha cliccato dove si trova già
-            
+
             // Salviamo le coordinate bersaglio e prepariamo il popup
             window.pendingMove = { x: gridX, y: gridY, dist: dist, charId: currentCharacterId };
             document.getElementById('move-modal-text').innerText = `Distanza bersaglio: ${dist} passi.\nScegli la tua andatura:`;
-            
+
             // --- NUOVO: Calcola il costo esatto in FRAME e aggiorna i bottoni ---
             document.querySelectorAll('.move-btn').forEach(btn => {
                 const framesPerStep = parseInt(btn.getAttribute('data-cost')) || 0;
                 const modeName = btn.getAttribute('data-name') || "Movimento";
-                
+
                 // Calcolo Frame richiesti: Distanza (esagoni) x Costo del singolo passo
                 const requiredFrames = dist * framesPerStep;
-                
+
                 // Usiamo currentPaMov come contenitore per i 120 frame di movimento
                 let currentFrames = parseInt(window.currentPaMov) || 0;
 
                 // 1. Aggiorna il TESTO del bottone e la TRASPARENZA prima di cliccare
                 btn.innerText = `${modeName} (Costo: ${requiredFrames} Frame)`;
-                
+
                 if (requiredFrames > currentFrames) {
                     btn.style.opacity = '0.3';
                     btn.style.cursor = 'not-allowed';
@@ -163,15 +161,15 @@ canvas.addEventListener('click', (event) => {
                     // 2. Azione al CLICK (blindata contro i bug)
                     btn.onclick = () => {
                         if (!window.pendingMove) return;
-                        
+
                         // Scala i Frame e aggiorna la memoria del browser
                         currentFrames -= requiredFrames;
                         window.currentPaMov = currentFrames;
                         window.playersPa[window.pendingMove.charId] = currentFrames;
-                        
+
                         // Chiudi la modale
                         document.getElementById('move-modal').style.display = 'none';
-                        
+
                        const moveData = {
                             char_id:
                                 window.pendingMove.charId,
@@ -183,14 +181,12 @@ canvas.addEventListener('click', (event) => {
                                 window.pendingMove.y
                         };
 
-
                         const myChar =
                             characters.find(
                                 c =>
                                     c.id ===
                                     window.pendingMove.charId
                             );
-
 
                         // ==========================================
                         // MOVIMENTO LOCALE IMMEDIATO
@@ -205,16 +201,13 @@ canvas.addEventListener('click', (event) => {
                                 moveData.target_y;
                         }
 
-
                         // Chiudi immediatamente la preview
                         window.pendingMove =
                             null;
 
-
                         // Aggiorna subito la mappa,
                         // senza aspettare il server
                         requestRender();
-
 
                         // ==========================================
                         // SINCRONIZZAZIONE SERVER
@@ -231,16 +224,12 @@ canvas.addEventListener('click', (event) => {
                             }
                         );
 
-
-                        socket.emit(
-                            'declare_move',
-                            moveData
-                        );
+                        socket.emit('declare_move',moveData);
                         if (myChar) {
                             const msg = `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`;
                             socket.emit('combat_msg', { name: myChar.name, message: msg });
                         }
-                    
+
                     };
                 }
             });
@@ -248,16 +237,15 @@ canvas.addEventListener('click', (event) => {
             document.getElementById('move-modal').style.display = 'block';
             return; // Ferma il codice qui, non si muove finché non clicca un pulsante!
         }
-        
+
         // Se non siamo in combattimento, muoviti normalmente
         socket.emit('declare_move', { char_id: currentCharacterId, target_x: gridX, target_y: gridY });
         return;
     }
 
     // Il Master può cliccare tutti, i giocatori solo quelli visibili (né FoW né Invisibili)
-   // Il Master può cliccare tutti, i giocatori solo quelli visibili (né FoW né Invisibili)
     const clickedChar = characters.find(c => c.x === gridX && c.y === gridY && (isMaster || (!c.is_hidden && !c.is_invisible)));
-    
+
     if (clickedChar) {
         // Se clicchi sulla pedina già selezionata, la deselezioni
         if (selectedCharacterId === clickedChar.id) {
@@ -275,7 +263,7 @@ canvas.addEventListener('click', (event) => {
     } else if (selectedCharacterId !== null) {
         socket.emit('declare_move', { char_id: selectedCharacterId, target_x: gridX, target_y: gridY });
         statusBar.innerText = `[MASTER] Spostamento in X:${gridX}, Y:${gridY}`;
-        
+
         // Deseleziona e nasconde i pannelli dopo il movimento
         selectedCharacterId = null;
         updateMasterEditPanel(null);
@@ -284,10 +272,9 @@ canvas.addEventListener('click', (event) => {
     }
 });
 
-
 canvas.addEventListener('mousedown', (event) => {
 
-    if (event.button !== 0) return; 
+    if (event.button !== 0) return;
 
     const pos = getWorldPos(event);
 
@@ -295,10 +282,10 @@ canvas.addEventListener('mousedown', (event) => {
     if (isMaster && window.fowEnabled && (window.keysDown['f'] || window.keysDown['g'])) {
         const hex = pixelToHex(pos.x, pos.y);
         const hexStr = `${hex.col},${hex.row}`;
-        
+
         if (window.keysDown['f']) window.revealedHexes.add(hexStr);
         else window.revealedHexes.delete(hexStr);
-        
+
         socket.emit('sync_fow_hexes', Array.from(window.revealedHexes));
         render();
         justFinishedAction = true;
@@ -317,7 +304,7 @@ canvas.addEventListener('mousedown', (event) => {
         // Controllo: Cliccato l'angolino per Ridimensionare?
         if (Math.hypot(pos.x - (mapDx + mapW), pos.y - (mapDy + mapH)) < handleHitbox) {
             window.mapDragAction = 'resize';
-        } 
+        }
         // Controllo: Cliccato dentro l'immagine per Spostare?
         else if (pos.x >= mapDx && pos.x <= mapDx + mapW && pos.y >= mapDy && pos.y <= mapDy + mapH) {
             window.mapDragAction = 'move';
@@ -338,7 +325,7 @@ canvas.addEventListener('mousedown', (event) => {
         window.rulerCurrent = { x: lastX, y: lastY };
         return;
     }
-    
+
     // 1. LASER
     if (event.shiftKey) {
         isLaserDrawing = true;
@@ -348,7 +335,7 @@ canvas.addEventListener('mousedown', (event) => {
     // 2. DISEGNO MASTER
     if (isMaster && isDrawingMode) {
         const tool = document.getElementById('draw-tool-select')?.value || 'line';
-        
+
         // Strumento "Manina" per spostare e selezionare
         if (tool === 'select') {
             let found = null;
@@ -359,7 +346,7 @@ canvas.addEventListener('mousedown', (event) => {
 
                 if (d.type === 'rectangle') {
                     // Clic dentro l'area del rettangolo
-                    isHit = pos.x >= Math.min(d.sx, d.ex) && pos.x <= Math.max(d.sx, d.ex) && 
+                    isHit = pos.x >= Math.min(d.sx, d.ex) && pos.x <= Math.max(d.sx, d.ex) &&
                             pos.y >= Math.min(d.sy, d.ey) && pos.y <= Math.max(d.sy, d.ey);
                 } else if (d.type === 'circle' || d.type === 'icon' || d.type === 'square') {
                     // Clic dentro il raggio della forma o dell'icona
@@ -369,7 +356,7 @@ canvas.addEventListener('mousedown', (event) => {
                     // Linee: controlla inizio, fine, o se clicchi in un punto qualsiasi nel mezzo
                     const distStart = Math.hypot(d.sx - pos.x, d.sy - pos.y);
                     const distEnd = Math.hypot((d.ex || d.sx) - pos.x, (d.ey || d.sy) - pos.y);
-                    
+
                     if (distStart < 25 || distEnd < 25) {
                         isHit = true;
                     } else if (d.ex !== undefined && d.ey !== undefined) {
@@ -389,10 +376,10 @@ canvas.addEventListener('mousedown', (event) => {
 
                 if (isHit) { found = d; break; }
             }
-            
+
             // Salva la selezione per l'eliminazione
-            window.selectedDrawing = found; 
-            
+            window.selectedDrawing = found;
+
             if (found) {
                 window.draggingDrawing = found;
                 window.dragOffset.sx = pos.x - found.sx;
@@ -436,19 +423,19 @@ canvas.addEventListener('mousemove', (event) => {
         if (isMaster && window.fowEnabled && (window.keysDown['f'] || window.keysDown['g'])) {
             const hex = pixelToHex(pos.x, pos.y);
             const hexStr = `${hex.col},${hex.row}`;
-            
+
             let changed = false;
             // F = Svela (Aggiunge all'elenco dei visibili)
             if (window.keysDown['f'] && !window.revealedHexes.has(hexStr)) {
                 window.revealedHexes.add(hexStr);
                 changed = true;
-            } 
+            }
             // G = Nascondi (Rimuove dall'elenco dei visibili)
             else if (window.keysDown['g'] && window.revealedHexes.has(hexStr)) {
                 window.revealedHexes.delete(hexStr);
                 changed = true;
             }
-            
+
             if (changed) {
                 render();
                 // Trasmette i dati ai giocatori a blocchi per non far laggare il server
@@ -462,7 +449,7 @@ canvas.addEventListener('mousemove', (event) => {
             justFinishedAction = true;
             return; // Blocca il trascinamento della visuale
         }
-        
+
         const diffX = pos.x - window.mapMouseStart.x;
         const diffY = pos.y - window.mapMouseStart.y;
 
@@ -477,7 +464,7 @@ canvas.addEventListener('mousemove', (event) => {
             if (mapScale < 0.1) mapScale = 0.1; // Limite minimo
             canvas.style.cursor = 'se-resize';
         }
-        
+
         // Aggiorna visivamente i numerini nel pannello a destra
         if (document.getElementById('map-scale')) document.getElementById('map-scale').value = mapScale.toFixed(2);
         if (document.getElementById('map-dx')) document.getElementById('map-dx').value = Math.round(mapDx);
@@ -486,7 +473,7 @@ canvas.addEventListener('mousemove', (event) => {
         render();
         return; // BLOCCO CRITICO: impedisce alla telecamera (panning) di muoversi
     }
-    
+
     // Gestione Spostamento Telecamera
     if (isPanning) {
         camera.x = event.clientX - panStartX;
@@ -541,7 +528,7 @@ canvas.addEventListener('mousemove', (event) => {
         const baseWidth = parseInt(document.getElementById('draw-width')?.value) || 3;
         const color = isEraserMode ? '#ffffff' : (document.getElementById('draw-color')?.value || '#000000');
         const width = isEraserMode ? baseWidth * 2 : baseWidth;
-        
+
         const itemData = { type: 'line', sx: lastX, sy: lastY, ex: currentX, ey: currentY, c: color, w: width };
         drawings.push(itemData);
         render();
@@ -565,7 +552,7 @@ canvas.addEventListener('mousemove', (event) => {
     }
 });
 
-canvas.addEventListener('mouseup', () => { 
+canvas.addEventListener('mouseup', () => {
 
     // --- NUOVO: MODIFICA MAPPA (Salvataggio Rilascio) ---
     if (window.mapDragAction) {
@@ -594,14 +581,14 @@ canvas.addEventListener('mouseup', () => {
 
     if (isDrawing || isDrawingShape) {
         justFinishedAction = true; // Evita di selezionare una pedina per sbaglio
-        
+
         if (isDrawingShape && currentTempShape) {
             drawings.push(currentTempShape); // Salva la forma definita
             socket.emit('draw_item', currentTempShape);
             currentTempShape = null;
             render();
         }
-        
+
         isDrawing = false;
         isDrawingShape = false;
     }
@@ -613,11 +600,10 @@ canvas.addEventListener('mouseup', () => {
         return;
     }
 
-    isLaserDrawing = false; 
+    isLaserDrawing = false;
 
     // Sblocca il click normale dopo un brevissimo istante
     setTimeout(() => { justFinishedAction = false; }, 100);
 });
 
 canvas.addEventListener('mouseout', () => { isDrawing = false; isLaserDrawing = false; });
-

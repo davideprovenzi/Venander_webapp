@@ -18,7 +18,6 @@ const HEX_CORNERS = Array.from(
     }
 );
 
-
 // Converte le coordinate della griglia (X,Y) in pixel esatti sulla mappa
 function hexToPixel(col, row) {
     const x = HEX_W * (col + 0.5 * (row & 1)); // Sfalsa le righe dispari

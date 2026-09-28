@@ -42,7 +42,7 @@ function populatePlayerSheetUI(myChar) {
     let autoStatus = "Perfetta forma";
     let statusColor = "#27ae60";
     let hpPercent = (myChar.hp_current !== undefined ? myChar.hp_current : 0) / (myChar.hp_max || 1);
-    
+
     if (hpPercent <= 0) { autoStatus = "Incosciente / Morto"; statusColor = "#000000"; }
     else if (hpPercent <= 0.25) { autoStatus = "Esausto / Ferito Grave"; statusColor = "#c0392b"; }
     else if (hpPercent <= 0.50) { autoStatus = "Stanco / Ferito"; statusColor = "#e74c3c"; }
@@ -61,7 +61,7 @@ function populatePlayerSheetUI(myChar) {
                 let statVal = parseInt(value) || 1;
                 let maxPa = 6 + (statVal - 1) * 3;
                 let currentPa = (myChar.pa_stats && myChar.pa_stats[key] !== undefined) ? myChar.pa_stats[key] : maxPa;
-                
+
                 const li = document.createElement('li');
                 li.style.marginBottom = '8px'; li.style.padding = '8px'; li.style.background = '#f9f9f9';
                 li.style.border = '1px solid #ddd'; li.style.borderRadius = '5px'; li.style.display = 'flex';
@@ -71,19 +71,19 @@ function populatePlayerSheetUI(myChar) {
                 if (!isMaster) {
                     const btnContainer = document.createElement('div');
                     btnContainer.style.display = 'flex'; btnContainer.style.gap = '8px'; btnContainer.style.alignItems = 'center';
-                    
+
                     const spendGroup = document.createElement('div');
                     spendGroup.style.display = 'flex'; spendGroup.style.flexDirection = 'column'; spendGroup.style.gap = '3px';
-                    
+
                     const inputSpend = document.createElement('input');
                     inputSpend.type = 'number'; inputSpend.min = 1; inputSpend.max = currentPa; inputSpend.value = 1;
                     inputSpend.style.padding = '2px'; inputSpend.style.border = '1px solid #ccc'; inputSpend.style.borderRadius = '3px'; inputSpend.style.textAlign = 'center'; inputSpend.style.fontSize = '12px';
                     inputSpend.disabled = currentPa <= 0;
-                    
+
                     const btnSpend = document.createElement('button');
                     btnSpend.innerText = "Spendi"; btnSpend.style.background = currentPa > 0 ? '#8e44ad' : '#bdc3c7';
                     btnSpend.style.color = 'white'; btnSpend.style.border = 'none'; btnSpend.style.padding = '4px 8px'; btnSpend.style.borderRadius = '3px'; btnSpend.style.cursor = currentPa > 0 ? 'pointer' : 'not-allowed'; btnSpend.style.fontSize = '12px'; btnSpend.disabled = currentPa <= 0;
-                    
+
                     btnSpend.onclick = () => {
                         let amount = parseInt(inputSpend.value) || 1;
                         if (amount > currentPa) { alert("Non hai abbastanza PA in questa statistica!"); return; }
@@ -121,28 +121,28 @@ function populatePlayerSheetUI(myChar) {
     populateList('ui-skills', myChar.skills);
 
     // ======================================
-    // ARMI 
+    // ARMI
     // ======================================
     const weaponsContainer = document.getElementById('ui-weapons');
     const btnShowAddWeapon = document.getElementById('btn-show-add-weapon');
     const addWeaponForm = document.getElementById('add-weapon-form');
-    
+
     if (weaponsContainer) {
         weaponsContainer.innerHTML = '';
         const wpList = myChar.weapons || [];
         const currentUserId = parseInt(userSelect?.value);
         const canEdit = isMaster || currentUserId === myChar.id;
-        
+
         wpList.forEach((item, index) => {
             // Conversione di sicurezza
             if (typeof item === 'string') item = { name: item, desc: "Nessuna descrizione" };
-            
+
             const li = document.createElement('li');
             li.style.background = '#fff';
             li.style.border = '1px solid #ccc';
             li.style.borderRadius = '5px';
             li.style.padding = '8px';
-            
+
             let controlsHtml = '';
             if (canEdit) {
                 controlsHtml = `
@@ -166,28 +166,28 @@ function populatePlayerSheetUI(myChar) {
             `;
             weaponsContainer.appendChild(li);
         });
-        
+
         if (wpList.length === 0) weaponsContainer.innerHTML = `<li style="color:#7f8c8d; font-size:13px; padding: 5px; text-align: center;"><em>Non hai armi equipaggiate.</em></li>`;
 
         if (canEdit) {
             btnShowAddWeapon.style.display = 'block';
             btnShowAddWeapon.onclick = () => addWeaponForm.style.display = addWeaponForm.style.display === 'none' ? 'block' : 'none';
-            
+
             const btnConfirm = document.getElementById('btn-confirm-add-weapon');
             const newBtnConfirm = btnConfirm.cloneNode(true);
             btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
-            
+
             newBtnConfirm.onclick = () => {
                 const name = document.getElementById('new-weapon-name').value.trim();
                 const desc = document.getElementById('new-weapon-desc').value.trim();
-                
+
                 if (!name) { alert("Inserisci il nome dell'arma."); return; }
-                
+
                 // Creiamo un'arma unica, senza la quantità
                 const newItem = { name, desc };
                 const updatedWeapons = [...wpList, newItem];
                 socket.emit('update_character_sheet', { char_id: myChar.id, weapons: updatedWeapons });
-                
+
                 document.getElementById('new-weapon-name').value = '';
                 document.getElementById('new-weapon-desc').value = '';
                 addWeaponForm.style.display = 'none';
@@ -212,7 +212,7 @@ function populatePlayerSheetUI(myChar) {
     if (permContainer) {
         permContainer.innerHTML = '';
         let hasPerms = false;
-        
+
         (myChar.skills || []).forEach(skillName => {
             const b = getSkillBonusInfo(skillName);
             if (b) {
@@ -220,7 +220,7 @@ function populatePlayerSheetUI(myChar) {
                 permContainer.innerHTML += `<li style="margin-bottom:3px; background: #fdfdfd; border: 1px solid #eee; padding: 4px; border-radius: 4px;"><strong>${skillName}:</strong> <span style="color:#27ae60; font-weight:bold;">+${b.val} ${b.stat}</span></li>`;
             }
         });
-        
+
         if (!hasPerms) permContainer.innerHTML = `<li><em>Nessun bonus permanente attivo.</em></li>`;
     }
 
@@ -228,16 +228,16 @@ function populatePlayerSheetUI(myChar) {
     if (tempContainer) {
         tempContainer.innerHTML = '';
         const bonusList = Array.isArray(myChar.bonuses) ? myChar.bonuses : [];
-        
+
         bonusList.forEach((item, index) => {
             if (typeof item === 'string') item = { name: item, desc: "Effetto sconosciuto", turns: 0, hpChange: 0 };
-            
+
             const li = document.createElement('li');
             li.style.background = '#fff';
             li.style.border = '1px solid #f39c12';
             li.style.borderRadius = '5px';
             li.style.padding = '8px';
-            
+
             let controlsHtml = '';
             if (canEdit) {
                 controlsHtml = `
@@ -268,9 +268,9 @@ function populatePlayerSheetUI(myChar) {
                     </div>
                 `;
             }
-            
+
             let turnsHtml = item.turns ? `<span style="background: #c0392b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">Restano: ${item.turns} turni</span>` : "";
-            
+
             // Etichetta grafica per il danno o la cura a turno
             let hpHtml = "";
             if (item.hpChange && item.hpChange !== 0) {
@@ -288,30 +288,30 @@ function populatePlayerSheetUI(myChar) {
             `;
             tempContainer.appendChild(li);
         });
-        
+
         if (bonusList.length === 0) tempContainer.innerHTML = `<li style="color:#7f8c8d; font-size:13px; padding: 5px; text-align: center;"><em>Nessun effetto temporaneo.</em></li>`;
 
         // Gestione form aggiunta bonus
         if (canEdit) {
             btnShowAddBonus.style.display = 'block';
             btnShowAddBonus.onclick = () => addBonusForm.style.display = addBonusForm.style.display === 'none' ? 'block' : 'none';
-            
+
             const btnConfirm = document.getElementById('btn-confirm-add-bonus');
             const newBtnConfirm = btnConfirm.cloneNode(true);
             btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
-            
+
             newBtnConfirm.onclick = () => {
                 const name = document.getElementById('new-bonus-name').value.trim();
                 const turns = parseInt(document.getElementById('new-bonus-turns').value) || 1;
                 const hpChange = parseInt(document.getElementById('new-bonus-hp').value) || 0; // NUOVO VALORE
                 const desc = document.getElementById('new-bonus-desc').value.trim();
-                
+
                 if (!name) { alert("Inserisci il nome dell'effetto."); return; }
-                
+
                 const newItem = { name, turns, hpChange, desc };
                 const updatedBonuses = [...bonusList, newItem];
                 socket.emit('update_character_sheet', { char_id: myChar.id, bonuses: updatedBonuses });
-                
+
                 document.getElementById('new-bonus-name').value = '';
                 document.getElementById('new-bonus-turns').value = '1';
                 document.getElementById('new-bonus-hp').value = '0';
@@ -330,24 +330,24 @@ function populatePlayerSheetUI(myChar) {
     const backpackContainer = document.getElementById('ui-backpack');
     const btnShowAdd = document.getElementById('btn-show-add-item');
     const addItemForm = document.getElementById('add-item-form');
-    
+
     if (backpackContainer) {
         backpackContainer.innerHTML = '';
         const bpList = myChar.backpack || [];
         const currentUserId = parseInt(userSelect?.value);
         const canEdit = isMaster || currentUserId === myChar.id;
-        
+
         // Disegna ogni oggetto
         bpList.forEach((item, index) => {
             // Retrocompatibilità se c'erano vecchie stringhe nel database
             if (typeof item === 'string') item = { name: item, desc: "Nessuna descrizione", qty: 1 };
-            
+
             const li = document.createElement('li');
             li.style.background = '#fff';
             li.style.border = '1px solid #ccc';
             li.style.borderRadius = '5px';
             li.style.padding = '8px';
-            
+
            let controlsHtml = '';
             if (canEdit) {
                 // 1. Cerca la parola "Slot:" nella descrizione dell'oggetto
@@ -433,7 +433,6 @@ function populatePlayerSheetUI(myChar) {
                         </select>
                     `;
                 }
-                
 
                 // 3. Genera l'HTML (se selectHtml è vuoto, mostra solo i bottoni +/- e Cestino)
                 controlsHtml = `
@@ -457,29 +456,29 @@ function populatePlayerSheetUI(myChar) {
             `;
             backpackContainer.appendChild(li);
         });
-        
+
         if (bpList.length === 0) backpackContainer.innerHTML = `<li style="color:#7f8c8d; font-size:13px; padding: 5px; text-align: center;"><em>Lo zaino è vuoto.</em></li>`;
 
         // Gestione form aggiunta oggetto
         if (canEdit) {
             btnShowAdd.style.display = 'block';
             btnShowAdd.onclick = () => addItemForm.style.display = addItemForm.style.display === 'none' ? 'block' : 'none';
-            
+
             const btnConfirm = document.getElementById('btn-confirm-add-item');
             const newBtnConfirm = btnConfirm.cloneNode(true);
             btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
-            
+
             newBtnConfirm.onclick = () => {
                 const name = document.getElementById('new-item-name').value.trim();
                 const qty = parseInt(document.getElementById('new-item-qty').value) || 1;
                 const desc = document.getElementById('new-item-desc').value.trim();
-                
+
                 if (!name) { alert("Inserisci il nome dell'oggetto."); return; }
-                
+
                 const newItem = { name, qty, desc };
                 const updatedBackpack = [...bpList, newItem];
                 socket.emit('update_character_sheet', { char_id: myChar.id, backpack: updatedBackpack });
-                
+
                 document.getElementById('new-item-name').value = '';
                 document.getElementById('new-item-qty').value = '1';
                 document.getElementById('new-item-desc').value = '';
@@ -511,7 +510,7 @@ function populatePlayerSheetUI(myChar) {
     // 1. GESTIONE CATEGORIE (Armature, Gadget, Oggettistica)
     document.querySelectorAll('.shop-tab-btn').forEach(btn => {
         const tabName = btn.getAttribute('data-tab');
-        if (tabName === currentShopTab) { btn.style.background = '#8e44ad'; btn.style.color = 'white'; } 
+        if (tabName === currentShopTab) { btn.style.background = '#8e44ad'; btn.style.color = 'white'; }
         else { btn.style.background = 'white'; btn.style.color = '#8e44ad'; }
         btn.onclick = () => { currentShopTab = tabName; populatePlayerSheetUI(myChar); };
     });
@@ -524,7 +523,7 @@ function populatePlayerSheetUI(myChar) {
             const typeBtn = document.createElement('button');
             typeBtn.innerText = type;
             typeBtn.style.padding = '3px 8px'; typeBtn.style.fontSize = '11px'; typeBtn.style.cursor = 'pointer'; typeBtn.style.borderRadius = '4px'; typeBtn.style.border = '1px dashed #3498db';
-            if (type === currentArmorType) { typeBtn.style.background = '#3498db'; typeBtn.style.color = 'white'; } 
+            if (type === currentArmorType) { typeBtn.style.background = '#3498db'; typeBtn.style.color = 'white'; }
             else { typeBtn.style.background = 'white'; typeBtn.style.color = '#3498db'; }
             typeBtn.onclick = () => { currentArmorType = type; populatePlayerSheetUI(myChar); };
             armorTypeContainer.appendChild(typeBtn);
@@ -539,7 +538,7 @@ function populatePlayerSheetUI(myChar) {
         const subBtn = document.createElement('button');
         subBtn.innerText = brandName;
         subBtn.style.padding = '4px 8px'; subBtn.style.fontSize = '12px'; subBtn.style.cursor = 'pointer'; subBtn.style.fontWeight = 'bold'; subBtn.style.borderRadius = '3px'; subBtn.style.border = '1px solid #8e44ad';
-        if (brandName === currentBrandSubTab) { subBtn.style.background = '#8e44ad'; subBtn.style.color = 'white'; } 
+        if (brandName === currentBrandSubTab) { subBtn.style.background = '#8e44ad'; subBtn.style.color = 'white'; }
         else { subBtn.style.background = 'white'; subBtn.style.color = '#8e44ad'; }
         subBtn.onclick = () => { currentBrandSubTab = brandName; populatePlayerSheetUI(myChar); };
         statsSubtabsContainer.appendChild(subBtn);
@@ -583,35 +582,35 @@ function populatePlayerSheetUI(myChar) {
             const li = document.createElement('li');
             li.style.padding = '12px'; li.style.border = '1px solid #ccc'; li.style.borderRadius = '8px'; li.style.display = 'flex'; li.style.flexDirection = 'column'; li.style.justifyContent = 'space-between'; li.style.width = 'calc(50% - 20px)'; li.style.boxSizing = 'border-box';
             li.style.background = '#fff'; li.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
-            
+
             // Controlla quanti ne possiede già nello zaino
             let ownedQty = 0;
             (myChar.backpack || []).forEach(b => {
                 if (b.name === item.name) ownedQty += (b.qty || 1);
             });
             const ownedText = ownedQty > 0 ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px; font-weight:bold;">Nello Zaino: x${ownedQty}</span>` : "";
-            
+
             const itemCost = getCompendioCost(item);
             const itemDesc = getCompendioDescription(item);
-    
+
             li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${itemCost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 12px 0; line-height:1.4;">${itemDesc}</p>${ownedText}</div>`;
-            
+
             const btn = document.createElement('button');
             btn.style.padding = '8px'; btn.style.borderRadius = '4px'; btn.style.fontWeight = 'bold'; btn.style.width = '100%'; btn.style.border = 'none'; btn.style.marginTop = '10px';
-            
+
             if (isMaster) {
                 btn.innerText = 'Solo Visualizzazione'; btn.style.background = '#bdc3c7'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.disabled = true;
             } else {
                 btn.innerText = 'Acquista (Invia allo Zaino)'; btn.style.background = '#8e44ad'; btn.style.color = '#fff';
                 const canAfford = myChar.xp >= itemCost;
                 btn.style.cursor = canAfford ? 'pointer' : 'not-allowed'; btn.style.opacity = canAfford ? '1' : '0.5';
-                
+
                 if (canAfford) {
-                    btn.onclick = () => { 
+                    btn.onclick = () => {
                         if (confirm(`Vuoi spendere ${itemCost} € per acquistare "${item.name}"?`)) {
                             // 1. Deducce il costo (invia importo negativo all'aggiornamento soldi/XP)
                             socket.emit('update_xp', { char_id: myChar.id, amount: -itemCost });
-                            
+
                             // 2. Aggiunge l'oggetto direttamente nello zaino
                             const bp = myChar.backpack || [];
                             const existingIndex = bp.findIndex(
@@ -659,29 +658,29 @@ document.getElementById('btn-view-sheet')?.addEventListener('click', () => {
 document.getElementById('btn-edit-sheet')?.addEventListener('click', () => {
     let targetId = selectedCharacterId || (parseInt(userSelect?.value) > 0 ? parseInt(userSelect?.value) : null);
     if (!targetId) { alert("Prima seleziona un personaggio!"); return; }
-    
+
     const char = characters.find(c => c.id === targetId);
     if (!char) return;
-    
+
     selectedCharacterId = char.id;
     document.getElementById('edit-char-name').innerText = char.name;
-  
+
     let statsStr = "";
     if (char.stats) for (const [key, value] of Object.entries(char.stats)) statsStr += `${key}: ${value}\n`;
-    
+
     // Controlli di sicurezza per evitare crash se manca un pezzo nell'HTML
     const statsEl = document.getElementById('edit-stats');
     if (statsEl) statsEl.value = statsStr.trim();
-    
+
     const wpEl = document.getElementById('edit-weapons');
     if (wpEl) wpEl.value = (char.weapons || []).map(w => typeof w === 'string' ? w : w.name).join('\n');
-    
+
     const skEl = document.getElementById('edit-skills');
     if (skEl) skEl.value = (char.skills || []).join('\n');
-    
+
     const bpEl = document.getElementById('edit-backpack');
     if (bpEl) bpEl.value = (char.backpack || []).map(b => typeof b === 'string' ? b : b.name).join('\n');
-    
+
     if (editSheetModal) editSheetModal.style.display = 'flex';
     socket.emit('get_compendio');
 });
@@ -689,7 +688,7 @@ document.getElementById('btn-edit-sheet')?.addEventListener('click', () => {
 // SALVATAGGIO SCHEDA MASTER
 document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
     if (!selectedCharacterId) return;
-    
+
     const char = characters.find(c => c.id === selectedCharacterId);
     if (!char) return;
 
@@ -700,12 +699,12 @@ document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
         const parts = line.split(':');
         if (parts.length >= 2) statsObj[parts.shift().trim()] = parts.join(':').trim();
     });
-    
+
     const parseList = (id) => {
         const el = document.getElementById(id);
         return el ? el.value.split('\n').map(s => s.trim()).filter(s => s !== '') : [];
     };
-    
+
     const newWeaponsNames = parseList('edit-weapons');
     const newBackpackNames = parseList('edit-backpack');
 
@@ -723,16 +722,16 @@ document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
     const photoUrl = document.getElementById('edit-photo-url') ? document.getElementById('edit-photo-url').value.trim() : "";
     const loreText = document.getElementById('edit-lore') ? document.getElementById('edit-lore').value.trim() : "";
 
-    socket.emit('update_character_sheet', { 
-        char_id: selectedCharacterId, 
+    socket.emit('update_character_sheet', {
+        char_id: selectedCharacterId,
         photo_url: photoUrl,
         lore: loreText,
-        stats: statsObj, 
-        weapons: updatedWeapons, 
-        skills: parseList('edit-skills'), 
-        backpack: updatedBackpack 
+        stats: statsObj,
+        weapons: updatedWeapons,
+        skills: parseList('edit-skills'),
+        backpack: updatedBackpack
     });
-    
+
     if (editSheetModal) editSheetModal.style.display = 'none';
 });
 
@@ -761,7 +760,7 @@ dicePanelHeader?.addEventListener('click', () => {
 
 function updateChatStatus() {
     if (!chatStatus) return;
-    if (isMaster) { chatStatus.innerText = "Privato (Solo tu)"; chatStatus.style.color = "#e74c3c"; } 
+    if (isMaster) { chatStatus.innerText = "Privato (Solo tu)"; chatStatus.style.color = "#e74c3c"; }
     else { chatStatus.innerText = "Pubblico"; chatStatus.style.color = "#1abc9c"; }
 }
 
@@ -769,18 +768,18 @@ function updateChatStatus() {
 socket.on('dice_result', (data) => {
     const div = document.createElement('div');
     div.style.padding = '8px 10px'; div.style.borderRadius = '5px'; div.style.lineHeight = '1.4';
-    if (data.is_master_roll) { div.style.background = '#fadbd8'; div.style.borderLeft = '4px solid #c0392b'; div.style.color = '#c0392b'; } 
+    if (data.is_master_roll) { div.style.background = '#fadbd8'; div.style.borderLeft = '4px solid #c0392b'; div.style.color = '#c0392b'; }
     else { div.style.background = '#e8f8f5'; div.style.borderLeft = '4px solid #1abc9c'; div.style.color = '#2c3e50'; }
     div.innerHTML = `<strong style="display:block; font-size:13px; margin-bottom:2px;">${data.name}</strong>${data.message}`;
     chatLog.appendChild(div);
-    
+
     // Auto-apertura se arriva un messaggio e la tendina è chiusa
     if (dicePanelContent && dicePanelContent.style.display === 'none') {
         dicePanelContent.style.display = 'flex';
         diceToggleIcon.innerText = '▼';
         dicePanelHeader.style.borderRadius = '6px 6px 0 0';
     }
-    
+
     chatLog.scrollTop = chatLog.scrollHeight;
 });
 
@@ -790,7 +789,7 @@ document.querySelectorAll('.dice-btn').forEach(btn => {
         const diceExpr = e.target.getAttribute('data-dice');
         const selectElem = document.getElementById('user-select');
         const charId = selectElem ? parseInt(selectElem.value) : null;
-        
+
         socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster });
     });
 });
@@ -800,7 +799,7 @@ document.getElementById('btn-custom-dice')?.addEventListener('click', () => {
     const diceExpr = input.value.trim();
     const selectElem = document.getElementById('user-select');
     const charId = selectElem ? parseInt(selectElem.value) : null;
-    
+
     if (diceExpr) {
         socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster });
         input.value = ''; // Pulisce la barra dopo il lancio
@@ -920,7 +919,6 @@ function getAllowedSlots(inventoryItem) {
     return compItem?.equipment?.slot?.allowed_slots || [];
 }
 
-
 socket.on('compendio_data', (data) => {
     globalCompendio = data || {
         items: [],
@@ -994,14 +992,12 @@ document.getElementById('compendio-category')?.addEventListener(
             return;
         }
 
-
         // ==========================================
         // FILTRA DAL NUOVO COMPENDIO
         // ==========================================
 
         const items = getCompendioItems()
             .filter(item => item.class === category);
-
 
         if (items.length === 0) {
             listContainer.innerHTML = `
@@ -1011,7 +1007,6 @@ document.getElementById('compendio-category')?.addEventListener(
             `;
             return;
         }
-
 
         // ==========================================
         // CREA LE RIGHE
@@ -1031,13 +1026,11 @@ document.getElementById('compendio-category')?.addEventListener(
             row.style.fontSize = '13px';
             row.style.gap = '10px';
 
-
             const cost =
                 getCompendioCost(item);
 
             const description =
                 getCompendioDescription(item);
-
 
             row.innerHTML = `
                 <div style="flex:1;">
@@ -1062,7 +1055,6 @@ document.getElementById('compendio-category')?.addEventListener(
                     </span>
                 </div>
             `;
-
 
             // ==========================================
             // BOTTONE MASTER
@@ -1095,7 +1087,6 @@ document.getElementById('compendio-category')?.addEventListener(
             addBtn.style.fontWeight =
                 'bold';
 
-
             addBtn.onclick = () => {
 
                 if (!selectedCharacterId) {
@@ -1111,10 +1102,8 @@ document.getElementById('compendio-category')?.addEventListener(
 
                 if (!char) return;
 
-
                 const backpack =
                     char.backpack || [];
-
 
                 const existingIndex =
                     backpack.findIndex(b => {
@@ -1131,7 +1120,6 @@ document.getElementById('compendio-category')?.addEventListener(
                             )
                         );
                     });
-
 
                 if (existingIndex !== -1) {
 
@@ -1166,7 +1154,6 @@ document.getElementById('compendio-category')?.addEventListener(
                     });
                 }
 
-
                 socket.emit(
                     'update_character_sheet',
                     {
@@ -1178,7 +1165,6 @@ document.getElementById('compendio-category')?.addEventListener(
                     }
                 );
 
-
                 addBtn.innerText =
                     'Aggiunto ✓';
 
@@ -1187,7 +1173,6 @@ document.getElementById('compendio-category')?.addEventListener(
 
                 addBtn.disabled = true;
             };
-
 
             row.appendChild(addBtn);
             listContainer.appendChild(row);
@@ -1198,8 +1183,6 @@ document.getElementById('compendio-category')?.addEventListener(
 updateChatStatus();
 updateSheetButton();
 
-
-
 // ==========================================
 // PUNTATORE LASER (PING MAPPA)
 // ==========================================
@@ -1209,10 +1192,10 @@ canvas.addEventListener('contextmenu', (event) => {
     event.preventDefault(); // Blocca il noioso menu a tendina di Windows/Chrome
 
     const currentCharacter = getSelectedCharacter();
-    
+
     // Solo chi ha selezionato una pedina o il Master può usare il puntatore
     if (!isMaster && !currentCharacter) {
-        return; 
+        return;
     }
 
     const pos = getWorldPos(event);
@@ -1220,7 +1203,6 @@ canvas.addEventListener('contextmenu', (event) => {
     // Recupera colore e nome per personalizzare il laser
     const name = isMaster ? "Master" : currentCharacter.name;
     const color = isMaster ? "#c0392b" : (currentCharacter.color || "#3498db");
-
 
     socket.emit('ping_location', {
         x: pos.x,
@@ -1285,7 +1267,7 @@ function openProfileEdit(char) {
 document.getElementById('profile-photo-file')?.addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
         profileEditBase64 = e.target.result;
@@ -1318,18 +1300,17 @@ document.getElementById('profile-token-file')?.addEventListener('change', functi
     reader.readAsDataURL(file);
 });
 
-
 // Salva Profilo
 document.getElementById('save-profile-btn')?.addEventListener('click', () => {
     if (!profileEditTargetId) return;
-    
+
     socket.emit('update_character_sheet', {
         char_id: profileEditTargetId,
         photo_url: profileEditBase64,
         token_url: profileTokenBase64,
         lore: document.getElementById('profile-lore').value.trim()
     });
-    
+
     document.getElementById('profile-edit-modal').style.display = 'none';
 });
 
@@ -1351,14 +1332,14 @@ window.updateBackpackItem = function(charId, itemIndex, delta) {
     if (!char) return;
     const bp = char.backpack || [];
     if (!bp[itemIndex]) return;
-    
+
     // Convertitore di sicurezza: trasforma il vecchio testo in un oggetto numerico
     if (typeof bp[itemIndex] === 'string') {
         bp[itemIndex] = { name: bp[itemIndex], desc: "Nessuna descrizione", qty: 1 };
     }
-    
+
     bp[itemIndex].qty += delta;
-    
+
     if (bp[itemIndex].qty <= 0) {
         if (confirm(`La quantità di ${bp[itemIndex].name} è 0. Vuoi rimuoverlo dallo zaino?`)) {
             bp.splice(itemIndex, 1);
@@ -1374,15 +1355,14 @@ window.removeBackpackItem = function(charId, itemIndex) {
     if (!char) return;
     const bp = char.backpack || [];
     if (!bp[itemIndex]) return;
-    
+
     const itemName = typeof bp[itemIndex] === 'string' ? bp[itemIndex] : bp[itemIndex].name;
-    
+
     if (confirm(`Sicuro di voler buttare via ${itemName}?`)) {
         bp.splice(itemIndex, 1);
         socket.emit('update_character_sheet', { char_id: charId, backpack: bp });
     }
 };
-
 
 // ==========================================
 // FUNZIONI GLOBALI ARMI
@@ -1392,9 +1372,9 @@ window.removeWeaponItem = function(charId, itemIndex) {
     if (!char) return;
     const wp = char.weapons || [];
     if (!wp[itemIndex]) return;
-    
+
     const itemName = typeof wp[itemIndex] === 'string' ? wp[itemIndex] : wp[itemIndex].name;
-    
+
     if (confirm(`Sicuro di voler scartare l'arma: ${itemName}?`)) {
         wp.splice(itemIndex, 1);
         socket.emit('update_character_sheet', { char_id: charId, weapons: wp });
@@ -1409,15 +1389,14 @@ window.removeBonusItem = function(charId, itemIndex) {
     if (!char) return;
     const bList = char.bonuses || [];
     if (!bList[itemIndex]) return;
-    
+
     const itemName = typeof bList[itemIndex] === 'string' ? bList[itemIndex] : bList[itemIndex].name;
-    
+
     if (confirm(`Rimuovere l'effetto: ${itemName}?`)) {
         bList.splice(itemIndex, 1);
         socket.emit('update_character_sheet', { char_id: charId, bonuses: bList });
     }
 };
-
 
 // ==========================================
 // TRASCINAMENTO FINESTRE (Drag & Drop)
@@ -1481,7 +1460,7 @@ if (equipHeader && equipPanel) {
         equipPanel.style.left = (e.clientX - dragEquipOffsetX) + 'px';
         equipPanel.style.top = (e.clientY - dragEquipOffsetY) + 'px';
         // Rimuove il vincolo del "bottom" originario per lasciarlo libero
-        equipPanel.style.bottom = 'auto'; 
+        equipPanel.style.bottom = 'auto';
     });
 
     document.addEventListener('mouseup', () => {
@@ -1522,8 +1501,6 @@ if (actionHeader && actionPanel) {
     });
 }
 
-
-
 // ==========================================
 // HUD EQUIPAGGIAMENTO
 // ==========================================
@@ -1541,7 +1518,6 @@ function getEquippedCompendiumItem(itemData) {
     });
 }
 
-
 function formatEquipmentDamage(compItem) {
     const formula = compItem?.combat?.damage?.formula;
 
@@ -1549,7 +1525,6 @@ function formatEquipmentDamage(compItem) {
 
     return String(formula);
 }
-
 
 function formatEquipmentSpeed(compItem) {
     if (!compItem) return null;
@@ -1561,7 +1536,6 @@ function formatEquipmentSpeed(compItem) {
     );
 }
 
-
 function formatEquipmentRange(compItem) {
     const range = compItem?.combat?.range?.max_m;
 
@@ -1571,7 +1545,6 @@ function formatEquipmentRange(compItem) {
 
     return `${range} m`;
 }
-
 
 function buildEquipmentTooltip(itemData) {
     const compItem = getEquippedCompendiumItem(itemData);
@@ -1691,7 +1664,6 @@ window.updateEquippedPanel = function(char) {
         'stivale_sx'
     ];
 
-
     // ==========================================
     // TESTO SLOT VUOTI
     // ==========================================
@@ -1719,7 +1691,6 @@ window.updateEquippedPanel = function(char) {
         stivale_dx: 'STIVALE DX',
         stivale_sx: 'STIVALE SX'
     };
-
 
     // ==========================================
     // EMOJI FALLBACK
@@ -1749,7 +1720,6 @@ window.updateEquippedPanel = function(char) {
         stivale_sx: '🥾'
     };
 
-
     // ==========================================
     // RETROCOMPATIBILITÀ VECCHI SALVATAGGI
     // ==========================================
@@ -1758,7 +1728,6 @@ window.updateEquippedPanel = function(char) {
         guanto_dx: 'guanti',
         stivale_dx: 'stivali'
     };
-
 
     // ==========================================
     // CICLO SLOT
@@ -1786,7 +1755,6 @@ window.updateEquippedPanel = function(char) {
 
         if (!nameEl || !iconEl) return;
 
-
         // ==========================================
         // SLOT OCCUPATO
         // ==========================================
@@ -1798,7 +1766,6 @@ window.updateEquippedPanel = function(char) {
 
             el.classList.add('filled');
 
-
             // ==========================================
             // CERCA DATI NEL NUOVO COMPENDIO
             // ==========================================
@@ -1809,7 +1776,6 @@ window.updateEquippedPanel = function(char) {
                     name: itemData.name
                 })
                 : null;
-
 
             // ==========================================
             // DATI STRUTTURATI
@@ -1829,7 +1795,6 @@ window.updateEquippedPanel = function(char) {
             const equipmentHp =
                 compItem?.equipment?.hp ?? null;
 
-
             // ==========================================
             // DURABILITÀ
             // ==========================================
@@ -1843,13 +1808,11 @@ window.updateEquippedPanel = function(char) {
                 itemData.durability_current ??
                 maxHp;
 
-
             // ==========================================
             // OVERLAY ICONA
             // ==========================================
 
             let overlayHtml = '';
-
 
             // DANNO
             if (
@@ -1880,7 +1843,6 @@ window.updateEquippedPanel = function(char) {
                     </div>
                 `;
             }
-
 
             // HP / DURABILITÀ
             if (
@@ -1948,7 +1910,6 @@ window.updateEquippedPanel = function(char) {
                 `;
             }
 
-
             // ==========================================
             // IMMAGINE / EMOJI
             // ==========================================
@@ -1987,7 +1948,6 @@ window.updateEquippedPanel = function(char) {
                 `;
             }
 
-
             // ==========================================
             // TOOLTIP STRUTTURATO
             // ==========================================
@@ -2010,13 +1970,11 @@ window.updateEquippedPanel = function(char) {
                 const requirements =
                     compItem?.requirements?.items || [];
 
-
                 if (slot) {
                     tooltipRows.push(
                         `<b>Slot:</b> ${slot}`
                     );
                 }
-
 
                 if (
                     weight !== null &&
@@ -2027,7 +1985,6 @@ window.updateEquippedPanel = function(char) {
                     );
                 }
 
-
                 if (
                     harmonization !== null &&
                     harmonization !== undefined
@@ -2036,7 +1993,6 @@ window.updateEquippedPanel = function(char) {
                         `<b>Armonizzazione:</b> ${harmonization}`
                     );
                 }
-
 
                 if (
                     maxHp !== null &&
@@ -2047,7 +2003,6 @@ window.updateEquippedPanel = function(char) {
                     );
                 }
 
-
                 if (
                     activationSpeed !== null &&
                     activationSpeed !== undefined
@@ -2057,7 +2012,6 @@ window.updateEquippedPanel = function(char) {
                     );
                 }
 
-
                 if (
                     range !== null &&
                     range !== undefined
@@ -2066,7 +2020,6 @@ window.updateEquippedPanel = function(char) {
                         `<b>Range:</b> ${range} m`
                     );
                 }
-
 
                 if (
                     damage !== null &&
@@ -2078,13 +2031,11 @@ window.updateEquippedPanel = function(char) {
                     );
                 }
 
-
                 if (requirements.length > 0) {
                     tooltipRows.push(
                         `<b>Requisiti:</b> ${requirements.join(', ')}`
                     );
                 }
-
 
                 const rules =
                     compItem?.text?.original_rules ||
@@ -2114,10 +2065,8 @@ window.updateEquippedPanel = function(char) {
                     'Nessuna descrizione.';
             }
 
-
             // Salviamo temporaneamente il tooltip sull'elemento
             el.dataset.tooltipHtml = tooltipHtml;
-
 
         } else {
 
@@ -2147,7 +2096,6 @@ window.updateEquippedPanel = function(char) {
             el.dataset.tooltipHtml = '';
         }
 
-
         // ==========================================
         // RICREA ELEMENTO
         // per evitare listener duplicati
@@ -2159,7 +2107,6 @@ window.updateEquippedPanel = function(char) {
             newEl,
             el
         );
-
 
         // ==========================================
         // TOOLTIP
@@ -2210,7 +2157,6 @@ window.updateEquippedPanel = function(char) {
             }
         );
 
-
         newEl.addEventListener(
             'mousemove',
             (e) => {
@@ -2232,7 +2178,6 @@ window.updateEquippedPanel = function(char) {
             }
         );
 
-
         newEl.addEventListener(
             'mouseleave',
             () => {
@@ -2247,7 +2192,6 @@ window.updateEquippedPanel = function(char) {
                 }
             }
         );
-
 
         // ==========================================
         // CLICK = DISEQUIPAGGIA
@@ -2353,7 +2297,6 @@ function returnEquippedItemToInventory(item, backpack, weapons) {
     }
 }
 
-
 // Restituisce tutti gli slot occupati dalla stessa ISTANZA equipaggiata.
 function getLinkedEquippedSlots(equipped, slotKey) {
     const item = equipped[slotKey];
@@ -2373,7 +2316,6 @@ function getLinkedEquippedSlots(equipped, slotKey) {
     // Vecchi salvataggi: consideriamo solo lo slot cliccato.
     return [slotKey];
 }
-
 
 // Rimuove un oggetto equipaggiato.
 // Se occupa 2 slot, li libera entrambi e restituisce UNA sola copia.
@@ -2397,8 +2339,6 @@ function removeEquippedInstance(equipped, slotKey, backpack, weapons) {
         equipped[key] = null;
     });
 }
-
-
 
 window.equipItem = function(
     charId,
@@ -2441,10 +2381,8 @@ window.equipItem = function(
         equipped.stivali = null;
     }
 
-
     let backpack = char.backpack || [];
     let weapons = char.weapons || [];
-
 
     // ==========================================
     // TROVA L'OGGETTO NEL NUOVO COMPENDIO
@@ -2463,7 +2401,6 @@ window.equipItem = function(
 
     const occupancy =
         slotInfo?.occupancy || 'one';
-
 
     // ==========================================
     // RIMUOVI MANUALMENTE
@@ -2510,7 +2447,6 @@ window.equipItem = function(
         return;
     }
 
-
     // ==========================================
     // DETERMINA GLI SLOT CHE DEVE OCCUPARE
     // ==========================================
@@ -2540,7 +2476,6 @@ window.equipItem = function(
             targetSlots = [...allowedSlots];
         }
     }
-
 
     // ==========================================
     // RECUPERA E RIMUOVE L'OGGETTO DALL'INVENTARIO
@@ -2628,7 +2563,6 @@ window.equipItem = function(
         }
     }
 
-
     // ==========================================
     // SE GLI SLOT SONO OCCUPATI,
     // RIMETTE VIA GLI OGGETTI PRESENTI
@@ -2661,7 +2595,6 @@ window.equipItem = function(
         );
     });
 
-
     // ==========================================
     // CREA ID UNICO PER L'ISTANZA EQUIPAGGIATA
     // ==========================================
@@ -2674,13 +2607,11 @@ window.equipItem = function(
                 .toString(36)
                 .slice(2)}`;
 
-
     const effectiveCompendiumId =
         compendiumId ||
         sourceItem?.compendium_id ||
         compItem?.id ||
         null;
-
 
     // ==========================================
     // CREA L'OGGETTO EQUIPAGGIATO
@@ -2725,7 +2656,6 @@ window.equipItem = function(
             equipmentMaxHp,
     };
 
-
     // ==========================================
     // OCCUPA TUTTI GLI SLOT NECESSARI
     // ==========================================
@@ -2737,7 +2667,6 @@ window.equipItem = function(
         };
 
     });
-
 
     // ==========================================
     // SALVATAGGIO
@@ -2780,14 +2709,12 @@ window.unequipFromSlot = function(
     const weapons =
         char.weapons || [];
 
-
     removeEquippedInstance(
         equipped,
         slotKey,
         backpack,
         weapons
     );
-
 
     socket.emit(
         'update_character_sheet',
@@ -2813,27 +2740,22 @@ function getAttackDataFromEquippedItem(item) {
 
     if (!compItem) return null;
 
-
     const speed =
         compItem?.activation?.speed?.effect_or_action ??
         compItem?.activation?.speed?.activation ??
         null;
 
-
     const range =
         compItem?.combat?.range?.max_m ??
         null;
-
 
     const damage =
         compItem?.combat?.damage?.formula ??
         null;
 
-
     const damageType =
         compItem?.combat?.damage?.type ??
         null;
-
 
     return {
         compItem,
@@ -2895,7 +2817,6 @@ function updateAttackWeaponInfo() {
         return;
     }
 
-
     const option =
         actionSelect.selectedOptions[0];
 
@@ -2903,7 +2824,6 @@ function updateAttackWeaponInfo() {
         infoPanel.style.display = 'none';
         return;
     }
-
 
     // ==========================================
     // VELOCITÀ
@@ -2917,12 +2837,10 @@ function updateAttackWeaponInfo() {
     const speedRaw =
         option.dataset.speedRaw || null;
 
-
     const speedInput =
         document.getElementById(
             'attack-speed'
         );
-
 
     if (speedInput) {
 
@@ -2956,7 +2874,6 @@ function updateAttackWeaponInfo() {
         }
     }
 
-
     const displayedSpeed =
         speed !== null
             ? speed
@@ -2965,12 +2882,10 @@ function updateAttackWeaponInfo() {
                 'Da inserire'
             );
 
-
     document.getElementById(
         'attack-info-speed'
     ).innerText =
         displayedSpeed;
-
 
     // ==========================================
     // COSTO FRAME
@@ -2995,7 +2910,6 @@ function updateAttackWeaponInfo() {
         ).innerText = '-';
     }
 
-
     // ==========================================
     // RANGE
     // ==========================================
@@ -3005,14 +2919,12 @@ function updateAttackWeaponInfo() {
             ? Number(option.dataset.range)
             : null;
 
-
     document.getElementById(
         'attack-info-range'
     ).innerText =
         range !== null
             ? `${range} m`
             : 'N/D';
-
 
     // ==========================================
     // DANNO
@@ -3024,14 +2936,12 @@ function updateAttackWeaponInfo() {
     const damageType =
         option.dataset.damageType || '';
 
-
     document.getElementById(
         'attack-info-damage'
     ).innerText =
         damageType
             ? `${damage} — ${damageType}`
             : damage;
-
 
     // ==========================================
     // DISTANZA
@@ -3042,9 +2952,7 @@ function updateAttackWeaponInfo() {
             targetSelect.value
         );
 
-
     let distance = null;
-
 
     if (
         targetId &&
@@ -3061,7 +2969,6 @@ function updateAttackWeaponInfo() {
                 ? actor.id
                 : actor.char_id;
 
-
         distance =
             getCombatDistance(
                 attackerId,
@@ -3069,12 +2976,10 @@ function updateAttackWeaponInfo() {
             );
     }
 
-
     const distanceEl =
         document.getElementById(
             'attack-info-distance'
         );
-
 
     if (distance === null) {
 
@@ -3103,7 +3008,6 @@ function updateAttackWeaponInfo() {
                 '#2ecc71';
         }
     }
-
 
     infoPanel.style.display =
         'block';
@@ -3134,7 +3038,6 @@ function getSlotCombatLimb(slot) {
     return map[slot] || null;
 }
 
-
 function isOffensiveCompendiumItem(compItem) {
     if (!compItem) return false;
 
@@ -3163,7 +3066,6 @@ function isOffensiveCompendiumItem(compItem) {
     return false;
 }
 
-
 function getNumericSpeed(rawSpeed) {
     if (
         rawSpeed === null ||
@@ -3190,7 +3092,6 @@ function getNumericSpeed(rawSpeed) {
     );
 }
 
-
 function getCompendiumAttackSpeed(compItem) {
     if (!compItem) {
         return {
@@ -3209,7 +3110,6 @@ function getCompendiumAttackSpeed(compItem) {
         numeric: getNumericSpeed(raw)
     };
 }
-
 
 function getCompendiumAttackRange(compItem) {
     if (!compItem) return null;
@@ -3269,7 +3169,6 @@ function getCompendiumAttackRange(compItem) {
     return null;
 }
 
-
 function collectCombatActions(char) {
     const equipped =
         char?.stats?.equipped || {};
@@ -3303,14 +3202,12 @@ function collectCombatActions(char) {
         'gambe'
     ];
 
-
     slotOrder.forEach(slot => {
 
         const item =
             equipped[slot];
 
         if (!item) return;
-
 
         // Evita che un oggetto x2 venga mostrato due volte.
         const groupKey =
@@ -3321,17 +3218,14 @@ function collectCombatActions(char) {
             return;
         }
 
-
         const compItem =
             findCompendioItem(item);
-
 
         // Le armi nelle mani vengono mantenute anche
         // se sono vecchi oggetti non presenti nel compendio.
         const isHandWeapon =
             slot === 'mano_dx' ||
             slot === 'mano_sx';
-
 
         if (
             !isHandWeapon &&
@@ -3340,9 +3234,7 @@ function collectCombatActions(char) {
             return;
         }
 
-
         seenGroups.add(groupKey);
-
 
         const speed =
             getCompendiumAttackSpeed(compItem);
@@ -3357,7 +3249,6 @@ function collectCombatActions(char) {
         const damageType =
             compItem?.combat?.damage?.type ??
             null;
-
 
         // Se l'oggetto occupa più arti diversi,
         // non scegliamo arbitrariamente un arto.
@@ -3382,7 +3273,6 @@ function collectCombatActions(char) {
         if (linkedLimbs.length > 1) {
             preferredLimb = null;
         }
-
 
         actions.push({
             id:
@@ -3431,7 +3321,6 @@ function collectCombatActions(char) {
         });
     });
 
-
     // ==========================================
     // PUGNI BASE
     // ==========================================
@@ -3451,7 +3340,6 @@ function collectCombatActions(char) {
         });
     }
 
-
     if (!equipped.mano_sx) {
         actions.push({
             id: 'base-pugno-sx',
@@ -3467,7 +3355,6 @@ function collectCombatActions(char) {
         });
     }
 
-
     return actions;
 }
 
@@ -3475,7 +3362,6 @@ window.updateCombatActionPanel = function() {
 
     const panel =
         document.getElementById('combat-action-panel');
-
 
     // ==========================================
     // CONTROLLO COMBATTIMENTO ATTIVO
@@ -3494,14 +3380,12 @@ window.updateCombatActionPanel = function() {
         return;
     }
 
-
     // ==========================================
     // IDENTIFICA IL PERSONAGGIO DI TURNO
     // ==========================================
 
     let isMyTurn = false;
     let activeCharId = null;
-
 
     if (
         combatState.turn_order &&
@@ -3513,7 +3397,6 @@ window.updateCombatActionPanel = function() {
                 combatState.current_index
             ];
 
-
         if (currentActor) {
 
             activeCharId =
@@ -3521,24 +3404,20 @@ window.updateCombatActionPanel = function() {
                     ? currentActor.id
                     : currentActor.char_id;
 
-
             const selectElem =
                 document.getElementById(
                     'user-select'
                 );
-
 
             const myCharId =
                 selectElem
                     ? parseInt(selectElem.value)
                     : -1;
 
-
             // Turno del giocatore
             if (activeCharId === myCharId) {
                 isMyTurn = true;
             }
-
 
             // Il Master può sempre visualizzare e gestire
             // il personaggio attualmente di turno.
@@ -3550,7 +3429,6 @@ window.updateCombatActionPanel = function() {
             }
         }
     }
-
 
     // ==========================================
     // NON È IL MIO TURNO
@@ -3565,9 +3443,7 @@ window.updateCombatActionPanel = function() {
         return;
     }
 
-
     panel.style.display = 'block';
-
 
     // ==========================================
     // FRAME ARTI
@@ -3583,7 +3459,6 @@ window.updateCombatActionPanel = function() {
             gs: 60
         };
 
-
     const hudBd =
         document.getElementById('hud-bd');
 
@@ -3596,12 +3471,10 @@ window.updateCombatActionPanel = function() {
     const hudGs =
         document.getElementById('hud-gs');
 
-
     if (hudBd) hudBd.innerText = myLimbs.bd;
     if (hudBs) hudBs.innerText = myLimbs.bs;
     if (hudGd) hudGd.innerText = myLimbs.gd;
     if (hudGs) hudGs.innerText = myLimbs.gs;
-
 
     // ==========================================
     // BERSAGLI
@@ -3612,7 +3485,6 @@ window.updateCombatActionPanel = function() {
             'attack-target'
         );
 
-
     if (targetSelect) {
 
         // Mantiene il bersaglio selezionato
@@ -3620,10 +3492,8 @@ window.updateCombatActionPanel = function() {
         const previousTarget =
             targetSelect.value;
 
-
         targetSelect.innerHTML =
             '<option value="">-- Seleziona Bersaglio --</option>';
-
 
         characters.forEach(char => {
 
@@ -3650,7 +3520,6 @@ window.updateCombatActionPanel = function() {
             }
         });
 
-
         // Ripristina il bersaglio
         // se esiste ancora.
         if (
@@ -3667,7 +3536,6 @@ window.updateCombatActionPanel = function() {
         }
     }
 
-
     // ==========================================
     // PERSONAGGIO ATTIVO
     // ==========================================
@@ -3678,12 +3546,10 @@ window.updateCombatActionPanel = function() {
                 char.id === activeCharId
         );
 
-
     if (!activeChar) {
         panel.style.display = 'none';
         return;
     }
-
 
     // ==========================================
     // SELETTORE AZIONE / ARMA / GADGET
@@ -3694,17 +3560,13 @@ window.updateCombatActionPanel = function() {
             'attack-weapon'
         );
 
-
     if (!weaponSelect) return;
-
 
     // Mantiene la selezione precedente
     const previousAction =
         weaponSelect.value;
 
-
     weaponSelect.innerHTML = '';
-
 
     // Recupera tutte le azioni offensive
     // disponibili dall'equipaggiamento.
@@ -3712,7 +3574,6 @@ window.updateCombatActionPanel = function() {
         collectCombatActions(
             activeChar
         );
-
 
     // ==========================================
     // CREA LE OPTION
@@ -3725,17 +3586,14 @@ window.updateCombatActionPanel = function() {
                 'option'
             );
 
-
         option.value =
             action.id;
-
 
         // ==========================================
         // ICONA IN BASE ALLO SLOT
         // ==========================================
 
         let icon = '⚔️';
-
 
         if (
             action.name &&
@@ -3809,13 +3667,11 @@ window.updateCombatActionPanel = function() {
             icon = '🗡️';
         }
 
-
         // ==========================================
         // TESTO LATO / ARTO
         // ==========================================
 
         let sideText = '';
-
 
         if (action.limb === 'bd') {
 
@@ -3842,10 +3698,8 @@ window.updateCombatActionPanel = function() {
                 ' (Gamba Sx)';
         }
 
-
         option.textContent =
             `${icon} ${action.name}${sideText}`;
-
 
         // ==========================================
         // DATI AZIONE
@@ -3854,18 +3708,14 @@ window.updateCombatActionPanel = function() {
         option.dataset.actionName =
             action.name || 'Attacco';
 
-
         option.dataset.slot =
             action.slot || '';
-
 
         option.dataset.limb =
             action.limb || '';
 
-
         option.dataset.compendiumId =
             action.compendiumId || '';
-
 
         // Velocità numerica
         if (
@@ -3876,7 +3726,6 @@ window.updateCombatActionPanel = function() {
             option.dataset.speed =
                 action.speed;
         }
-
 
         // Valore originale velocità
         if (
@@ -3890,7 +3739,6 @@ window.updateCombatActionPanel = function() {
                 );
         }
 
-
         // Range
         if (
             action.range !== null &&
@@ -3900,7 +3748,6 @@ window.updateCombatActionPanel = function() {
             option.dataset.range =
                 action.range;
         }
-
 
         // Danno
         if (
@@ -3915,7 +3762,6 @@ window.updateCombatActionPanel = function() {
                 );
         }
 
-
         // Tipo danno
         if (
             action.damageType
@@ -3924,7 +3770,6 @@ window.updateCombatActionPanel = function() {
             option.dataset.damageType =
                 action.damageType;
         }
-
 
         // Modalità attivazione
         if (
@@ -3935,7 +3780,6 @@ window.updateCombatActionPanel = function() {
                 action.mode;
         }
 
-
         // Forma area
         if (
             action.areaShape
@@ -3945,12 +3789,10 @@ window.updateCombatActionPanel = function() {
                 action.areaShape;
         }
 
-
         weaponSelect.appendChild(
             option
         );
     });
-
 
     // ==========================================
     // NESSUNA AZIONE DISPONIBILE
@@ -3980,7 +3822,6 @@ window.updateCombatActionPanel = function() {
         weaponSelect.disabled = false;
     }
 
-
     // ==========================================
     // RIPRISTINA AZIONE SELEZIONATA
     // ==========================================
@@ -3998,7 +3839,6 @@ window.updateCombatActionPanel = function() {
             previousAction;
     }
 
-
     // ==========================================
     // ARTO AUTOMATICO
     // ==========================================
@@ -4006,12 +3846,10 @@ window.updateCombatActionPanel = function() {
     const selectedOption =
         weaponSelect.selectedOptions[0];
 
-
     if (selectedOption) {
 
         const autoLimb =
             selectedOption.dataset.limb;
-
 
         // Solo se il gadget è chiaramente
         // associato a un singolo arto.
@@ -4029,7 +3867,6 @@ window.updateCombatActionPanel = function() {
             }
         }
     }
-
 
     // ==========================================
     // AGGIORNA VELOCITÀ / RANGE /
@@ -4051,7 +3888,6 @@ socket.on('combat_update', (data) => {
     setTimeout(() => { window.updateCombatActionPanel(); }, 50);
 });
 
-
 // Calcolatore Costo Dinamico (Attacco)
 document.getElementById('attack-speed')?.addEventListener('input', (e) => {
     let speed = parseInt(e.target.value) || 0;
@@ -4067,10 +3903,8 @@ document.getElementById('attack-weapon')?.addEventListener('change',(e) => {
 
         if (!option) return;
 
-
         const limb =
             option.dataset.limb;
-
 
         // Solo gli oggetti legati chiaramente
         // a un arto lo selezionano automaticamente.
@@ -4083,7 +3917,6 @@ document.getElementById('attack-weapon')?.addEventListener('change',(e) => {
                 'attack-limb'
             ).value = limb;
         }
-
 
         updateAttackWeaponInfo();
     }
@@ -4101,7 +3934,7 @@ document.getElementById(
 // Sferra Attacco
 document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     const targetId = document.getElementById('attack-target').value;
-    
+
     const actionSelect = document.getElementById('attack-weapon');
 
     const actionOption =
@@ -4116,7 +3949,6 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
         actionOption.dataset.actionName ||
         actionOption.textContent;
 
-
     const limb = document.getElementById('attack-limb').value;
     const speed =
     parseInt(
@@ -4130,18 +3962,17 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     return;
     }
     const cost = 110 - speed < 0 ? 0 : 110 - speed;
-    
+
     // Recupera l'ID di chi sta attaccando (Giocatore o NPC)
     const currentActor = combatState.turn_order[combatState.current_index];
     const attackerId = currentActor.id !== undefined ? currentActor.id : currentActor.char_id;
-    
+
     if (!targetId) { alert("Seleziona un bersaglio!"); return; }
 
     const selectedWeaponOption =
     document.getElementById(
         'attack-weapon'
     ).selectedOptions[0];
-
 
     const weaponRange =
         selectedWeaponOption?.dataset?.range
@@ -4150,13 +3981,11 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
             )
             : null;
 
-
     const distance =
         getCombatDistance(
             attackerId,
             parseInt(targetId)
         );
-
 
     if (
         weaponRange !== null &&
@@ -4172,7 +4001,7 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
 
         return;
     }
-    
+
     let myLimbs = window.playersLimbs[attackerId] || {bd: 60, bs: 60, gd: 60, gs: 60};
     if (myLimbs[limb] < cost) {
         alert(`Frame insufficienti in questo arto! Ne servono ${cost}, ne hai ${myLimbs[limb]}`);
@@ -4191,7 +4020,7 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     // Se confermato, scala i frame ed emette l'attacco
     myLimbs[limb] -= cost;
     socket.emit('sync_limbs', { char_id: attackerId, limbs: myLimbs });
-    
+
     const attackerName = characters.find(c => c.id === attackerId).name;
 
     socket.emit('declare_attack', {
@@ -4213,7 +4042,6 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
 
         speed:
             speed,
-
 
         // NUOVI DATI
         compendium_id:
@@ -4246,7 +4074,7 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
             actionOption.dataset.areaShape ||
             null
     });
-        
+
     updateCombatActionPanel();
 });
 
@@ -4267,7 +4095,6 @@ socket.on('incoming_attack', (data) => {
 
     if (!targetChar) return;
 
-
     const isMe =
         myCharId === data.defender_id;
 
@@ -4275,17 +4102,13 @@ socket.on('incoming_attack', (data) => {
         isMaster &&
         targetChar.role === 'npc';
 
-
     if (!isMe && !isNpcForMaster) {
         return;
     }
 
-
     pendingIncomingAttack = data;
 
-
     let extraInfo = '';
-
 
     if (
         data.distance !== null &&
@@ -4299,7 +4122,6 @@ socket.on('incoming_attack', (data) => {
         `;
     }
 
-
     if (
         data.range !== null &&
         data.range !== undefined
@@ -4312,7 +4134,6 @@ socket.on('incoming_attack', (data) => {
         `;
     }
 
-
     if (data.damage_type) {
 
         extraInfo += `
@@ -4322,11 +4143,9 @@ socket.on('incoming_attack', (data) => {
         `;
     }
 
-
     const effectiveFormula =
     data.resolved_damage_formula ||
     data.damage_formula;
-
 
     if (effectiveFormula) {
 
@@ -4336,7 +4155,6 @@ socket.on('incoming_attack', (data) => {
             <b>${effectiveFormula}</b>
         `;
     }
-
 
     if (
         data.resolved_damage !== null &&
@@ -4350,7 +4168,6 @@ socket.on('incoming_attack', (data) => {
         `;
     }
 
-
     if (data.damage_note) {
 
         extraInfo += `
@@ -4363,7 +4180,6 @@ socket.on('incoming_attack', (data) => {
             </span>
         `;
     }
-
 
     document.getElementById(
         'defense-alert-text'
@@ -4390,7 +4206,6 @@ socket.on('incoming_attack', (data) => {
         ${extraInfo}
     `;
 
-
     document.getElementById(
         'defense-modal'
     ).style.display = 'block';
@@ -4404,15 +4219,15 @@ document.getElementById('reaction-speed')?.addEventListener('input', (e) => {
 
 document.getElementById('btn-execute-reaction')?.addEventListener('click', () => {
     if (!pendingIncomingAttack) return;
-    
+
     const reactionType = document.getElementById('reaction-type').value;
     const limb = document.getElementById('reaction-limb').value;
     const speed = parseInt(document.getElementById('reaction-speed').value) || 100;
     const cost = 110 - speed;
-    
+
     // L'ID del difensore reale (Giocatore o NPC)
     const defenderId = pendingIncomingAttack.defender_id;
-    
+
     let myLimbs = window.playersLimbs[defenderId] || {bd: 60, bs: 60, gd: 60, gs: 60};
     if (myLimbs[limb] < cost) {
         alert(`Frame insufficienti per reagire a questa velocità! Ne servono ${cost}, ne hai ${myLimbs[limb]}`);
@@ -4422,7 +4237,7 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
     // Scala i frame e chiudi la finestra
     myLimbs[limb] -= cost;
     socket.emit('sync_limbs', { char_id: defenderId, limbs: myLimbs });
-    
+
     // Invia i dati precisi ad app.py per il calcolo matematico
     socket.emit('resolve_reaction', {
         attack_id: pendingIncomingAttack.attack_id,
@@ -4433,7 +4248,7 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
 
     document.getElementById('defense-modal').style.display = 'none';
     pendingIncomingAttack = null;
-    
+
     if (window.updateCombatActionPanel) window.updateCombatActionPanel();
 });
 
@@ -4444,11 +4259,11 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
     const toggleBtn = document.getElementById(`${prefix}-toggle`);
     const contentDiv = document.getElementById(`${prefix}-content`);
     const headerDiv = document.getElementById(`${prefix}-header`);
-    
+
     if (toggleBtn && contentDiv) {
         // Blocca il mousedown in modo che cliccando la freccina non si trascini per sbaglio la finestra
         toggleBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-        
+
         toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (contentDiv.style.display === 'none') {
@@ -4492,7 +4307,7 @@ document.body.addEventListener('click', (e) => {
     if (e.target && (e.target.id === 'btn-toggle-notes' || e.target.id === 'notes-close-x')) {
         const panel = document.getElementById('notes-panel');
         const btn = document.getElementById('btn-toggle-notes');
-        
+
         if (panel) {
             if (panel.style.display === 'none') {
                 // APERTURA: Mostra il pannello e fai diventare rosso il bottone
@@ -4517,17 +4332,15 @@ document.body.addEventListener('click', (e) => {
 document.getElementById('save-notes-btn')?.addEventListener('click', () => {
     const charId = isMaster ? selectedCharacterId : parseInt(document.getElementById('user-select')?.value);
     if (!charId) return;
-    
+
     socket.emit('update_character_sheet', { char_id: charId, notes: document.getElementById('notes-textarea').value });
-    
+
     const msg = document.getElementById('notes-saved-msg');
     msg.style.display = 'block';
     setTimeout(() => { msg.style.display = 'none'; }, 2000);
 });
 
-
 let pendingMasterCombatResult = null;
-
 
 socket.on(
     'master_pending_combat_result',
@@ -4535,22 +4348,18 @@ socket.on(
 
         if (!isMaster) return;
 
-
         pendingMasterCombatResult =
             data;
-
 
         const modal =
             document.getElementById(
                 'master-combat-review'
             );
 
-
         const summary =
             document.getElementById(
                 'master-review-summary'
             );
-
 
         summary.innerHTML = `
 
@@ -4585,24 +4394,20 @@ socket.on(
             }
         `;
 
-
         document.getElementById(
             'master-review-att-roll'
         ).value =
             data.att_roll;
-
 
         document.getElementById(
             'master-review-def-roll'
         ).value =
             data.def_roll;
 
-
         document.getElementById(
             'master-review-damage'
         ).value =
             data.damage ?? 0;
-
 
         document.getElementById(
             'master-review-message'
@@ -4611,12 +4416,10 @@ socket.on(
                 data
             );
 
-
         modal.style.display =
             'block';
     }
 );
-
 
 function buildMasterCombatMessage(
     data
@@ -4644,14 +4447,12 @@ document.getElementById(
             return;
         }
 
-
         const attRoll =
             parseInt(
                 document.getElementById(
                     'master-review-att-roll'
                 ).value
             );
-
 
         const defRoll =
             parseInt(
@@ -4660,7 +4461,6 @@ document.getElementById(
                 ).value
             );
 
-
         const damage =
             parseInt(
                 document.getElementById(
@@ -4668,12 +4468,10 @@ document.getElementById(
                 ).value
             );
 
-
         const message =
             document.getElementById(
                 'master-review-message'
             ).value.trim();
-
 
         if (
             !Number.isFinite(attRoll) ||
@@ -4687,7 +4485,6 @@ document.getElementById(
 
             return;
         }
-
 
         socket.emit(
             'master_publish_combat_result',
@@ -4713,12 +4510,10 @@ document.getElementById(
             }
         );
 
-
         document.getElementById(
             'master-combat-review'
         ).style.display =
             'none';
-
 
         pendingMasterCombatResult =
             null;
@@ -4737,7 +4532,6 @@ document.getElementById(
             return;
         }
 
-
         socket.emit(
             'master_discard_combat_result',
             {
@@ -4746,12 +4540,10 @@ document.getElementById(
             }
         );
 
-
         document.getElementById(
             'master-combat-review'
         ).style.display =
             'none';
-
 
         pendingMasterCombatResult =
             null;
@@ -4767,13 +4559,13 @@ document.body.addEventListener('click', (e) => {
         const modal = document.getElementById('sheet-modal');
         if (modal) modal.style.display = 'none';
     }
-    
+
     // 2. Chiude la Scheda Master cliccando la X
     if (e.target && e.target.id === 'close-edit-modal') {
         const modal = document.getElementById('edit-sheet-modal');
         if (modal) modal.style.display = 'none';
     }
-    
+
     // 3. Chiude qualsiasi finestra cliccando sullo sfondo scuro (overlay)
     if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
         e.target.style.display = 'none';

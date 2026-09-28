@@ -38,7 +38,6 @@ window.revealedHexes = new Set();
 
 const VISION_RADIUS = 3;
 
-
 // ==========================================
 // COORDINATE MONDO
 // ==========================================
@@ -65,19 +64,16 @@ function getWorldPos(event) {
     };
 }
 
-
 const COLS =
     canvas.width / TILE_SIZE;
 
 const ROWS =
     canvas.height / TILE_SIZE;
 
-
 let characters = [];
 let drawings = [];
 
 let currentIconBase64 = null;
-
 
 // ==========================================
 // VARIABILI DISEGNO FORME
@@ -90,7 +86,6 @@ let currentTempShape = null;
 
 let laserLines = [];
 let isLaserDrawing = false;
-
 
 // ==========================================
 // RUOLO / MOVIMENTO
@@ -107,18 +102,15 @@ window.lastHoveredHex = null;
 
 window.wasCombatActive = false;
 
-
 function isMasterUser() {
     return currentRole === 'master';
 }
-
 
 // ==========================================
 // SOCKET
 // ==========================================
 
 const socket = io();
-
 
 // ==========================================
 // REGISTRAZIONE RUOLO SESSIONE
@@ -128,23 +120,19 @@ function registerCurrentSessionRole() {
 
     if (!userSelect) return;
 
-
     const selectedOption =
         userSelect.options[
             userSelect.selectedIndex
         ];
 
-
     const value =
         userSelect.value;
-
 
     const role =
         selectedOption
             ?.getAttribute(
                 'data-role'
             );
-
 
     const sessionRole =
         (
@@ -154,10 +142,8 @@ function registerCurrentSessionRole() {
             ? 'master'
             : 'player';
 
-
     currentRole =
         sessionRole;
-
 
     socket.emit(
         'register_session_role',
@@ -166,7 +152,6 @@ function registerCurrentSessionRole() {
         }
     );
 }
-
 
 // ==========================================
 // EVENTI CONNESSIONE
@@ -181,24 +166,20 @@ socket.on(
             socket.id
         );
 
-
         // Richiede i dati iniziali
         socket.emit(
             'get_compendio'
         );
 
-
         socket.emit(
             'get_npc_tokens'
         );
-
 
         // Fondamentale dopo ogni
         // riconnessione Socket.IO.
         registerCurrentSessionRole();
     }
 );
-
 
 socket.on(
     'disconnect',
@@ -211,7 +192,6 @@ socket.on(
     }
 );
 
-
 socket.on(
     'connect_error',
     (error) => {
@@ -222,7 +202,6 @@ socket.on(
         );
     }
 );
-
 
 // ==========================================
 // SEZIONI SCHEDA
@@ -237,7 +216,6 @@ function toggleSection(headerEl) {
         headerEl.querySelector(
             'span'
         );
-
 
     if (
         content.style.display ===
@@ -258,7 +236,6 @@ function toggleSection(headerEl) {
     }
 }
 
-
 // ==========================================
 // STATO LOCALE E COMBATTIMENTO
 // ==========================================
@@ -274,7 +251,6 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
-
 let combatState = {
 
     is_active: false,
@@ -288,7 +264,6 @@ let combatState = {
         y: 0
     }
 };
-
 
 // ==========================================
 // ELEMENTI UI
@@ -314,7 +289,6 @@ const editSheetModal =
         'edit-sheet-modal'
     );
 
-
 // ==========================================
 // UTILITY PERSONAGGIO
 // ==========================================
@@ -326,14 +300,12 @@ function getSelectedCharacter() {
             userSelect?.value
         );
 
-
     if (
         isNaN(id) ||
         id === 0
     ) {
         return null;
     }
-
 
     return (
         characters.find(
@@ -342,7 +314,6 @@ function getSelectedCharacter() {
     );
 }
 
-
 function updateSheetButton() {
 
     const sheetBtn =
@@ -350,18 +321,15 @@ function updateSheetButton() {
             'sheet-btn'
         );
 
-
     const notesBtn =
         document.getElementById(
             'btn-toggle-notes'
         );
 
-
     const renameBtn =
         document.getElementById(
             'rename-btn'
         );
-
 
     if (isMaster) {
 
@@ -373,7 +341,6 @@ function updateSheetButton() {
                     : 'none';
         }
 
-
         if (notesBtn) {
 
             notesBtn.style.display =
@@ -381,7 +348,6 @@ function updateSheetButton() {
                     ? 'inline-block'
                     : 'none';
         }
-
 
         if (renameBtn) {
 
@@ -394,7 +360,6 @@ function updateSheetButton() {
         const char =
             getSelectedCharacter();
 
-
         if (sheetBtn) {
 
             sheetBtn.style.display =
@@ -403,7 +368,6 @@ function updateSheetButton() {
                     : 'none';
         }
 
-
         if (notesBtn) {
 
             notesBtn.style.display =
@@ -411,7 +375,6 @@ function updateSheetButton() {
                     ? 'inline-block'
                     : 'none';
         }
-
 
         if (renameBtn) {
 
@@ -422,7 +385,6 @@ function updateSheetButton() {
         }
     }
 }
-
 
 // ==========================================
 // BONUS COMPENDIO
@@ -438,7 +400,6 @@ function getSkillBonusInfo(
         return null;
     }
 
-
     const item =
         globalCompendio.items.find(
             entry =>
@@ -446,29 +407,23 @@ function getSkillBonusInfo(
                 skillName
         );
 
-
     if (!item) return null;
-
 
     const bonusText =
         item?.effects?.bonus_malus;
 
-
     if (!bonusText) {
         return null;
     }
-
 
     const match =
         bonusText.match(
             /\+(\d+)\s+(Forza|Destrezza|Percezione|Arguzia|Volontà)/i
         );
 
-
     if (!match) {
         return null;
     }
-
 
     return {
 
@@ -488,7 +443,6 @@ function getSkillBonusInfo(
     };
 }
 
-
 // ==========================================
 // TELECAMERA
 // ==========================================
@@ -504,7 +458,6 @@ function centerCameraOn(
             gridY
         );
 
-
     camera.x =
         (canvas.width / 2)
         -
@@ -512,7 +465,6 @@ function centerCameraOn(
             centerPos.x *
             camera.zoom
         );
-
 
     camera.y =
         (canvas.height / 2)
@@ -522,10 +474,8 @@ function centerCameraOn(
             camera.zoom
         );
 
-
     requestRender();
 }
-
 
 document.getElementById(
     'center-cam-btn'
@@ -537,7 +487,6 @@ document.getElementById(
 
             const myChar =
                 getSelectedCharacter();
-
 
             if (myChar) {
 
@@ -566,7 +515,6 @@ document.getElementById(
                             selectedCharacterId
                     );
 
-
                 if (targetChar) {
 
                     centerCameraOn(
@@ -592,14 +540,12 @@ document.getElementById(
                     0
                 );
 
-
                 statusBar.innerText =
                     "Visuale centrata sulle coordinate (0,0).";
             }
         }
     }
 );
-
 
 // ==========================================
 // STATO INIZIALE SERVER
@@ -612,9 +558,7 @@ socket.on(
         characters =
             serverCharacters || [];
 
-
         requestRender();
-
 
         if (statusBar) {
 
@@ -622,9 +566,7 @@ socket.on(
                 "Connesso. Tabellone sincronizzato.";
         }
 
-
         updateSheetButton();
-
 
         if (
             selectedCharacterId !==
@@ -638,13 +580,11 @@ socket.on(
                         selectedCharacterId
                 );
 
-
             updateMasterEditPanel(
                 selected
                     ? selected
                     : null
             );
-
 
             if (!selected) {
 
@@ -654,7 +594,6 @@ socket.on(
         }
     }
 );
-
 
 socket.on(
     'init_drawings',
@@ -666,7 +605,6 @@ socket.on(
         requestRender();
     }
 );
-
 
 socket.on(
     'draw_item',
@@ -680,7 +618,6 @@ socket.on(
     }
 );
 
-
 socket.on(
     'clear_lines',
     () => {
@@ -690,7 +627,6 @@ socket.on(
         requestRender();
     }
 );
-
 
 // ==========================================
 // COMBAT UPDATE
@@ -702,7 +638,6 @@ socket.on(
 
         combatState = data;
 
-
         if (
             combatState.players_pa
         ) {
@@ -711,42 +646,35 @@ socket.on(
                 combatState.players_pa;
         }
 
-
         const tracker =
             document.getElementById(
                 'combat-tracker'
             );
-
 
         const list =
             document.getElementById(
                 'turn-order-list'
             );
 
-
         const btnNext =
             document.getElementById(
                 'btn-next-turn'
             );
-
 
         const toggleBtn =
             document.getElementById(
                 'btn-toggle-combat'
             );
 
-
         const movPanel =
             document.getElementById(
                 'movement-panel'
             );
 
-
         const selectElem =
             document.getElementById(
                 'user-select'
             );
-
 
         const myCharId =
             selectElem
@@ -755,9 +683,7 @@ socket.on(
                 )
                 : -1;
 
-
         let isMyTurn = false;
-
 
         if (
             combatState.turn_order &&
@@ -770,7 +696,6 @@ socket.on(
                     combatState.current_index
                 ];
 
-
             if (currentActor) {
 
                 const activeId =
@@ -780,7 +705,6 @@ socket.on(
                         ? currentActor.id
 
                         : currentActor.char_id;
-
 
                 if (
                     activeId ===
@@ -793,13 +717,11 @@ socket.on(
             }
         }
 
-
         // Il Master può gestire il
         // personaggio attualmente di turno.
         const canControlTurn =
             isMaster ||
             isMyTurn;
-
 
         if (isMyTurn) {
 
@@ -814,19 +736,16 @@ socket.on(
 
                     : 15;
 
-
             const paEl =
                 document.getElementById(
                     'ui-pa-mov'
                 );
-
 
             if (paEl) {
 
                 paEl.innerText =
                     window.currentPaMov;
             }
-
 
             if (movPanel) {
 
@@ -843,7 +762,6 @@ socket.on(
             }
         }
 
-
         if (
             combatState.is_active
         ) {
@@ -854,7 +772,6 @@ socket.on(
                     'flex';
             }
 
-
             if (btnNext) {
 
                 btnNext.style.display =
@@ -862,7 +779,6 @@ socket.on(
                         ? 'block'
                         : 'none';
             }
-
 
             if (toggleBtn) {
 
@@ -873,11 +789,9 @@ socket.on(
                     "#7f8c8d";
             }
 
-
             if (list) {
 
                 list.innerHTML = '';
-
 
                 combatState
                     .turn_order
@@ -891,12 +805,10 @@ socket.on(
                                 index ===
                                 combatState.current_index;
 
-
                             const div =
                                 document.createElement(
                                     'div'
                                 );
-
 
                             div.style.padding =
                                 '8px 10px';
@@ -927,13 +839,11 @@ socket.on(
                             div.style.whiteSpace =
                                 'nowrap';
 
-
                             div.innerHTML =
                                 `${actor.name} ` +
                                 `<span style="font-size:12px;">` +
                                 `(Dist: ${actor.distance}m)` +
                                 `</span>`;
-
 
                             list.appendChild(
                                 div
@@ -942,7 +852,6 @@ socket.on(
                     );
             }
 
-
         } else {
 
             if (tracker) {
@@ -950,7 +859,6 @@ socket.on(
                 tracker.style.display =
                     'none';
             }
-
 
             if (toggleBtn) {
 
@@ -962,7 +870,6 @@ socket.on(
             }
         }
 
-
         // Aggiorna anche il pannello
         // delle azioni quando cambia turno.
         if (
@@ -972,11 +879,9 @@ socket.on(
             window.updateCombatActionPanel();
         }
 
-
         requestRender();
     }
 );
-
 
 // ==========================================
 // FOG OF WAR
@@ -990,13 +895,11 @@ function getHexesInRadius(
 
     let results = [];
 
-
     const centerCube =
         offsetToCube(
             centerCol,
             centerRow
         );
-
 
     for (
         let q = -radius;
@@ -1023,7 +926,6 @@ function getHexesInRadius(
             let s =
                 -q - r;
 
-
             let targetCube = {
 
                 q:
@@ -1039,12 +941,10 @@ function getHexesInRadius(
                     s
             };
 
-
             let offset =
                 cubeToOffset(
                     targetCube
                 );
-
 
             results.push(
                 `${offset.col},${offset.row}`
@@ -1052,10 +952,8 @@ function getHexesInRadius(
         }
     }
 
-
     return results;
 }
-
 
 window.autoReveal = function(
     x,
@@ -1069,7 +967,6 @@ window.autoReveal = function(
         return;
     }
 
-
     const visibleHexes =
         getHexesInRadius(
             x,
@@ -1077,14 +974,12 @@ window.autoReveal = function(
             VISION_RADIUS
         );
 
-
     const newHexes =
         visibleHexes.filter(
             h =>
                 !window.revealedHexes
                     .has(h)
         );
-
 
     if (
         newHexes.length >
@@ -1101,7 +996,6 @@ window.autoReveal = function(
     }
 };
 
-
 // ==========================================
 // UPDATE PERSONAGGIO
 // ==========================================
@@ -1117,7 +1011,6 @@ socket.on(
                     updatedChar.id
             );
 
-
         if (
             index !== -1
         ) {
@@ -1132,7 +1025,6 @@ socket.on(
             );
         }
 
-
         if (userSelect) {
 
             const option =
@@ -1140,14 +1032,12 @@ socket.on(
                     `option[value="${updatedChar.id}"]`
                 );
 
-
             if (option) {
 
                 option.text =
                     updatedChar.name;
             }
         }
-
 
         if (
             selectedCharacterId ===
@@ -1159,7 +1049,6 @@ socket.on(
             );
         }
 
-
         const currentViewedId =
             isMaster
 
@@ -1168,7 +1057,6 @@ socket.on(
                 : parseInt(
                     userSelect?.value
                 );
-
 
         if (
             sheetModal &&
@@ -1190,7 +1078,6 @@ socket.on(
             }
         }
 
-
         if (
             window.updateEquippedPanel &&
             currentViewedId ===
@@ -1202,7 +1089,6 @@ socket.on(
             );
         }
 
-
         if (
             currentViewedId ===
             updatedChar.id
@@ -1212,7 +1098,6 @@ socket.on(
                 document.getElementById(
                     'notes-textarea'
                 );
-
 
             if (
                 textarea &&
@@ -1225,7 +1110,6 @@ socket.on(
                     "";
             }
         }
-
 
         if (
             !isMaster &&
@@ -1248,12 +1132,10 @@ socket.on(
             }
         }
 
-
         const myCharId =
             parseInt(
                 userSelect?.value
             );
-
 
         if (
             !isMaster &&
@@ -1290,7 +1172,6 @@ socket.on(
             }
         }
 
-
         if (
             typeof requestRender ===
             'function'
@@ -1299,11 +1180,9 @@ socket.on(
             requestRender();
         }
 
-
         updateSheetButton();
     }
 );
-
 
 // ==========================================
 // CANCELLAZIONE PERSONAGGIO
@@ -1320,7 +1199,6 @@ socket.on(
                     data.id
             );
 
-
         if (
             selectedCharacterId ===
             data.id
@@ -1329,18 +1207,15 @@ socket.on(
             selectedCharacterId =
                 null;
 
-
             updateMasterEditPanel(
                 null
             );
         }
 
-
         requestRender();
         updateSheetButton();
     }
 );
-
 
 socket.on(
     'character_hidden_update',
@@ -1353,7 +1228,6 @@ socket.on(
                     data.id
             );
 
-
         if (
             index !== -1
         ) {
@@ -1362,12 +1236,10 @@ socket.on(
                 .is_hidden =
                 data.is_hidden;
 
-
             requestRender();
         }
     }
 );
-
 
 socket.on(
     'character_invisible_update',
@@ -1380,7 +1252,6 @@ socket.on(
                     data.id
             );
 
-
         if (
             index !== -1
         ) {
@@ -1389,12 +1260,10 @@ socket.on(
                 .is_invisible =
                 data.is_invisible;
 
-
             requestRender();
         }
     }
 );
-
 
 // ==========================================
 // PANNELLO ENTITÀ MASTER
@@ -1409,9 +1278,7 @@ function updateMasterEditPanel(
             'selected-entity-panel'
         );
 
-
     if (!panel) return;
-
 
     if (char) {
 
@@ -1423,7 +1290,6 @@ function updateMasterEditPanel(
 
         panel.style.pointerEvents =
             'auto';
-
 
         const nameEl =
             document.getElementById(
@@ -1445,13 +1311,11 @@ function updateMasterEditPanel(
                 'sel-conc'
             );
 
-
         if (nameEl) {
 
             nameEl.innerText =
                 char.name;
         }
-
 
         if (hpEl) {
 
@@ -1463,7 +1327,6 @@ function updateMasterEditPanel(
                     : "?";
         }
 
-
         if (stamEl) {
 
             stamEl.innerText =
@@ -1473,7 +1336,6 @@ function updateMasterEditPanel(
                     ? char.stamina_current
                     : "?";
         }
-
 
         if (concEl) {
 
@@ -1485,12 +1347,10 @@ function updateMasterEditPanel(
                     : "?";
         }
 
-
         const statusSelect =
             document.getElementById(
                 'sel-status'
             );
-
 
         if (
             statusSelect &&
@@ -1501,18 +1361,15 @@ function updateMasterEditPanel(
                 char.status;
         }
 
-
         const visBtn =
             document.getElementById(
                 'btn-toggle-visibility'
             );
 
-
         if (visBtn) {
 
             visBtn.style.display =
                 'block';
-
 
             visBtn.innerText =
                 char.is_hidden
@@ -1521,14 +1378,12 @@ function updateMasterEditPanel(
 
                     : "👁️ Nascondi (FoW)";
 
-
             visBtn.style.background =
                 char.is_hidden
 
                     ? "#27ae60"
 
                     : "#95a5a6";
-
 
             visBtn.onclick =
                 () => {
@@ -1546,18 +1401,15 @@ function updateMasterEditPanel(
                 };
         }
 
-
         const invBtn =
             document.getElementById(
                 'btn-toggle-invisible'
             );
 
-
         if (invBtn) {
 
             invBtn.style.display =
                 'block';
-
 
             invBtn.innerText =
                 char.is_invisible
@@ -1566,14 +1418,12 @@ function updateMasterEditPanel(
 
                     : "👻 Rendi Invisibile";
 
-
             invBtn.style.background =
                 char.is_invisible
 
                     ? "#27ae60"
 
                     : "#8e44ad";
-
 
             invBtn.onclick =
                 () => {
@@ -1596,12 +1446,10 @@ function updateMasterEditPanel(
         panel.style.display =
             'none';
 
-
         const equipPanelEl =
             document.getElementById(
                 'equipped-panel'
             );
-
 
         if (equipPanelEl) {
 
@@ -1610,7 +1458,6 @@ function updateMasterEditPanel(
         }
     }
 }
-
 
 // ==========================================
 // VITALS
@@ -1631,12 +1478,10 @@ document.querySelectorAll(
                     return;
                 }
 
-
                 const type =
                     btn.getAttribute(
                         'data-type'
                     );
-
 
                 const val =
                     parseInt(
@@ -1645,16 +1490,13 @@ document.querySelectorAll(
                         )
                     );
 
-
                 const payload = {
                     char_id:
                         selectedCharacterId
                 };
 
-
                 payload[type] =
                     val;
-
 
                 socket.emit(
                     'update_vitals',
@@ -1664,7 +1506,6 @@ document.querySelectorAll(
         );
     }
 );
-
 
 document.getElementById(
     'sel-status'
@@ -1677,7 +1518,6 @@ document.getElementById(
         ) {
             return;
         }
-
 
         socket.emit(
             'update_vitals',
@@ -1692,7 +1532,6 @@ document.getElementById(
     }
 );
 
-
 // ==========================================
 // SELEZIONE PERSONAGGIO
 // ==========================================
@@ -1706,10 +1545,8 @@ userSelect?.addEventListener(
                 userSelect.selectedIndex
             ];
 
-
         const value =
             userSelect.value;
-
 
         const role =
             selectedOption
@@ -1717,18 +1554,15 @@ userSelect?.addEventListener(
                     'data-role'
                 );
 
-
         const renameBtn =
             document.getElementById(
                 'rename-btn'
             );
 
-
         const centerBtn =
             document.getElementById(
                 'center-cam-btn'
             );
-
 
         // ======================================
         // NESSUNA SELEZIONE
@@ -1747,9 +1581,7 @@ userSelect?.addEventListener(
             selectedCharacterId =
                 null;
 
-
             registerCurrentSessionRole();
-
 
             if (masterPanel) {
 
@@ -1757,13 +1589,11 @@ userSelect?.addEventListener(
                     'none';
             }
 
-
             if (sheetBtn) {
 
                 sheetBtn.style.display =
                     'none';
             }
-
 
             if (renameBtn) {
 
@@ -1771,13 +1601,11 @@ userSelect?.addEventListener(
                     'none';
             }
 
-
             if (centerBtn) {
 
                 centerBtn.style.display =
                     'none';
             }
-
 
             if (
                 window.updateEquippedPanel
@@ -1788,7 +1616,6 @@ userSelect?.addEventListener(
                 );
             }
 
-
             if (
                 window.updateCombatActionPanel
             ) {
@@ -1796,12 +1623,10 @@ userSelect?.addEventListener(
                 window.updateCombatActionPanel();
             }
 
-
             updateSheetButton();
 
             return;
         }
-
 
         // ======================================
         // MASTER
@@ -1818,13 +1643,10 @@ userSelect?.addEventListener(
             currentRole =
                 'master';
 
-
             registerCurrentSessionRole();
-
 
             selectedCharacterId =
                 null;
-
 
             if (masterPanel) {
 
@@ -1832,13 +1654,11 @@ userSelect?.addEventListener(
                     'block';
             }
 
-
             if (sheetBtn) {
 
                 sheetBtn.style.display =
                     'none';
             }
-
 
             if (renameBtn) {
 
@@ -1846,13 +1666,11 @@ userSelect?.addEventListener(
                     'none';
             }
 
-
             if (centerBtn) {
 
                 centerBtn.style.display =
                     'none';
             }
-
 
             if (statusBar) {
 
@@ -1864,10 +1682,8 @@ userSelect?.addEventListener(
                     "#fadbd8";
             }
 
-
             canvas.style.cursor =
                 "pointer";
-
 
         } else {
 
@@ -1881,9 +1697,7 @@ userSelect?.addEventListener(
             currentRole =
                 'player';
 
-
             registerCurrentSessionRole();
-
 
             if (masterPanel) {
 
@@ -1891,13 +1705,11 @@ userSelect?.addEventListener(
                     'none';
             }
 
-
             if (sheetBtn) {
 
                 sheetBtn.style.display =
                     'block';
             }
-
 
             if (renameBtn) {
 
@@ -1905,13 +1717,11 @@ userSelect?.addEventListener(
                     'inline-block';
             }
 
-
             if (centerBtn) {
 
                 centerBtn.style.display =
                     'inline-block';
             }
-
 
             if (statusBar) {
 
@@ -1923,11 +1733,9 @@ userSelect?.addEventListener(
                     "#f0f0f0";
             }
 
-
             canvas.style.cursor =
                 "crosshair";
         }
-
 
         if (
             typeof updateChatStatus ===
@@ -1936,7 +1744,6 @@ userSelect?.addEventListener(
 
             updateChatStatus();
         }
-
 
         // ======================================
         // COMBATTIMENTO
@@ -1951,10 +1758,8 @@ userSelect?.addEventListener(
                     value
                 );
 
-
             let isMyTurn =
                 false;
-
 
             if (
                 combatState.turn_order &&
@@ -1967,7 +1772,6 @@ userSelect?.addEventListener(
                         combatState.current_index
                     ];
 
-
                 const activeId =
                     currentActor
                         ?.id !== undefined
@@ -1976,7 +1780,6 @@ userSelect?.addEventListener(
 
                         : currentActor
                             ?.char_id;
-
 
                 if (
                     activeId ===
@@ -1988,18 +1791,15 @@ userSelect?.addEventListener(
                 }
             }
 
-
             const movPanel =
                 document.getElementById(
                     'movement-panel'
                 );
 
-
             const btnNext =
                 document.getElementById(
                     'btn-next-turn'
                 );
-
 
             if (isMyTurn) {
 
@@ -2017,19 +1817,16 @@ userSelect?.addEventListener(
 
                         : 15;
 
-
                 const paEl =
                     document.getElementById(
                         'ui-pa-mov'
                     );
-
 
                 if (paEl) {
 
                     paEl.innerText =
                         window.currentPaMov;
                 }
-
 
                 if (movPanel) {
 
@@ -2046,7 +1843,6 @@ userSelect?.addEventListener(
                 }
             }
 
-
             if (btnNext) {
 
                 btnNext.style.display =
@@ -2058,7 +1854,6 @@ userSelect?.addEventListener(
                         : 'none';
             }
         }
-
 
         // ======================================
         // HUD EQUIPAGGIAMENTO
@@ -2073,7 +1868,6 @@ userSelect?.addEventListener(
                     )
             );
 
-
         if (
             window.updateEquippedPanel
         ) {
@@ -2082,7 +1876,6 @@ userSelect?.addEventListener(
                 char || null
             );
         }
-
 
         // ======================================
         // HUD ATTACCO
@@ -2095,7 +1888,6 @@ userSelect?.addEventListener(
             window.updateCombatActionPanel();
         }
 
-
         // ======================================
         // APPUNTI
         // ======================================
@@ -2104,7 +1896,6 @@ userSelect?.addEventListener(
             document.getElementById(
                 'notes-textarea'
             );
-
 
         if (textarea) {
 
@@ -2117,11 +1908,9 @@ userSelect?.addEventListener(
                     : "";
         }
 
-
         updateSheetButton();
     }
 );
-
 
 // ==========================================
 // RINOMINA PERSONAGGIO
@@ -2138,7 +1927,6 @@ document.getElementById(
                 userSelect.value
             );
 
-
         if (
             !charId ||
             charId === 0
@@ -2146,12 +1934,10 @@ document.getElementById(
             return;
         }
 
-
         const newName =
             prompt(
                 "Inserisci il nuovo nome del tuo personaggio:"
             );
-
 
         if (
             newName &&
@@ -2173,7 +1959,6 @@ document.getElementById(
     }
 );
 
-
 // ==========================================
 // COMBATTIMENTO MASTER
 // ==========================================
@@ -2188,13 +1973,11 @@ document.getElementById(
             return;
         }
 
-
         socket.emit(
             'toggle_combat'
         );
     }
 );
-
 
 // ==========================================
 // DISEGNO
@@ -2215,7 +1998,6 @@ const clearDrawBtn =
         'clear-draw-btn'
     );
 
-
 toggleDrawBtn
     ?.addEventListener(
         'click',
@@ -2224,14 +2006,12 @@ toggleDrawBtn
             isDrawingMode =
                 !isDrawingMode;
 
-
             toggleDrawBtn.innerText =
                 isDrawingMode
 
                     ? "Disegno ON"
 
                     : "Disegno OFF";
-
 
             toggleDrawBtn.style.background =
                 isDrawingMode
@@ -2242,7 +2022,6 @@ toggleDrawBtn
         }
     );
 
-
 eraserBtn
     ?.addEventListener(
         'click',
@@ -2251,14 +2030,12 @@ eraserBtn
             isEraserMode =
                 !isEraserMode;
 
-
             eraserBtn.innerText =
                 isEraserMode
 
                     ? "Gomma ON"
 
                     : "Gomma OFF";
-
 
             eraserBtn.style.background =
                 isEraserMode
@@ -2268,7 +2045,6 @@ eraserBtn
                     : "#eee";
         }
     );
-
 
 clearDrawBtn
     ?.addEventListener(
@@ -2288,7 +2064,6 @@ clearDrawBtn
         }
     );
 
-
 // ==========================================
 // SPAWN NPC
 // ==========================================
@@ -2302,19 +2077,16 @@ document.getElementById(
         window.isSpawningNpc =
             true;
 
-
         if (statusBar) {
 
             statusBar.innerText =
                 "[MASTER] Clicca su un esagono per posizionare l'NPC.";
         }
 
-
         canvas.style.cursor =
             "crosshair";
     }
 );
-
 
 // ==========================================
 // DELETE ENTITÀ
@@ -2344,7 +2116,6 @@ document.getElementById(
     }
 );
 
-
 // ==========================================
 // MAPPA
 // ==========================================
@@ -2356,30 +2127,24 @@ socket.on(
         const oldUrl =
             currentMapUrl;
 
-
         currentMapUrl =
             data.map_url;
-
 
         mapScale =
             data.map_scale ||
             1.0;
 
-
         mapDx =
             data.map_dx ||
             0;
-
 
         mapDy =
             data.map_dy ||
             0;
 
-
         window.fowEnabled =
             data.fow_enabled ||
             false;
-
 
         window.revealedHexes =
             new Set(
@@ -2389,14 +2154,11 @@ socket.on(
 
         window.fowVersion =
             (window.fowVersion || 0) + 1;
-        
-
 
         const fowBtn =
             document.getElementById(
                 'btn-toggle-fow'
             );
-
 
         if (fowBtn) {
 
@@ -2407,7 +2169,6 @@ socket.on(
 
                     : "☁️ Attiva Fog of War";
 
-
             fowBtn.style.background =
                 window.fowEnabled
 
@@ -2415,7 +2176,6 @@ socket.on(
 
                     : "#8e44ad";
         }
-
 
         if (currentMapUrl) {
 
@@ -2427,13 +2187,11 @@ socket.on(
                 bgImage =
                     new Image();
 
-
                 bgImage.onload =
                     () => {
 
                         requestRender();
                     };
-
 
                 bgImage.src =
                     currentMapUrl;
@@ -2453,7 +2211,6 @@ socket.on(
     }
 );
 
-
 socket.on(
     'drawing_updated',
     (data) => {
@@ -2464,7 +2221,6 @@ socket.on(
                     d.uid ===
                     data.uid
             );
-
 
         if (
             index !== -1
@@ -2478,7 +2234,6 @@ socket.on(
     }
 );
 
-
 socket.on(
     'drawing_deleted',
     (data) => {
@@ -2490,7 +2245,6 @@ socket.on(
                     data.uid
             );
 
-
         if (
             window.selectedDrawing &&
             window.selectedDrawing.uid ===
@@ -2501,11 +2255,9 @@ socket.on(
                 null;
         }
 
-
         requestRender();
     }
 );
-
 
 // ==========================================
 // MODIFICA MAPPA
@@ -2525,7 +2277,6 @@ window.mapMouseStart = {
     y: 0
 };
 
-
 document.getElementById(
     'toggle-map-edit-btn'
 )?.addEventListener(
@@ -2544,16 +2295,13 @@ document.getElementById(
             return;
         }
 
-
         window.isEditingMap =
             !window.isEditingMap;
-
 
         const btn =
             document.getElementById(
                 'toggle-map-edit-btn'
             );
-
 
         if (
             window.isEditingMap
@@ -2579,7 +2327,6 @@ document.getElementById(
             canvas.style.cursor =
                 'pointer';
 
-
             socket.emit(
                 'set_map',
                 {
@@ -2598,11 +2345,9 @@ document.getElementById(
             );
         }
 
-
         requestRender();
     }
 );
-
 
 // ==========================================
 // CARICAMENTO MAPPA
@@ -2618,19 +2363,15 @@ document.getElementById(
             return;
         }
 
-
         const file =
             e.target.files[0];
-
 
         if (!file) {
             return;
         }
 
-
         const reader =
             new FileReader();
-
 
         reader.onload =
             function(evt) {
@@ -2652,7 +2393,6 @@ document.getElementById(
                     }
                 );
 
-
                 const scaleInput =
                     document.getElementById(
                         'map-scale'
@@ -2668,20 +2408,17 @@ document.getElementById(
                         'map-dy'
                     );
 
-
                 if (scaleInput) {
 
                     scaleInput.value =
                         "1.0";
                 }
 
-
                 if (dxInput) {
 
                     dxInput.value =
                         "0";
                 }
-
 
                 if (dyInput) {
 
@@ -2690,13 +2427,11 @@ document.getElementById(
                 }
             };
 
-
         reader.readAsDataURL(
             file
         );
     }
 );
-
 
 // ==========================================
 // SALVA MAPPA MANUALMENTE
@@ -2712,14 +2447,12 @@ document.getElementById(
             return;
         }
 
-
         const scale =
             parseFloat(
                 document.getElementById(
                     'map-scale'
                 ).value
             ) || 1.0;
-
 
         const dx =
             parseInt(
@@ -2728,14 +2461,12 @@ document.getElementById(
                 ).value
             ) || 0;
 
-
         const dy =
             parseInt(
                 document.getElementById(
                     'map-dy'
                 ).value
             ) || 0;
-
 
         socket.emit(
             'set_map',
@@ -2756,7 +2487,6 @@ document.getElementById(
     }
 );
 
-
 document.getElementById(
     'clear-map-btn'
 )?.addEventListener(
@@ -2767,19 +2497,16 @@ document.getElementById(
             return;
         }
 
-
         const input =
             document.getElementById(
                 'map-file-input'
             );
-
 
         if (input) {
 
             input.value =
                 "";
         }
-
 
         socket.emit(
             'set_map',
@@ -2789,7 +2516,6 @@ document.getElementById(
         );
     }
 );
-
 
 // ==========================================
 // PA
@@ -2804,11 +2530,9 @@ socket.on(
         ] =
             data.pa;
 
-
         requestRender();
     }
 );
-
 
 // ==========================================
 // STRUMENTI FORME
@@ -2825,11 +2549,9 @@ document.getElementById(
                 'icon-upload-section'
             );
 
-
         if (!iconSection) {
             return;
         }
-
 
         iconSection.style.display =
             e.target.value ===
@@ -2841,7 +2563,6 @@ document.getElementById(
     }
 );
 
-
 document.getElementById(
     'icon-file-input'
 )?.addEventListener(
@@ -2851,13 +2572,10 @@ document.getElementById(
         const file =
             e.target.files[0];
 
-
         if (!file) return;
-
 
         const reader =
             new FileReader();
-
 
         reader.onload =
             function(evt) {
@@ -2866,13 +2584,11 @@ document.getElementById(
                     evt.target.result;
             };
 
-
         reader.readAsDataURL(
             file
         );
     }
 );
-
 
 // ==========================================
 // MOVIMENTO
@@ -2893,7 +2609,6 @@ document.querySelectorAll(
                     return;
                 }
 
-
                 const framesPerStep =
                     parseInt(
                         e.target.getAttribute(
@@ -2901,21 +2616,17 @@ document.querySelectorAll(
                         )
                     );
 
-
                 const modeName =
                     e.target.getAttribute(
                         'data-name'
                     );
 
-
                 const dist =
                     window.pendingMove.dist;
-
 
                 let requiredFrames =
                     dist *
                     framesPerStep;
-
 
                 if (
                     requiredFrames >
@@ -2932,29 +2643,24 @@ document.querySelectorAll(
                     return;
                 }
 
-
                 window.currentPaMov -=
                     requiredFrames;
-
 
                 window.playersPa[
                     window.pendingMove.charId
                 ] =
                     window.currentPaMov;
 
-
                 const moveModal =
                     document.getElementById(
                         'move-modal'
                     );
-
 
                 if (moveModal) {
 
                     moveModal.style.display =
                         'none';
                 }
-
 
                 socket.emit(
                     'sync_pa',
@@ -2966,7 +2672,6 @@ document.querySelectorAll(
                             window.currentPaMov
                     }
                 );
-
 
                 socket.emit(
                     'declare_move',
@@ -2982,14 +2687,12 @@ document.querySelectorAll(
                     }
                 );
 
-
                 const myChar =
                     characters.find(
                         c =>
                             c.id ===
                             window.pendingMove.charId
                     );
-
 
                 if (myChar) {
 
@@ -3000,7 +2703,6 @@ document.querySelectorAll(
                         `consumando ` +
                         `<b>${requiredFrames} Frame</b> ` +
                         `movimento.`;
-
 
                     socket.emit(
                         'combat_msg',
@@ -3014,17 +2716,14 @@ document.querySelectorAll(
                     );
                 }
 
-
                 window.pendingMove =
                     null;
-
 
                 requestRender();
             }
         );
     }
 );
-
 
 // ==========================================
 // CANCELLA DISEGNO
@@ -3048,10 +2747,8 @@ document.getElementById(
                 }
             );
 
-
             window.selectedDrawing =
                 null;
-
 
             requestRender();
 
@@ -3063,7 +2760,6 @@ document.getElementById(
         }
     }
 );
-
 
 // ==========================================
 // DELETE / BACKSPACE
@@ -3081,7 +2777,6 @@ document.addEventListener(
         ) {
             return;
         }
-
 
         if (
             (
@@ -3104,16 +2799,13 @@ document.addEventListener(
                 }
             );
 
-
             window.selectedDrawing =
                 null;
-
 
             requestRender();
         }
     }
 );
-
 
 // ==========================================
 // FINE TURNO
@@ -3147,7 +2839,6 @@ document.getElementById(
     }
 );
 
-
 // ==========================================
 // FOG OF WAR MASTER
 // ==========================================
@@ -3158,7 +2849,6 @@ window.toggleFogOfWar =
         const turningOn =
             !window.fowEnabled;
 
-
         socket.emit(
             'toggle_global_fow',
             {
@@ -3167,12 +2857,10 @@ window.toggleFogOfWar =
             }
         );
 
-
         if (turningOn) {
 
             let initialHexes =
                 [];
-
 
             characters.forEach(
                 c => {
@@ -3195,14 +2883,12 @@ window.toggleFogOfWar =
                 }
             );
 
-
             const uniqueHexes =
                 [
                     ...new Set(
                         initialHexes
                     )
                 ];
-
 
             if (
                 uniqueHexes.length >
@@ -3220,7 +2906,6 @@ window.toggleFogOfWar =
         }
     };
 
-
 socket.on(
     'update_fow_hexes',
     (data) => {
@@ -3234,16 +2919,13 @@ socket.on(
                     data
                 );
 
-
             window.fowVersion =
                 (window.fowVersion || 0) + 1;
-
 
             requestRender();
         }
     }
 );
-
 
 // ==========================================
 // NPC TOKEN LIBRARY
@@ -3252,7 +2934,6 @@ socket.on(
 window.npcTokenLibrary = [];
 window.currentNpcTokenBase64 = "";
 
-
 socket.on(
     'npc_token_library',
     (tokens) => {
@@ -3260,28 +2941,23 @@ socket.on(
         window.npcTokenLibrary =
             tokens || [];
 
-
         const select =
             document.getElementById(
                 'npc-token-select'
             );
 
-
         if (!select) {
             return;
         }
 
-
         const oldValue =
             select.value;
-
 
         select.innerHTML = `
             <option value="">
                 -- Nessuna pedina --
             </option>
         `;
-
 
         window.npcTokenLibrary
             .forEach(
@@ -3292,21 +2968,17 @@ socket.on(
                             'option'
                         );
 
-
                     option.value =
                         token.id;
 
-
                     option.textContent =
                         token.name;
-
 
                     select.appendChild(
                         option
                     );
                 }
             );
-
 
         if (
             [
@@ -3324,7 +2996,6 @@ socket.on(
     }
 );
 
-
 document.getElementById(
     'npc-token-file'
 )?.addEventListener(
@@ -3334,11 +3005,9 @@ document.getElementById(
         const file =
             e.target.files[0];
 
-
         if (!file) {
             return;
         }
-
 
         if (
             file.type !==
@@ -3352,10 +3021,8 @@ document.getElementById(
             return;
         }
 
-
         const reader =
             new FileReader();
-
 
         reader.onload =
             function(event) {
@@ -3363,31 +3030,26 @@ document.getElementById(
                 window.currentNpcTokenBase64 =
                     event.target.result;
 
-
                 const preview =
                     document.getElementById(
                         'npc-token-preview'
                     );
-
 
                 if (preview) {
 
                     preview.src =
                         window.currentNpcTokenBase64;
 
-
                     preview.style.display =
                         'inline-block';
                 }
             };
-
 
         reader.readAsDataURL(
             file
         );
     }
 );
-
 
 document.getElementById(
     'npc-token-select'
@@ -3400,14 +3062,12 @@ document.getElementById(
                 this.value
             );
 
-
         const token =
             window.npcTokenLibrary.find(
                 t =>
                     t.id ===
                     tokenId
             );
-
 
         if (!token) {
 
@@ -3417,33 +3077,27 @@ document.getElementById(
             return;
         }
 
-
         window.currentNpcTokenBase64 =
             token.image_data;
-
 
         const preview =
             document.getElementById(
                 'npc-token-preview'
             );
 
-
         if (preview) {
 
             preview.src =
                 token.image_data;
 
-
             preview.style.display =
                 'inline-block';
         }
-
 
         const npcName =
             document.getElementById(
                 'npc-name'
             );
-
 
         if (npcName) {
 
@@ -3452,7 +3106,6 @@ document.getElementById(
         }
     }
 );
-
 
 document.getElementById(
     'save-npc-token-btn'
@@ -3471,18 +3124,15 @@ document.getElementById(
             return;
         }
 
-
         const npcNameInput =
             document.getElementById(
                 'npc-name'
             );
 
-
         const name =
             npcNameInput
                 ?.value
                 .trim();
-
 
         if (!name) {
 
@@ -3492,7 +3142,6 @@ document.getElementById(
 
             return;
         }
-
 
         socket.emit(
             'save_npc_token',
