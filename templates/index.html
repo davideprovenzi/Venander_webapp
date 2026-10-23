@@ -901,6 +901,7 @@
                 Costo in Frame (110 - Vel): <strong id="attack-cost" style="color: #e74c3c; font-size: 14px;">25</strong>
             </div>
             <button id="btn-execute-attack" style="width: 100%; padding: 10px; background: #c0392b; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">SFERRA ATTACCO</button>
+            <button class="action-speed-table-open" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Tabella velocità azioni</button>
         </div>
     </div>
 
@@ -930,6 +931,63 @@
         </div>
 
         <button id="btn-execute-reaction" style="width: 100%; padding: 12px; background: #f39c12; color: black; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">DICHIARA REAZIONE</button>
+        <button class="action-speed-table-open" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Consulta tabella azioni</button>
+    </div>
+
+    <!-- TABELLA VELOCITÀ AZIONI -->
+    <div id="action-speed-table-modal"
+        style="
+            display:none;
+            position:fixed;
+            inset:0;
+            z-index:12000;
+            background:rgba(0,0,0,0.72);
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+            box-sizing:border-box;
+        ">
+        <div style="
+            width:min(900px, 96vw);
+            max-height:88vh;
+            overflow:hidden;
+            background:#1f2933;
+            color:white;
+            border:2px solid #3498db;
+            border-radius:10px;
+            box-shadow:0 12px 45px rgba(0,0,0,0.75);
+            display:flex;
+            flex-direction:column;
+        ">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 16px; background:#17202a; border-bottom:1px solid #34495e;">
+                <div>
+                    <div style="font-size:18px; font-weight:bold;">📋 Velocità Azioni / Reazioni</div>
+                    <div style="font-size:11px; color:#bdc3c7; margin-top:3px;">Valori ufficiali della tabella azioni.</div>
+                </div>
+                <button id="action-speed-table-close" style="background:#c0392b; color:white; border:none; border-radius:4px; padding:7px 11px; cursor:pointer; font-weight:bold;">✕</button>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; padding:12px 16px; background:#253442;">
+                <input id="action-speed-search" type="text" placeholder="Cerca azione..." style="flex:1; min-width:200px; padding:8px; border-radius:4px; border:1px solid #7f8c8d;">
+                <select id="action-speed-category" style="min-width:190px; padding:8px; border-radius:4px; border:1px solid #7f8c8d;">
+                    <option value="">Tutte le categorie</option>
+                </select>
+            </div>
+
+            <div style="overflow:auto; padding:0 16px 16px 16px;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead style="position:sticky; top:0; background:#2c3e50; z-index:1;">
+                        <tr>
+                            <th style="text-align:left; padding:9px; border-bottom:1px solid #566573;">Categoria</th>
+                            <th style="text-align:left; padding:9px; border-bottom:1px solid #566573;">Azione</th>
+                            <th style="text-align:center; padding:9px; border-bottom:1px solid #566573;">Velocità</th>
+                            <th style="text-align:center; padding:9px; border-bottom:1px solid #566573;">Frame</th>
+                        </tr>
+                    </thead>
+                    <tbody id="action-speed-table-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div id="master-combat-review"

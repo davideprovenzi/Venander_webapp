@@ -859,6 +859,45 @@ def get_compendium_item(compendium_id=None, name=None):
 
     return None
 
+def get_action_speed_rule(action_name):
+    """Restituisce una voce della tabella velocità azioni del compendio."""
+    if not action_name:
+        return None
+
+    compendio = load_compendio()
+    table = (
+        compendio.get("action_speed_table", {})
+        if isinstance(compendio, dict)
+        else {}
+    )
+
+    entries = (
+        table.get("entries", [])
+        if isinstance(table, dict)
+        else table
+    )
+
+    if not isinstance(entries, list):
+        return None
+
+    wanted = str(action_name).strip().casefold()
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+
+        current = (
+            str(entry.get("action", ""))
+            .strip()
+            .casefold()
+        )
+
+        if current == wanted:
+            return entry
+
+    return None
+
+
 def character_owns_compendium_item(character, compendium_id=None, name=None):
     """Controlla zaino e lista armi senza dipendere dalla forma legacy dei dati."""
     if not character:
@@ -2008,7 +2047,6 @@ def handle_resolve_reaction(data):
 
     try:
         att_speed = int(attack["speed"])
-        def_speed = int(data.get("def_speed", 100))
     except (TypeError, ValueError):
         return
 
@@ -2018,6 +2056,33 @@ def handle_resolve_reaction(data):
 
     if reaction not in {"Schivata", "Parata", "Scambio"}:
         reaction = "Schivata"
+
+    reaction_action_map = {
+        "Parata": "Parare",
+        "Schivata": "Schivare"
+    }
+
+    reaction_rule = get_action_speed_rule(
+        reaction_action_map.get(reaction)
+    )
+
+    if reaction_rule:
+        try:
+            def_speed = int(
+                reaction_rule.get("speed")
+            )
+        except (TypeError, ValueError):
+            return
+    else:
+        try:
+            def_speed = int(
+                data.get("def_speed")
+            )
+        except (TypeError, ValueError):
+            return
+
+    if def_speed <= 0:
+        return
 
     if def_limb_key not in {"bd", "bs", "gd", "gs"}:
         def_limb_key = "bd"

@@ -17277,5 +17277,514 @@
         "weapon_name": "Fucile a colpo singolo"
       }
     }
-  ]
+  ],
+  "action_speed_table": {
+    "source": "Tabella velocità azioni/reazioni fornita dall’utente — 2026-10-23",
+    "entries": [
+      {
+        "category": "Movimento",
+        "action": "Girarsi di 180°",
+        "speed": 95,
+        "frames": 15
+      },
+      {
+        "category": "Movimento",
+        "action": "Accovacciarsi",
+        "speed": 95,
+        "frames": 15
+      },
+      {
+        "category": "Movimento",
+        "action": "Rialzarsi da accovacciato",
+        "speed": 95,
+        "frames": 15
+      },
+      {
+        "category": "Movimento",
+        "action": "Sdraiarsi a terra",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Movimento",
+        "action": "Rialzarsi da terra",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Movimento",
+        "action": "Rotolata",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Movimento",
+        "action": "Tuffarsi dietro una copertura",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Movimento",
+        "action": "Saltare verticalmente",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Movimento",
+        "action": "Saltare un piccolo ostacolo",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Movimento",
+        "action": "Saltare un fossato",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Movimento",
+        "action": "Scavalcare un muretto basso",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Movimento",
+        "action": "Scavalcare una staccionata",
+        "speed": 20,
+        "frames": 90
+      },
+      {
+        "category": "Movimento",
+        "action": "Salire su un tavolo",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Movimento",
+        "action": "Scendere da un'altezza bassa",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Movimento",
+        "action": "Arrampicarsi per 1 m",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Movimento",
+        "action": "Arrampicarsi per 2 m",
+        "speed": 20,
+        "frames": 90
+      },
+      {
+        "category": "Movimento",
+        "action": "Salire una scala a pioli",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Tirare un pugno",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Calcio",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Testata",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Gomito",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Ginocchiata",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Spingere qualcuno",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Afferrare qualcuno",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Liberarsi da una presa",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Atterrare qualcuno",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Placcare qualcuno",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Corpo a corpo",
+        "action": "Strangolare / immobilizzare",
+        "speed": 20,
+        "frames": 90
+      },
+      {
+        "category": "Armi bianche",
+        "action": "Colpo di spada",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Armi bianche",
+        "action": "Colpo di coltello",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Armi bianche",
+        "action": "Colpo con arma pesante",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Armi bianche",
+        "action": "Colpo con mazza",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Armi bianche",
+        "action": "Colpo con bastone",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Armi bianche",
+        "action": "Attacco con arma improvvisata",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Lancio",
+        "action": "Lanciare un piccolo oggetto",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Lancio",
+        "action": "Lanciare un oggetto medio",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Lancio",
+        "action": "Lanciare un oggetto pesante",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Lancio",
+        "action": "Lanciare un coltello",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Lancio",
+        "action": "Lanciare una pietra",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Lancio",
+        "action": "Lanciare una granata",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Lancio",
+        "action": "Passare un oggetto a un compagno vicino",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Estrarre pistola",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Mirare con pistola",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Sparare con pistola",
+        "speed": 100,
+        "frames": 10
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Estrarre fucile",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Mirare con fucile",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Sparare con fucile",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Cambiare caricatore pistola",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Cambiare caricatore fucile",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Armi da fuoco",
+        "action": "Rimuovere un inceppamento semplice",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Difesa",
+        "action": "Parare",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Difesa",
+        "action": "Schivare",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Difesa",
+        "action": "Proteggersi con le braccia",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Difesa",
+        "action": "Alzare uno scudo",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Difesa",
+        "action": "Mettersi completamente al riparo",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Oggetti",
+        "action": "Raccogliere un oggetto da terra",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Oggetti",
+        "action": "Prendere un oggetto da una tasca",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Oggetti",
+        "action": "Prendere un oggetto dalla cintura",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Oggetti",
+        "action": "Estrarre un oggetto",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Oggetti",
+        "action": "Premere un pulsante",
+        "speed": 100,
+        "frames": 10
+      },
+      {
+        "category": "Oggetti",
+        "action": "Azionare una leva",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Oggetti",
+        "action": "Aprire una porta",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Oggetti",
+        "action": "Chiudere una porta",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Oggetti",
+        "action": "Aprire una porta pesante",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Oggetti",
+        "action": "Spostare un piccolo oggetto",
+        "speed": 70,
+        "frames": 40
+      },
+      {
+        "category": "Oggetti",
+        "action": "Spostare un oggetto pesante",
+        "speed": 20,
+        "frames": 90
+      },
+      {
+        "category": "Interazione",
+        "action": "Guardarsi rapidamente intorno",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Interazione",
+        "action": "Cercare qualcosa nella stanza",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Interazione",
+        "action": "Perquisire rapidamente una persona",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Interazione",
+        "action": "Perquisire accuratamente una persona",
+        "speed": 10,
+        "frames": 100
+      },
+      {
+        "category": "Interazione",
+        "action": "Accendere un dispositivo",
+        "speed": 90,
+        "frames": 20
+      },
+      {
+        "category": "Interazione",
+        "action": "Inserire un codice semplice",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Interazione",
+        "action": "Usare rapidamente un terminale",
+        "speed": 50,
+        "frames": 60
+      },
+      {
+        "category": "Medica",
+        "action": "Applicare una benda rapida",
+        "speed": 40,
+        "frames": 70
+      },
+      {
+        "category": "Medica",
+        "action": "Applicare un laccio emostatico",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Medica",
+        "action": "Iniettare un farmaco",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Medica",
+        "action": "Controllare rapidamente un ferito",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Medica",
+        "action": "Stabilizzare un ferito",
+        "speed": 10,
+        "frames": 100
+      },
+      {
+        "category": "Gadget",
+        "action": "Attivare gadget già impugnato",
+        "speed": 100,
+        "frames": 10
+      },
+      {
+        "category": "Gadget",
+        "action": "Attivare gadget dell'armatura",
+        "speed": 100,
+        "frames": 10
+      },
+      {
+        "category": "Gadget",
+        "action": "Estrarre gadget dalla cintura",
+        "speed": 80,
+        "frames": 30
+      },
+      {
+        "category": "Gadget",
+        "action": "Estrarre gadget dalla valigetta",
+        "speed": 60,
+        "frames": 50
+      },
+      {
+        "category": "Gadget",
+        "action": "Montare rapidamente un gadget",
+        "speed": 30,
+        "frames": 80
+      },
+      {
+        "category": "Gadget",
+        "action": "Disattivare un gadget",
+        "speed": 90,
+        "frames": 20
+      }
+    ]
+  }
 }

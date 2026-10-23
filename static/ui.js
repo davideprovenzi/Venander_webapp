@@ -1532,6 +1532,311 @@ function getCompendioItems() {
         : [];
 }
 
+function getActionSpeedEntries() {
+    const table = globalCompendio?.action_speed_table;
+
+    if (Array.isArray(table)) {
+        return table;
+    }
+
+    return Array.isArray(table?.entries)
+        ? table.entries
+        : [];
+}
+
+function findActionSpeedRule(actionName) {
+    if (!actionName) return null;
+
+    const normalized =
+        String(actionName)
+            .trim()
+            .toLowerCase();
+
+    return getActionSpeedEntries().find(
+        entry =>
+            String(entry?.action || '')
+                .trim()
+                .toLowerCase() === normalized
+    ) || null;
+}
+
+function getReactionTableActionName(reactionType) {
+    const map = {
+        Parata: 'Parare',
+        Schivata: 'Schivare'
+    };
+
+    return map[reactionType] || null;
+}
+
+function applyReactionSpeedFromTable() {
+    const typeSelect =
+        document.getElementById('reaction-type');
+
+    const speedInput =
+        document.getElementById('reaction-speed');
+
+    const costEl =
+        document.getElementById('reaction-cost');
+
+    if (!typeSelect || !speedInput || !costEl) {
+        return;
+    }
+
+    const tableAction =
+        getReactionTableActionName(
+            typeSelect.value
+        );
+
+    const rule =
+        tableAction
+            ? findActionSpeedRule(tableAction)
+            : null;
+
+    if (rule) {
+        speedInput.value =
+            rule.speed;
+
+        speedInput.readOnly =
+            true;
+
+        speedInput.style.opacity =
+            '0.8';
+
+        costEl.innerText =
+            rule.frames;
+
+        return;
+    }
+
+    speedInput.readOnly =
+        false;
+
+    speedInput.style.opacity =
+        '1';
+
+    speedInput.value =
+        '';
+
+    speedInput.placeholder =
+        'Velocità';
+
+    costEl.innerText =
+        '-';
+}
+
+function renderActionSpeedTable() {
+    const body =
+        document.getElementById(
+            'action-speed-table-body'
+        );
+
+    const categorySelect =
+        document.getElementById(
+            'action-speed-category'
+        );
+
+    const searchInput =
+        document.getElementById(
+            'action-speed-search'
+        );
+
+    if (!body || !categorySelect || !searchInput) {
+        return;
+    }
+
+    const entries =
+        getActionSpeedEntries();
+
+    if (
+        categorySelect.options.length <= 1
+    ) {
+        const categories =
+            [...new Set(
+                entries
+                    .map(entry => entry.category)
+                    .filter(Boolean)
+            )];
+
+        categories.forEach(category => {
+            const option =
+                document.createElement('option');
+
+            option.value =
+                category;
+
+            option.textContent =
+                category;
+
+            categorySelect.appendChild(
+                option
+            );
+        });
+    }
+
+    const selectedCategory =
+        categorySelect.value;
+
+    const search =
+        searchInput.value
+            .trim()
+            .toLowerCase();
+
+    const filtered =
+        entries.filter(entry => {
+            const matchesCategory =
+                !selectedCategory ||
+                entry.category ===
+                    selectedCategory;
+
+            const haystack =
+                `${entry.category || ''} ${entry.action || ''}`
+                    .toLowerCase();
+
+            const matchesSearch =
+                !search ||
+                haystack.includes(search);
+
+            return (
+                matchesCategory &&
+                matchesSearch
+            );
+        });
+
+    body.innerHTML = '';
+
+    filtered.forEach(entry => {
+        const tr =
+            document.createElement('tr');
+
+        [
+            entry.category,
+            entry.action,
+            entry.speed,
+            entry.frames
+        ].forEach((value, index) => {
+            const td =
+                document.createElement('td');
+
+            td.textContent =
+                value ?? '';
+
+            td.style.padding =
+                '8px 9px';
+
+            td.style.borderBottom =
+                '1px solid #34495e';
+
+            if (index >= 2) {
+                td.style.textAlign =
+                    'center';
+
+                td.style.fontWeight =
+                    'bold';
+            }
+
+            tr.appendChild(td);
+        });
+
+        body.appendChild(tr);
+    });
+
+    if (filtered.length === 0) {
+        const tr =
+            document.createElement('tr');
+
+        const td =
+            document.createElement('td');
+
+        td.colSpan = 4;
+        td.textContent =
+            'Nessuna azione trovata.';
+
+        td.style.padding =
+            '16px';
+
+        td.style.textAlign =
+            'center';
+
+        td.style.color =
+            '#bdc3c7';
+
+        tr.appendChild(td);
+        body.appendChild(tr);
+    }
+}
+
+function openActionSpeedTable() {
+    const modal =
+        document.getElementById(
+            'action-speed-table-modal'
+        );
+
+    if (!modal) return;
+
+    renderActionSpeedTable();
+
+    modal.style.display =
+        'flex';
+}
+
+function closeActionSpeedTable() {
+    const modal =
+        document.getElementById(
+            'action-speed-table-modal'
+        );
+
+    if (modal) {
+        modal.style.display =
+            'none';
+    }
+}
+
+document.querySelectorAll(
+    '.action-speed-table-open'
+).forEach(button => {
+    button.addEventListener(
+        'click',
+        openActionSpeedTable
+    );
+});
+
+document.getElementById(
+    'action-speed-table-close'
+)?.addEventListener(
+    'click',
+    closeActionSpeedTable
+);
+
+document.getElementById(
+    'action-speed-search'
+)?.addEventListener(
+    'input',
+    renderActionSpeedTable
+);
+
+document.getElementById(
+    'action-speed-category'
+)?.addEventListener(
+    'change',
+    renderActionSpeedTable
+);
+
+document.getElementById(
+    'action-speed-table-modal'
+)?.addEventListener(
+    'click',
+    (event) => {
+        if (
+            event.target.id ===
+            'action-speed-table-modal'
+        ) {
+            closeActionSpeedTable();
+        }
+    }
+);
+
+
 function getAllBrands() {
     const brands = globalCompendio?.indexes?.brands;
 
@@ -5604,10 +5909,19 @@ socket.on('incoming_attack', (data) => {
         ${extraInfo}
     `;
 
+    applyReactionSpeedFromTable();
+
     document.getElementById(
         'defense-modal'
     ).style.display = 'block';
 });
+
+document.getElementById(
+    'reaction-type'
+)?.addEventListener(
+    'change',
+    applyReactionSpeedFromTable
+);
 
 document.getElementById('reaction-speed')?.addEventListener('input', (e) => {
     let speed = parseInt(e.target.value) || 0;
@@ -5620,8 +5934,29 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
 
     const reactionType = document.getElementById('reaction-type').value;
     const limb = document.getElementById('reaction-limb').value;
-    const speed = parseInt(document.getElementById('reaction-speed').value) || 100;
-    const cost = 110 - speed;
+
+    const speed =
+        parseInt(
+            document.getElementById(
+                'reaction-speed'
+            ).value
+        );
+
+    if (
+        !Number.isFinite(speed) ||
+        speed <= 0
+    ) {
+        alert(
+            "Questa reazione non ha una velocità definita nella tabella. Inserisci una velocità manuale."
+        );
+        return;
+    }
+
+    const cost =
+        Math.max(
+            0,
+            110 - speed
+        );
 
     // L'ID del difensore reale (Giocatore o NPC)
     const defenderId = pendingIncomingAttack.defender_id;
