@@ -874,8 +874,15 @@ socket.on(
 
             if (toggleBtn) {
 
-                toggleBtn.innerText =
-                    "🕊️ TERMINA COMBATTIMENTO";
+                if (toggleBtn.classList.contains('master-tool-btn')) {
+                    toggleBtn.innerHTML =
+                        '<span class="master-tool-icon">🕊️</span>' +
+                        '<span class="master-tool-label">Termina</span>';
+                    toggleBtn.title = 'Termina combattimento';
+                } else {
+                    toggleBtn.innerText =
+                        "🕊️ TERMINA COMBATTIMENTO";
+                }
 
                 toggleBtn.style.background =
                     "#7f8c8d";
@@ -954,8 +961,15 @@ socket.on(
 
             if (toggleBtn) {
 
-                toggleBtn.innerText =
-                    "⚔️ INIZIA COMBATTIMENTO";
+                if (toggleBtn.classList.contains('master-tool-btn')) {
+                    toggleBtn.innerHTML =
+                        '<span class="master-tool-icon">⚔️</span>' +
+                        '<span class="master-tool-label">Combat</span>';
+                    toggleBtn.title = 'Avvia combattimento';
+                } else {
+                    toggleBtn.innerText =
+                        "⚔️ INIZIA COMBATTIMENTO";
+                }
 
                 toggleBtn.style.background =
                     "#c0392b";

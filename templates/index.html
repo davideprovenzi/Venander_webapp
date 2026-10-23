@@ -173,12 +173,50 @@
 
     <div id="master-panel" style="max-height: 90vh; overflow-y: auto;">
 
-        <h3 style="margin-top: 0; color: #c0392b; border-bottom: 1px solid #c0392b; padding-bottom: 5px;">👑 Pannello Master</h3>
+        <div id="master-dock" class="master-dock" aria-label="Strumenti Master">
+            <button id="btn-master-dock-toggle" class="master-dock-title" type="button" title="Riduci / espandi strumenti Master" aria-expanded="true">👑</button>
 
-        <button id="btn-open-master-forge-panel" type="button" style="width:100%; margin-bottom:10px; padding:8px; border:0; border-radius:5px; background:#873600; color:white; cursor:pointer; font-weight:bold;">⚒️ Apri Fucina del Master</button>
+            <button class="master-tool-btn" type="button" data-master-section="master-section-spawn" title="Spawna entità">
+                <span class="master-tool-icon">👾</span><span class="master-tool-label">Entità</span>
+            </button>
+
+            <button class="master-tool-btn" type="button" data-master-section="master-section-map" title="Gestione mappa">
+                <span class="master-tool-icon">🗺️</span><span class="master-tool-label">Mappa</span>
+            </button>
+
+            <button class="master-tool-btn" type="button" data-master-section="master-section-fow" title="Fog of War">
+                <span class="master-tool-icon">☁️</span><span class="master-tool-label">FoW</span>
+            </button>
+
+            <button class="master-tool-btn" type="button" data-master-section="master-section-draw" title="Disegno e sticker">
+                <span class="master-tool-icon">🖌️</span><span class="master-tool-label">Disegno</span>
+            </button>
+
+            <button class="master-tool-btn" type="button" data-master-section="selected-entity-panel" title="Entità selezionata">
+                <span class="master-tool-icon">🎯</span><span class="master-tool-label">Selezione</span>
+            </button>
+
+            <button id="btn-master-open-sidequest" class="master-tool-btn" type="button" title="Invia Sidequest">
+                <span class="master-tool-icon">📜</span><span class="master-tool-label">Task</span>
+            </button>
+
+            <button id="btn-open-master-forge-panel" class="master-tool-btn" type="button" title="Fucina del Master">
+                <span class="master-tool-icon">⚒️</span><span class="master-tool-label">Fucina</span>
+            </button>
+
+            <div class="master-dock-separator"></div>
+
+            <button id="btn-toggle-combat" class="master-tool-btn master-tool-combat" type="button" title="Avvia / termina combattimento">
+                <span class="master-tool-icon">⚔️</span><span class="master-tool-label">Combat</span>
+            </button>
+
+            <button id="btn-master-close-tools" class="master-tool-btn master-tool-close" type="button" title="Chiudi pannello aperto">
+                <span class="master-tool-icon">✕</span><span class="master-tool-label">Chiudi</span>
+            </button>
+        </div>
 
         <!-- 1. SPAWN NPC (Chiuso di default) -->
-        <div style="margin-top: 10px; border: 1px solid #c0392b; padding: 5px; border-radius: 5px; background: #fff;">
+        <div id="master-section-spawn" class="master-tool-section" style="margin-top: 10px; border: 1px solid #c0392b; padding: 5px; border-radius: 5px; background: #fff;">
 
             <h4 class="collapsible-header"
                 onclick="toggleSection(this)"
@@ -330,7 +368,7 @@
         </div>
 
         <!-- 2. GESTIONE MAPPA (Chiuso di default) -->
-        <div style="margin-top: 10px; border: 1px solid #3498db; padding: 5px; border-radius: 5px; background: #fff;">
+        <div id="master-section-map" class="master-tool-section" style="margin-top: 10px; border: 1px solid #3498db; padding: 5px; border-radius: 5px; background: #fff;">
             <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #2980b9; background: #d6eaf8;">
                 🗺️ Sfondo Mappa (Locale) <span style="font-size:12px;">▶</span>
             </h4>
@@ -365,7 +403,7 @@
         </div>
 
         <!-- SEZIONE FOG OF WAR (NUOVA) -->
-        <div style="margin-top: 10px; border: 1px solid #8e44ad; padding: 5px; border-radius: 5px; background: #fff;">
+        <div id="master-section-fow" class="master-tool-section" style="margin-top: 10px; border: 1px solid #8e44ad; padding: 5px; border-radius: 5px; background: #fff;">
             <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #8e44ad; background: #ebdef0;">
                 ☁️ Fog of War Automatica <span style="font-size:12px;">▶</span>
             </h4>
@@ -376,7 +414,7 @@
         </div>
 
         <!-- 3. STRUMENTI DISEGNO (Chiuso di default) -->
-        <div style="margin-top: 10px; border: 1px solid #27ae60; padding: 5px; border-radius: 5px; background: #fff;">
+        <div id="master-section-draw" class="master-tool-section" style="margin-top: 10px; border: 1px solid #27ae60; padding: 5px; border-radius: 5px; background: #fff;">
             <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #27ae60; background: #d5f5e3;">
                 🖌️ Disegno & Sticker <span style="font-size:12px;">▶</span>
             </h4>
@@ -417,7 +455,7 @@
         </div>
 
         <!-- 4. ENTITÀ SELEZIONATA (Aperto di default) -->
-        <div id="selected-entity-panel" style="display: none; margin-top: 10px; opacity: 0.5; pointer-events: none; background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #ccc; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
+        <div id="selected-entity-panel" class="master-tool-section" style="display: none; margin-top: 10px; opacity: 0.5; pointer-events: none; background: #fff; padding: 5px; border-radius: 5px; border: 1px solid #ccc; box-shadow: inset 0 0 5px rgba(0,0,0,0.05);">
             <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #333; background: #ecf0f1;">
                 🎯 Entità Selezionata <span style="font-size:12px;">▼</span>
             </h4>
@@ -481,9 +519,6 @@
             </div>
         </div>
 
-        <button id="btn-toggle-combat" style="width: 100%; margin-top: 15px; padding: 10px; background: #c0392b; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-            ⚔️ INIZIA COMBATTIMENTO
-        </button>
 
     </div>
 

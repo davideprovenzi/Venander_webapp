@@ -6987,3 +6987,131 @@ socket.on(
         );
     }
 );
+
+// ==========================================
+// MASTER DOCK - REDESIGN COMPATTO
+// ==========================================
+(() => {
+    const masterToolButtons = Array.from(
+        document.querySelectorAll('.master-tool-btn[data-master-section]')
+    );
+
+    const masterToolSections = Array.from(
+        document.querySelectorAll('#master-panel .master-tool-section')
+    );
+
+    const closeMasterToolsBtn = document.getElementById('btn-master-close-tools');
+    const openSidequestToolBtn = document.getElementById('btn-master-open-sidequest');
+
+    function closeMasterToolSections() {
+        masterToolSections.forEach(section => {
+            section.classList.remove('master-tool-section-active');
+        });
+
+        masterToolButtons.forEach(button => {
+            button.classList.remove('master-tool-active');
+        });
+    }
+
+    function openMasterToolSection(button, section) {
+        const wasOpen = section.classList.contains('master-tool-section-active');
+        closeMasterToolSections();
+
+        if (wasOpen) return;
+
+        section.classList.add('master-tool-section-active');
+        button.classList.add('master-tool-active');
+
+        // La dock sostituisce il primo livello di accordion:
+        // quando si apre uno strumento, mostriamo subito il suo contenuto.
+        const content = section.querySelector(':scope > .collapsible-content');
+        const header = section.querySelector(':scope > .collapsible-header');
+
+        if (content) content.style.display = 'block';
+
+        if (header) {
+            const icon = header.querySelector('span');
+            if (icon) icon.innerText = '▼';
+        }
+    }
+
+    masterToolButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (typeof isMaster !== 'undefined' && !isMaster) return;
+
+            const sectionId = button.dataset.masterSection;
+            const section = document.getElementById(sectionId);
+            if (!section) return;
+
+            openMasterToolSection(button, section);
+        });
+    });
+
+    closeMasterToolsBtn?.addEventListener('click', () => {
+        closeMasterToolSections();
+    });
+
+    openSidequestToolBtn?.addEventListener('click', () => {
+        if (typeof isMaster !== 'undefined' && !isMaster) return;
+
+        closeMasterToolSections();
+
+        if (dicePanelContent) {
+            dicePanelContent.style.display = 'flex';
+        }
+
+        if (diceToggleIcon) {
+            diceToggleIcon.innerText = '▼';
+        }
+
+        if (dicePanelHeader) {
+            dicePanelHeader.style.borderRadius = '6px 6px 0 0';
+        }
+
+        if (sidequestComposer) {
+            sidequestComposer.style.display = 'block';
+        }
+
+        if (sidequestComposerBody) {
+            sidequestComposerBody.style.display = 'block';
+        }
+
+        if (sidequestComposerToggleBtn) {
+            sidequestComposerToggleBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        if (sidequestComposerToggleIcon) {
+            sidequestComposerToggleIcon.innerText = '▼';
+        }
+
+        sidequestTitle?.focus();
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closeMasterToolSections();
+        }
+    });
+
+    window.closeMasterToolSections = closeMasterToolSections;
+})();
+
+// Riduzione completa della dock Master: resta visibile solo la corona.
+(() => {
+    const panel = document.getElementById('master-panel');
+    const toggle = document.getElementById('btn-master-dock-toggle');
+
+    toggle?.addEventListener('click', () => {
+        if (!panel) return;
+
+        const collapsed = panel.classList.toggle('master-dock-collapsed');
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.title = collapsed
+            ? 'Espandi strumenti Master'
+            : 'Riduci strumenti Master';
+
+        if (collapsed && typeof window.closeMasterToolSections === 'function') {
+            window.closeMasterToolSections();
+        }
+    });
+})();
