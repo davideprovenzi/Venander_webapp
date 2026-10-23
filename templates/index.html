@@ -757,8 +757,12 @@
                 </div>
             </div>
 
-            <div id="sidequest-composer" style="display:none; padding:10px; border-top:2px solid #8e44ad; background:#f5eef8;">
-                <div style="font-size:12px; font-weight:bold; color:#6c3483; margin-bottom:7px;">📜 INVIA SIDEQUEST</div>
+            <div id="sidequest-composer" style="display:none; border-top:2px solid #8e44ad; background:#f5eef8;">
+                <button id="btn-toggle-sidequest-composer" type="button" aria-expanded="false" style="width:100%; padding:10px; border:0; background:#eee1f3; color:#6c3483; cursor:pointer; font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:space-between; text-align:left;">
+                    <span>📜 INVIA SIDEQUEST</span>
+                    <span id="sidequest-composer-toggle-icon" style="font-size:11px;">▶</span>
+                </button>
+                <div id="sidequest-composer-body" style="display:none; padding:10px;">
                 <select id="sidequest-target" style="width:100%; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;">
                     <option value="all">🌐 Tutti i giocatori</option>
                 </select>
@@ -834,6 +838,7 @@
                 <div style="display:flex; gap:6px;">
                     <input id="sidequest-cost" type="number" min="0" step="1" value="0" placeholder="Costo €" style="width:105px; padding:6px; border:1px solid #c39bd3; border-radius:4px;">
                     <button id="btn-send-sidequest" type="button" style="flex:1; padding:7px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📜 Invia Sidequest</button>
+                </div>
                 </div>
             </div>
 

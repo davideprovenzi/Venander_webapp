@@ -901,6 +901,9 @@ const sendChatBtn = document.getElementById('btn-send-chat');
 const chatCompose = document.getElementById('chat-compose');
 let chatRecipient = document.getElementById('chat-recipient');
 const sidequestComposer = document.getElementById('sidequest-composer');
+const sidequestComposerToggleBtn = document.getElementById('btn-toggle-sidequest-composer');
+const sidequestComposerBody = document.getElementById('sidequest-composer-body');
+const sidequestComposerToggleIcon = document.getElementById('sidequest-composer-toggle-icon');
 const sidequestTarget = document.getElementById('sidequest-target');
 const sidequestTitle = document.getElementById('sidequest-title');
 const sidequestDescription = document.getElementById('sidequest-description');
@@ -928,6 +931,18 @@ let pendingSidequestWeapon = null;
 let masterForgeEditingId = null;
 
 // --- 1. APERTURA E CHIUSURA TENDINA ---
+sidequestComposerToggleBtn?.addEventListener('click', () => {
+    if (!sidequestComposerBody) return;
+
+    const isOpen = sidequestComposerBody.style.display !== 'none';
+    sidequestComposerBody.style.display = isOpen ? 'none' : 'block';
+    sidequestComposerToggleBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+
+    if (sidequestComposerToggleIcon) {
+        sidequestComposerToggleIcon.innerText = isOpen ? '▶' : '▼';
+    }
+});
+
 dicePanelHeader?.addEventListener('click', () => {
     if (dicePanelContent.style.display === 'none') {
         dicePanelContent.style.display = 'flex';
