@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "source": "db_armi.xlsx",
-  "item_count": 137,
+  "item_count": 188,
   "indexes": {
     "brands": [
       "CRAPTERRA",
@@ -20,7 +20,9 @@
       "Interfaccia",
       "Kit",
       "Munizione / consumabile",
-      "Armatura"
+      "Armatura",
+      "Arma",
+      "Licenza"
     ],
     "types": [
       "Controllo",
@@ -84,7 +86,13 @@
       "Supporto / munizioni",
       "Utility / drone / demolizione",
       "Utility / sabotaggio / controllo remoto",
-      "Armatura"
+      "Armatura",
+      "Arma / a distanza",
+      "Arma / corpo a corpo",
+      "Licenza arma",
+      "Oggettistica / utility",
+      "Riparazione / armatura",
+      "Supporto / trasporto arma"
     ]
   },
   "data_quality": {
@@ -12250,6 +12258,5024 @@
         "special_notes": null
       },
       "source": "Compendio armature fornito dall’utente — 2026-09-28"
+    },
+    {
+      "id": "GEN-GAD-001",
+      "name": "PortaCaricatore pistola",
+      "brand": null,
+      "class": "Gadget",
+      "type": "Supporto / trasporto arma",
+      "text": {
+        "description": "Un aggancio per armi direttamente sull'armatura",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Permette di fissare/trasportare una singola arma compatibile sull’armatura."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "carrier": {
+        "category": "pistola",
+        "capacity": 1
+      }
+    },
+    {
+      "id": "GEN-GAD-002",
+      "name": "PortaCaricatore Fucile",
+      "brand": null,
+      "class": "Gadget",
+      "type": "Supporto / trasporto arma",
+      "text": {
+        "description": "Un aggancio per armi direttamente sull'armatura",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Permette di fissare/trasportare una singola arma compatibile sull’armatura."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "carrier": {
+        "category": "fucile",
+        "capacity": 1
+      }
+    },
+    {
+      "id": "GEN-GAD-003",
+      "name": "Fodero lamacorta",
+      "brand": null,
+      "class": "Gadget",
+      "type": "Supporto / trasporto arma",
+      "text": {
+        "description": "Un aggancio per armi direttamente sull'armatura",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Permette di fissare/trasportare una singola arma compatibile sull’armatura."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "carrier": {
+        "category": "lama_corta",
+        "capacity": 1
+      }
+    },
+    {
+      "id": "GEN-GAD-004",
+      "name": "Fodero lamalunga",
+      "brand": null,
+      "class": "Gadget",
+      "type": "Supporto / trasporto arma",
+      "text": {
+        "description": "Un aggancio per armi direttamente sull'armatura",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Permette di fissare/trasportare una singola arma compatibile sull’armatura."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "carrier": {
+        "category": "lama_lunga",
+        "capacity": 1
+      }
+    },
+    {
+      "id": "GEN-GAD-005",
+      "name": "Fodero mazze lancie o alabarde",
+      "brand": null,
+      "class": "Gadget",
+      "type": "Supporto / trasporto arma",
+      "text": {
+        "description": "Un aggancio per armi direttamente sull'armatura",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Permette di fissare/trasportare una singola arma compatibile sull’armatura."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "carrier": {
+        "category": "arma_lunga",
+        "capacity": 1
+      }
+    },
+    {
+      "id": "GEN-GAD-006",
+      "name": "Piccolo contenitore porta oggetti",
+      "brand": null,
+      "class": "Contenitore",
+      "type": "Supporto / contenitore",
+      "text": {
+        "description": "piccolo contenitore in grado di trasportare oggetti fino a un valore di 50 punti spazio",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 400,
+        "weight": 120,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": "Spazio",
+        "capacity": 50,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Capacità: 50 punti spazio."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-GAD-007",
+      "name": "Medio contenitore porta oggetti",
+      "brand": null,
+      "class": "Contenitore",
+      "type": "Supporto / contenitore",
+      "text": {
+        "description": "contenitore in grado di trasportare oggetti fino a un valore di 100 punti spazio",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 700,
+        "weight": 240,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": "Spazio",
+        "capacity": 100,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Capacità: 100 punti spazio."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-GAD-008",
+      "name": "Grande contenitore porta oggetti",
+      "brand": null,
+      "class": "Contenitore",
+      "type": "Supporto / contenitore",
+      "text": {
+        "description": "Grande contenitore in grado di trasportare oggetti dino a un valore di 200 punti spazio",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Ovunque sull’armatura",
+          "family": "universale",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "elmo",
+            "schiena",
+            "spalla_dx",
+            "spalla_sx",
+            "petto",
+            "avambr_dx",
+            "avambr_sx",
+            "cintura",
+            "guanto_dx",
+            "guanto_sx",
+            "gambe",
+            "stivale_dx",
+            "stivale_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": 1000,
+        "weight": 480,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": "Spazio",
+        "capacity": 200,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Capacità: 200 punti spazio."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-OBJ-001",
+      "name": "Granata",
+      "brand": null,
+      "class": "Munizione / consumabile",
+      "type": "Offensivo / esplosivo",
+      "text": {
+        "description": "Dati di costo ed effetto da definire.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Voce di mercato inserita; parametri meccanici da definire."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-OBJ-002",
+      "name": "Interruttore di scambio gadget",
+      "brand": null,
+      "class": "Kit",
+      "type": "Oggettistica / utility",
+      "text": {
+        "description": "Dati di costo ed effetto da definire.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Voce di mercato inserita; parametri meccanici da definire."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-OBJ-003",
+      "name": "Pack fiala merlinica per riparazione armatura",
+      "brand": null,
+      "class": "Kit",
+      "type": "Riparazione / armatura",
+      "text": {
+        "description": "Dati di costo ed effetto da definire.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Voce di mercato inserita; parametri meccanici da definire."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-OBJ-004",
+      "name": "Fiala di cura dei 5 giorni",
+      "brand": null,
+      "class": "Munizione / consumabile",
+      "type": "Medico / cura",
+      "text": {
+        "description": "Dati di costo ed effetto da definire.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Voce di mercato inserita; parametri meccanici da definire."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "GEN-OBJ-005",
+      "name": "Fiala di cure rapide",
+      "brand": null,
+      "class": "Munizione / consumabile",
+      "type": "Medico / cura",
+      "text": {
+        "description": "Dati di costo ed effetto da definire.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Voce di mercato inserita; parametri meccanici da definire."
+      },
+      "source": "Mercato base — dati forniti dall’utente"
+    },
+    {
+      "id": "WPN-001",
+      "name": "Lama lunga",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 80
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Lama lunga per l’uso.",
+        "items": [
+          "Licenza Lama lunga"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 70,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "8 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 8,
+        "characteristic": "DES",
+        "action_cost": 4,
+        "attack_speed": 70,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-001",
+        "license_name": "Licenza Lama lunga"
+      }
+    },
+    {
+      "id": "WPN-002",
+      "name": "Lama corta",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 60
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Lama corta per l’uso.",
+        "items": [
+          "Licenza Lama corta"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 80,
+          "reload": null
+        },
+        "cost": {
+          "PA": 2,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "6 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 6,
+        "characteristic": "DES",
+        "action_cost": 2,
+        "attack_speed": 80,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-002",
+        "license_name": "Licenza Lama corta"
+      }
+    },
+    {
+      "id": "WPN-003",
+      "name": "Lancia",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 60
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Lancia per l’uso.",
+        "items": [
+          "Licenza Lancia"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 80,
+          "reload": null
+        },
+        "cost": {
+          "PA": 2,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "9 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 9,
+        "characteristic": "DES",
+        "action_cost": 2,
+        "attack_speed": 80,
+        "hands": 2,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-003",
+        "license_name": "Licenza Lancia"
+      }
+    },
+    {
+      "id": "WPN-004",
+      "name": "Alabarda",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 60
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Alabarda per l’uso.",
+        "items": [
+          "Licenza Alabarda"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 80,
+          "reload": null
+        },
+        "cost": {
+          "PA": 2,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "9 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 9,
+        "characteristic": "DES",
+        "action_cost": 2,
+        "attack_speed": 80,
+        "hands": 2,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-004",
+        "license_name": "Licenza Alabarda"
+      }
+    },
+    {
+      "id": "WPN-005",
+      "name": "Spadone a due mani",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 110
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Spadone a due mani per l’uso.",
+        "items": [
+          "Licenza Spadone a due mani"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 40,
+          "reload": null
+        },
+        "cost": {
+          "PA": 5,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "12 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 12,
+        "characteristic": "FOR",
+        "action_cost": 5,
+        "attack_speed": 40,
+        "hands": 2,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-005",
+        "license_name": "Licenza Spadone a due mani"
+      }
+    },
+    {
+      "id": "WPN-006",
+      "name": "Mazza pesante",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 80
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Mazza pesante per l’uso.",
+        "items": [
+          "Licenza Mazza pesante"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 70,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "8 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 8,
+        "characteristic": "FOR",
+        "action_cost": 4,
+        "attack_speed": 70,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-006",
+        "license_name": "Licenza Mazza pesante"
+      }
+    },
+    {
+      "id": "WPN-007",
+      "name": "Mazza grande",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 110
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Mazza grande per l’uso.",
+        "items": [
+          "Licenza Mazza grande"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 50,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "12 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 12,
+        "characteristic": "FOR",
+        "action_cost": 4,
+        "attack_speed": 50,
+        "hands": 2,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-007",
+        "license_name": "Licenza Mazza grande"
+      }
+    },
+    {
+      "id": "WPN-008",
+      "name": "Ascia pesante",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 80
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Ascia pesante per l’uso.",
+        "items": [
+          "Licenza Ascia pesante"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 70,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "8 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 8,
+        "characteristic": "DES",
+        "action_cost": 4,
+        "attack_speed": 70,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-008",
+        "license_name": "Licenza Ascia pesante"
+      }
+    },
+    {
+      "id": "WPN-009",
+      "name": "Ascia grande",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 110
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Ascia grande per l’uso.",
+        "items": [
+          "Licenza Ascia grande"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 50,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "12 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 12,
+        "characteristic": "DES",
+        "action_cost": 4,
+        "attack_speed": 50,
+        "hands": 2,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-009",
+        "license_name": "Licenza Ascia grande"
+      }
+    },
+    {
+      "id": "WPN-010",
+      "name": "Frusta",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 95
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Frusta per l’uso.",
+        "items": [
+          "Licenza Frusta"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 80,
+          "reload": null
+        },
+        "cost": {
+          "PA": 1,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "5 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "DES",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 5,
+        "characteristic": "DES",
+        "action_cost": 1,
+        "attack_speed": 80,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-010",
+        "license_name": "Licenza Frusta"
+      }
+    },
+    {
+      "id": "WPN-011",
+      "name": "Bastone",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 95
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Bastone per l’uso.",
+        "items": [
+          "Licenza Bastone"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 80,
+          "reload": null
+        },
+        "cost": {
+          "PA": 1,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "5 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 5,
+        "characteristic": "FOR",
+        "action_cost": 1,
+        "attack_speed": 80,
+        "hands": 2,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-011",
+        "license_name": "Licenza Bastone"
+      }
+    },
+    {
+      "id": "WPN-012",
+      "name": "Scudo piccolo",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 150
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Scudo piccolo per l’uso.",
+        "items": [
+          "Licenza Scudo piccolo"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 40,
+          "reload": null
+        },
+        "cost": {
+          "PA": 2,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "5 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 5,
+        "characteristic": "FOR",
+        "action_cost": 2,
+        "attack_speed": 40,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-012",
+        "license_name": "Licenza Scudo piccolo"
+      }
+    },
+    {
+      "id": "WPN-013",
+      "name": "Scudo medio",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 250
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Scudo medio per l’uso.",
+        "items": [
+          "Licenza Scudo medio"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 40,
+          "reload": null
+        },
+        "cost": {
+          "PA": 3,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "7 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 7,
+        "characteristic": "FOR",
+        "action_cost": 3,
+        "attack_speed": 40,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-013",
+        "license_name": "Licenza Scudo medio"
+      }
+    },
+    {
+      "id": "WPN-014",
+      "name": "Scudo a torre",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / corpo a corpo",
+      "text": {
+        "description": "Piazzamento: è possibile posizionarlo davanti a se come difesa stabile.",
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 500
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Scudo a torre per l’uso.",
+        "items": [
+          "Licenza Scudo a torre"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 40,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "7 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "FOR",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 1,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 7,
+        "characteristic": "FOR",
+        "action_cost": 4,
+        "attack_speed": 40,
+        "hands": 1,
+        "targeting": "Melee",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-014",
+        "license_name": "Licenza Scudo a torre"
+      }
+    },
+    {
+      "id": "WPN-015",
+      "name": "Pistola",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / a distanza",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 100
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Pistola per l’uso.",
+        "items": [
+          "Licenza Pistola"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 100,
+          "reload": null
+        },
+        "cost": {
+          "PA": 2,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "6 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "PRC",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 30,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 6,
+        "characteristic": "PRC",
+        "action_cost": 2,
+        "attack_speed": 100,
+        "hands": 1,
+        "targeting": "Ranged",
+        "ammo": {
+          "type": "9mm",
+          "capacity": 20
+        },
+        "base_malus": 5,
+        "range_bands_m": [
+          8,
+          20,
+          30
+        ],
+        "range_malus": [
+          0,
+          5,
+          12
+        ],
+        "aim_time": 50,
+        "license_id": "LIC-015",
+        "license_name": "Licenza Pistola"
+      }
+    },
+    {
+      "id": "WPN-016",
+      "name": "Revolver",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / a distanza",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "Mano",
+          "family": "mano",
+          "position": null,
+          "count": 1,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 100
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Revolver per l’uso.",
+        "items": [
+          "Licenza Revolver"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 100,
+          "reload": null
+        },
+        "cost": {
+          "PA": 3,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "8 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "PRC",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 35,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 8,
+        "characteristic": "PRC",
+        "action_cost": 3,
+        "attack_speed": 100,
+        "hands": 1,
+        "targeting": "Ranged",
+        "ammo": {
+          "type": "9mm",
+          "capacity": 7
+        },
+        "base_malus": 5,
+        "range_bands_m": [
+          15,
+          25,
+          35
+        ],
+        "range_malus": [
+          0,
+          4,
+          8
+        ],
+        "aim_time": 60,
+        "license_id": "LIC-016",
+        "license_name": "Licenza Revolver"
+      }
+    },
+    {
+      "id": "WPN-017",
+      "name": "Fucile a pompa",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / a distanza",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 100
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Fucile a pompa per l’uso.",
+        "items": [
+          "Licenza Fucile a pompa"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 100,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "11 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "PRC",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 15,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 11,
+        "characteristic": "PRC",
+        "action_cost": 4,
+        "attack_speed": 100,
+        "hands": 2,
+        "targeting": "Ranged",
+        "ammo": {
+          "type": "Pallettoni",
+          "capacity": 3
+        },
+        "base_malus": 8,
+        "range_bands_m": [
+          0,
+          10,
+          15
+        ],
+        "range_malus": [
+          0,
+          8,
+          18
+        ],
+        "aim_time": 60,
+        "license_id": "LIC-017",
+        "license_name": "Licenza Fucile a pompa"
+      }
+    },
+    {
+      "id": "WPN-018",
+      "name": "Fucile automatico",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / a distanza",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 100
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Fucile automatico per l’uso.",
+        "items": [
+          "Licenza Fucile automatico"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 100,
+          "reload": null
+        },
+        "cost": {
+          "PA": 3,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "8 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "PRC",
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 8,
+        "characteristic": "PRC",
+        "action_cost": 3,
+        "attack_speed": 100,
+        "hands": 2,
+        "targeting": "Ranged",
+        "ammo": null,
+        "base_malus": null,
+        "range_bands_m": null,
+        "range_malus": null,
+        "aim_time": null,
+        "license_id": "LIC-018",
+        "license_name": "Licenza Fucile automatico"
+      }
+    },
+    {
+      "id": "WPN-019",
+      "name": "Fucile a colpo singolo",
+      "brand": null,
+      "class": "Arma",
+      "type": "Arma / a distanza",
+      "text": {
+        "description": null,
+        "original_rules": null,
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": "x2 Mani",
+          "family": "mano",
+          "position": null,
+          "count": 2,
+          "allowed_slots": [
+            "mano_dx",
+            "mano_sx"
+          ],
+          "occupancy": "all"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": 100
+      },
+      "requirements": {
+        "raw": "Richiede Licenza Fucile a colpo singolo per l’uso.",
+        "items": [
+          "Licenza Fucile a colpo singolo"
+        ],
+        "limitations": null
+      },
+      "activation": {
+        "mode": "Attacco",
+        "speed": {
+          "activation": null,
+          "effect_or_action": 100,
+          "reload": null
+        },
+        "cost": {
+          "PA": 4,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": "13 HP",
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": "PRC",
+          "modifier": null
+        },
+        "range": {
+          "max_m": 15,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": null
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "weapon": {
+        "damage": 13,
+        "characteristic": "PRC",
+        "action_cost": 4,
+        "attack_speed": 100,
+        "hands": 2,
+        "targeting": "Ranged",
+        "ammo": {
+          "type": "Antimateria",
+          "capacity": 1
+        },
+        "base_malus": 8,
+        "range_bands_m": [
+          0,
+          10,
+          15
+        ],
+        "range_malus": [
+          0,
+          8,
+          18
+        ],
+        "aim_time": 60,
+        "license_id": "LIC-019",
+        "license_name": "Licenza Fucile a colpo singolo"
+      }
+    },
+    {
+      "id": "LIC-001",
+      "name": "Licenza Lama lunga",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Lama lunga senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Lama lunga."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-001",
+        "weapon_name": "Lama lunga"
+      }
+    },
+    {
+      "id": "LIC-002",
+      "name": "Licenza Lama corta",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Lama corta senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Lama corta."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-002",
+        "weapon_name": "Lama corta"
+      }
+    },
+    {
+      "id": "LIC-003",
+      "name": "Licenza Lancia",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Lancia senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Lancia."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-003",
+        "weapon_name": "Lancia"
+      }
+    },
+    {
+      "id": "LIC-004",
+      "name": "Licenza Alabarda",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Alabarda senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Alabarda."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-004",
+        "weapon_name": "Alabarda"
+      }
+    },
+    {
+      "id": "LIC-005",
+      "name": "Licenza Spadone a due mani",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Spadone a due mani senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Spadone a due mani."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-005",
+        "weapon_name": "Spadone a due mani"
+      }
+    },
+    {
+      "id": "LIC-006",
+      "name": "Licenza Mazza pesante",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Mazza pesante senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Mazza pesante."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-006",
+        "weapon_name": "Mazza pesante"
+      }
+    },
+    {
+      "id": "LIC-007",
+      "name": "Licenza Mazza grande",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Mazza grande senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Mazza grande."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-007",
+        "weapon_name": "Mazza grande"
+      }
+    },
+    {
+      "id": "LIC-008",
+      "name": "Licenza Ascia pesante",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Ascia pesante senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Ascia pesante."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-008",
+        "weapon_name": "Ascia pesante"
+      }
+    },
+    {
+      "id": "LIC-009",
+      "name": "Licenza Ascia grande",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Ascia grande senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Ascia grande."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-009",
+        "weapon_name": "Ascia grande"
+      }
+    },
+    {
+      "id": "LIC-010",
+      "name": "Licenza Frusta",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Frusta senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Frusta."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-010",
+        "weapon_name": "Frusta"
+      }
+    },
+    {
+      "id": "LIC-011",
+      "name": "Licenza Bastone",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Bastone senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Bastone."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-011",
+        "weapon_name": "Bastone"
+      }
+    },
+    {
+      "id": "LIC-012",
+      "name": "Licenza Scudo piccolo",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Scudo piccolo senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Scudo piccolo."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-012",
+        "weapon_name": "Scudo piccolo"
+      }
+    },
+    {
+      "id": "LIC-013",
+      "name": "Licenza Scudo medio",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Scudo medio senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Scudo medio."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-013",
+        "weapon_name": "Scudo medio"
+      }
+    },
+    {
+      "id": "LIC-014",
+      "name": "Licenza Scudo a torre",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Scudo a torre senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Scudo a torre."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-014",
+        "weapon_name": "Scudo a torre"
+      }
+    },
+    {
+      "id": "LIC-015",
+      "name": "Licenza Pistola",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Pistola senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Pistola."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-015",
+        "weapon_name": "Pistola"
+      }
+    },
+    {
+      "id": "LIC-016",
+      "name": "Licenza Revolver",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Revolver senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Revolver."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-016",
+        "weapon_name": "Revolver"
+      }
+    },
+    {
+      "id": "LIC-017",
+      "name": "Licenza Fucile a pompa",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Fucile a pompa senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Fucile a pompa."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-017",
+        "weapon_name": "Fucile a pompa"
+      }
+    },
+    {
+      "id": "LIC-018",
+      "name": "Licenza Fucile automatico",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Fucile automatico senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Fucile automatico."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-018",
+        "weapon_name": "Fucile automatico"
+      }
+    },
+    {
+      "id": "LIC-019",
+      "name": "Licenza Fucile a colpo singolo",
+      "brand": null,
+      "class": "Licenza",
+      "type": "Licenza arma",
+      "text": {
+        "description": "Abilita l’uso di Fucile a colpo singolo senza debuff.",
+        "original_rules": "Le licenze permettono di usare l’equipaggiamento indicato nel nome e ne garantiscono l’uso senza debuff.",
+        "effect_summary": null
+      },
+      "equipment": {
+        "slot": {
+          "raw": null,
+          "family": null,
+          "position": null,
+          "count": 1,
+          "allowed_slots": [],
+          "occupancy": "one"
+        },
+        "cost_eur": null,
+        "weight": 0,
+        "harmonization": 0,
+        "hp": null
+      },
+      "requirements": {
+        "raw": null,
+        "items": [],
+        "limitations": null
+      },
+      "activation": {
+        "mode": null,
+        "speed": {
+          "activation": null,
+          "effect_or_action": null,
+          "reload": null
+        },
+        "cost": {
+          "PA": null,
+          "PAA": null,
+          "PAV": null,
+          "PAP": null,
+          "maintenance": null
+        },
+        "condition": null
+      },
+      "combat": {
+        "damage": {
+          "formula": null,
+          "type": null
+        },
+        "healing": null,
+        "check": {
+          "required": null,
+          "modifier": null
+        },
+        "range": {
+          "max_m": null,
+          "movement_m": null
+        },
+        "area": {
+          "shape": null,
+          "size": null,
+          "angle_deg": null,
+          "targets": null
+        },
+        "duration": null,
+        "cooldown": null
+      },
+      "resource": {
+        "name": null,
+        "capacity": null,
+        "consumption": null,
+        "reload_cost": null
+      },
+      "effects": {
+        "bonus_malus": null,
+        "state": null,
+        "protection": null,
+        "resistance": null,
+        "movement_modifier": null,
+        "conditional_modifiers": null,
+        "special_notes": "Necessaria per usare Fucile a colpo singolo."
+      },
+      "source": "Mercato base — dati forniti dall’utente",
+      "license": {
+        "weapon_id": "WPN-019",
+        "weapon_name": "Fucile a colpo singolo"
+      }
     }
   ]
 }

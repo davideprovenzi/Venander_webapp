@@ -591,32 +591,58 @@ function populatePlayerSheetUI(myChar) {
     shopAvail.innerHTML = '';
     if (shopItemsToShow.length > 0) {
         let availCount = 0;
+
         shopItemsToShow.forEach(item => {
             const li = document.createElement('li');
-            li.style.padding = '12px'; li.style.border = '1px solid #ccc'; li.style.borderRadius = '8px'; li.style.display = 'flex'; li.style.flexDirection = 'column'; li.style.justifyContent = 'space-between'; li.style.width = 'calc(50% - 20px)'; li.style.boxSizing = 'border-box';
-            li.style.background = '#fff'; li.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
+            li.style.padding = '12px';
+            li.style.border = '1px solid #ccc';
+            li.style.borderRadius = '8px';
+            li.style.display = 'flex';
+            li.style.flexDirection = 'column';
+            li.style.justifyContent = 'space-between';
+            li.style.width = 'calc(50% - 20px)';
+            li.style.boxSizing = 'border-box';
+            li.style.background = '#fff';
+            li.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
 
-            // Controlla quanti ne possiede già nello zaino
+            const shopGroup = getShopGroup(item);
+            const ownershipCollection = shopGroup === 'Armi'
+                ? (myChar.weapons || [])
+                : (myChar.backpack || []);
+
             let ownedQty = 0;
-            (myChar.backpack || []).forEach(b => {
-                if (typeof b === 'string') {
-                    if (b === item.name) ownedQty += 1;
+            ownershipCollection.forEach(entry => {
+                if (typeof entry === 'string') {
+                    if (entry === item.name) ownedQty += 1;
                     return;
                 }
 
-                const sameItem = b.compendium_id
-                    ? b.compendium_id === item.id
-                    : b.name === item.name;
+                const sameItem = entry.compendium_id
+                    ? entry.compendium_id === item.id
+                    : entry.name === item.name;
 
-                if (sameItem) ownedQty += (b.qty || 1);
+                if (sameItem) {
+                    ownedQty += shopGroup === 'Armi' ? 1 : (entry.qty || 1);
+                }
             });
-            const ownedText = ownedQty > 0 ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px; font-weight:bold;">Nello Zaino: x${ownedQty}</span>` : "";
+
+            const ownedLabel = shopGroup === 'Armi'
+                ? 'Armi possedute'
+                : shopGroup === 'Licenze'
+                    ? 'Licenza posseduta'
+                    : 'Nello Zaino';
+
+            const ownedText = ownedQty > 0
+                ? `<span style="font-size:11px; color:#27ae60; display:block; margin-top:5px; font-weight:bold;">${ownedLabel}${shopGroup === 'Licenze' ? '' : `: x${ownedQty}`}</span>`
+                : '';
 
             const itemCost = getCompendioCost(item);
             const itemDesc = getCompendioDescription(item);
+            const priceText = itemCost === null ? 'Prezzo da definire' : `${itemCost} €`;
             const brandHtml = item.brand
                 ? `<span style="display:inline-block; font-size:10px; font-weight:bold; color:#8e44ad; margin-top:3px;">${item.brand}</span>`
                 : '';
+
             const armorStatsHtml = item.class === 'Armatura'
                 ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 10px 0; font-size:11px;">
                        <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Peso: <b>${item.equipment?.weight ?? '-'}</b></span>
@@ -625,47 +651,132 @@ function populatePlayerSheetUI(myChar) {
                    </div>`
                 : '';
 
-            li.innerHTML = `<div><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><div><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><br>${brandHtml}</div><span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${itemCost} €</span></div><p style="font-size:13px; color:#555; margin:0 0 8px 0; line-height:1.4;">${itemDesc}</p>${armorStatsHtml}${ownedText}</div>`;
+            const weaponData = item.weapon || {};
+            const weaponStatsHtml = item.class === 'Arma'
+                ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 10px 0; font-size:11px;">
+                       <span style="background:#fdebd0; padding:3px 6px; border-radius:4px;">Danno: <b>${item.combat?.damage?.formula ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Caratt.: <b>${weaponData.characteristic ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Vita: <b>${item.equipment?.hp ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Costo azione: <b>${weaponData.action_cost ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Velocità: <b>${weaponData.attack_speed ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Mani: <b>${weaponData.hands ?? '-'}</b></span>
+                       <span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Tiro: <b>${weaponData.targeting ?? '-'}</b></span>
+                       ${weaponData.ammo ? `<span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Munizioni: <b>${weaponData.ammo.type ?? '-'} x${weaponData.ammo.capacity ?? '-'}</b></span>` : ''}
+                       ${weaponData.range_bands_m ? `<span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Distanze: <b>${weaponData.range_bands_m.map(v => v ?? '-').join(' / ')} m</b></span>` : ''}
+                       ${weaponData.range_malus ? `<span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Malus dist.: <b>${weaponData.range_malus.map(v => v ?? '-').join(' / ')}</b></span>` : ''}
+                       ${weaponData.base_malus !== null && weaponData.base_malus !== undefined ? `<span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Malus base: <b>${weaponData.base_malus}</b></span>` : ''}
+                       ${weaponData.aim_time !== null && weaponData.aim_time !== undefined ? `<span style="background:#eef3f7; padding:3px 6px; border-radius:4px;">Mira: <b>${weaponData.aim_time}</b></span>` : ''}
+                   </div>`
+                : '';
+
+            const licenseInfo = getWeaponLicenseInfo(item);
+            const hasLicense = licenseInfo ? characterHasWeaponLicense(myChar, item) : true;
+            const licenseHtml = licenseInfo
+                ? `<div style="font-size:11px; margin:6px 0; padding:5px 7px; border-radius:4px; background:${hasLicense ? '#eafaf1' : '#fdecea'}; color:${hasLicense ? '#1e8449' : '#c0392b'}; font-weight:bold;">${hasLicense ? '✅' : '🔒'} Richiede: ${licenseInfo.name || licenseInfo.id}</div>`
+                : '';
+
+            li.innerHTML = `<div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><br>${brandHtml}</div>
+                    <span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${priceText}</span>
+                </div>
+                <p style="font-size:13px; color:#555; margin:0 0 8px 0; line-height:1.4;">${itemDesc}</p>
+                ${armorStatsHtml}${weaponStatsHtml}${licenseHtml}${ownedText}
+            </div>`;
 
             const btn = document.createElement('button');
-            btn.style.padding = '8px'; btn.style.borderRadius = '4px'; btn.style.fontWeight = 'bold'; btn.style.width = '100%'; btn.style.border = 'none'; btn.style.marginTop = '10px';
+            btn.style.padding = '8px';
+            btn.style.borderRadius = '4px';
+            btn.style.fontWeight = 'bold';
+            btn.style.width = '100%';
+            btn.style.border = 'none';
+            btn.style.marginTop = '10px';
 
             if (isMaster) {
-                btn.innerText = 'Solo Visualizzazione'; btn.style.background = '#bdc3c7'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.disabled = true;
+                btn.innerText = 'Solo Visualizzazione';
+                btn.style.background = '#bdc3c7';
+                btn.style.color = '#fff';
+                btn.style.cursor = 'not-allowed';
+                btn.disabled = true;
+            } else if (itemCost === null) {
+                btn.innerText = 'Prezzo da definire';
+                btn.style.background = '#bdc3c7';
+                btn.style.color = '#fff';
+                btn.style.cursor = 'not-allowed';
+                btn.disabled = true;
+            } else if (shopGroup === 'Licenze' && ownedQty > 0) {
+                btn.innerText = 'Licenza già posseduta';
+                btn.style.background = '#27ae60';
+                btn.style.color = '#fff';
+                btn.style.cursor = 'not-allowed';
+                btn.disabled = true;
             } else {
-                btn.innerText = 'Acquista (Invia allo Zaino)'; btn.style.background = '#8e44ad'; btn.style.color = '#fff';
+                btn.innerText = shopGroup === 'Armi' ? 'Acquista arma' : shopGroup === 'Licenze' ? 'Acquista licenza' : 'Acquista (Invia allo Zaino)';
+                btn.style.background = '#8e44ad';
+                btn.style.color = '#fff';
+
                 const canAfford = myChar.xp >= itemCost;
-                btn.style.cursor = canAfford ? 'pointer' : 'not-allowed'; btn.style.opacity = canAfford ? '1' : '0.5';
+                btn.style.cursor = canAfford ? 'pointer' : 'not-allowed';
+                btn.style.opacity = canAfford ? '1' : '0.5';
+                btn.disabled = !canAfford;
 
                 if (canAfford) {
                     btn.onclick = () => {
-                        if (confirm(`Vuoi spendere ${itemCost} € per acquistare "${item.name}"?`)) {
-                            // 1. Deducce il costo (invia importo negativo all'aggiornamento soldi/XP)
-                            socket.emit('update_xp', { char_id: myChar.id, amount: -itemCost });
+                        if (!confirm(`Vuoi spendere ${itemCost} € per acquistare "${item.name}"?`)) return;
 
-                            // 2. Aggiunge l'oggetto direttamente nello zaino
-                            const bp = myChar.backpack || [];
-                            const existingIndex = bp.findIndex(
-                                b =>
-                                    b.compendium_id === item.id ||
-                                    (!b.compendium_id && b.name === item.name)
-                            );
+                        socket.emit('update_xp', { char_id: myChar.id, amount: -itemCost });
+
+                        if (shopGroup === 'Armi') {
+                            const weapons = [...(myChar.weapons || [])];
+                            const maxHp = item.equipment?.hp ?? null;
+
+                            weapons.push({
+                                compendium_id: item.id,
+                                name: item.name,
+                                brand: item.brand || null,
+                                desc: itemDesc,
+                                durability_max: maxHp,
+                                durability_current: maxHp,
+                                img: item.img || ''
+                            });
+
+                            socket.emit('update_character_sheet', { char_id: myChar.id, weapons: weapons });
+                        } else {
+                            const backpack = [...(myChar.backpack || [])];
+                            const existingIndex = backpack.findIndex(entry => {
+                                if (typeof entry === 'string') return entry === item.name;
+                                return entry.compendium_id === item.id || (!entry.compendium_id && entry.name === item.name);
+                            });
+
                             if (existingIndex !== -1) {
-                                bp[existingIndex].qty = (bp[existingIndex].qty || 1) + 1;
+                                const existing = backpack[existingIndex];
+                                if (typeof existing === 'string') {
+                                    backpack[existingIndex] = { compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 2, img: item.img || '' };
+                                } else {
+                                    backpack[existingIndex] = { ...existing, qty: (existing.qty || 1) + 1 };
+                                }
                             } else {
-                                bp.push({ compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 1, img: item.img || "" });
+                                backpack.push({ compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 1, img: item.img || '' });
                             }
-                            socket.emit('update_character_sheet', { char_id: myChar.id, backpack: bp });
+
+                            socket.emit('update_character_sheet', { char_id: myChar.id, backpack: backpack });
                         }
                     };
                 }
             }
-            li.appendChild(btn); shopAvail.appendChild(li); availCount++;
+
+            li.appendChild(btn);
+            shopAvail.appendChild(li);
+            availCount++;
         });
-        if (availCount === 0) shopAvail.innerHTML = `<li style="color:#7f8c8d; font-size:13px;"><em>Nessun elemento acquistabile.</em></li>`;
+
+        if (availCount === 0) {
+            shopAvail.innerHTML = `<li style="color:#7f8c8d; font-size:13px;"><em>Nessun elemento acquistabile.</em></li>`;
+        }
     } else {
         shopAvail.innerHTML = `<li><em>Questa categoria del catalogo al momento è in aggiornamento.</em></li>`;
     }
+
 }
 
 // ==========================================
@@ -1441,6 +1552,14 @@ function getAllBrands() {
 function getShopGroup(item) {
     const cls = item?.class || '';
 
+    if (cls === 'Arma') {
+        return 'Armi';
+    }
+
+    if (cls === 'Licenza') {
+        return 'Licenze';
+    }
+
     if (
         cls === 'Kit' ||
         cls === 'Munizione / consumabile'
@@ -1467,7 +1586,83 @@ function getCompendioDescription(item) {
 }
 
 function getCompendioCost(item) {
-    return Number(item?.equipment?.cost_eur || 0);
+    const rawCost = item?.equipment?.cost_eur;
+
+    if (
+        rawCost === null ||
+        rawCost === undefined ||
+        rawCost === ''
+    ) {
+        return null;
+    }
+
+    const parsed = Number(rawCost);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function findCompendioItemById(itemId) {
+    if (!itemId) return null;
+
+    return getCompendioItems().find(
+        item => item.id === itemId
+    ) || null;
+}
+
+function characterOwnsCompendiumItem(char, itemId, itemName = null) {
+    if (!char) return false;
+
+    const backpack = Array.isArray(char.backpack)
+        ? char.backpack
+        : [];
+
+    const weapons = Array.isArray(char.weapons)
+        ? char.weapons
+        : [];
+
+    const collections = [backpack, weapons];
+
+    return collections.some(collection =>
+        collection.some(entry => {
+            if (typeof entry === 'string') {
+                return itemName ? entry === itemName : false;
+            }
+
+            if (itemId && entry?.compendium_id === itemId) {
+                return true;
+            }
+
+            return itemName && entry?.name === itemName;
+        })
+    );
+}
+
+function getWeaponLicenseInfo(compItem) {
+    if (!compItem || compItem.class !== 'Arma') {
+        return null;
+    }
+
+    const weaponData = compItem.weapon || {};
+
+    if (!weaponData.license_id && !weaponData.license_name) {
+        return null;
+    }
+
+    return {
+        id: weaponData.license_id || null,
+        name: weaponData.license_name || null
+    };
+}
+
+function characterHasWeaponLicense(char, compItem) {
+    const licenseInfo = getWeaponLicenseInfo(compItem);
+
+    if (!licenseInfo) return true;
+
+    return characterOwnsCompendiumItem(
+        char,
+        licenseInfo.id,
+        licenseInfo.name
+    );
 }
 
 function findCompendioItem(inventoryItem) {
@@ -1694,8 +1889,16 @@ document.getElementById('compendio-category')?.addEventListener(
             const cost =
                 getCompendioCost(item);
 
+            const costLabel =
+                cost === null
+                    ? 'Prezzo da definire'
+                    : `${cost} €`;
+
             const description =
                 getCompendioDescription(item);
+
+            const shopGroup =
+                getShopGroup(item);
 
             row.innerHTML = `
                 <div style="flex:1;">
@@ -1709,7 +1912,7 @@ document.getElementById('compendio-category')?.addEventListener(
                         color:#8e44ad;
                         font-weight:bold;
                     ">
-                        (${cost} €)
+                        (${costLabel})
                     </span>
 
                     <br>
@@ -1731,7 +1934,9 @@ document.getElementById('compendio-category')?.addEventListener(
                 document.createElement('button');
 
             addBtn.innerText =
-                '+ Metti in Zaino';
+                shopGroup === 'Armi'
+                    ? '+ Metti nelle Armi'
+                    : '+ Metti in Zaino';
 
             addBtn.style.background =
                 '#27ae60';
@@ -1768,6 +1973,41 @@ document.getElementById('compendio-category')?.addEventListener(
                 );
 
                 if (!char) return;
+
+                if (shopGroup === 'Armi') {
+                    const weapons = [
+                        ...(char.weapons || [])
+                    ];
+
+                    const maxHp =
+                        item.equipment?.hp ?? null;
+
+                    weapons.push({
+                        compendium_id: item.id,
+                        name: item.name,
+                        brand: item.brand || null,
+                        desc: description,
+                        durability_max: maxHp,
+                        durability_current: maxHp
+                    });
+
+                    socket.emit(
+                        'update_character_sheet',
+                        {
+                            char_id: selectedCharacterId,
+                            weapons: weapons
+                        }
+                    );
+
+                    addBtn.innerText =
+                        'Aggiunto ✓';
+
+                    addBtn.style.background =
+                        '#7f8c8d';
+
+                    addBtn.disabled = true;
+                    return;
+                }
 
                 const backpack =
                     char.backpack || [];
@@ -4383,6 +4623,15 @@ function collectCombatActions(char) {
             compItem?.combat?.damage?.type ??
             null;
 
+        const licenseInfo =
+            getWeaponLicenseInfo(compItem);
+
+        const hasLicense =
+            characterHasWeaponLicense(
+                char,
+                compItem
+            );
+
         // Se l'oggetto occupa più arti diversi,
         // non scegliamo arbitrariamente un arto.
         let preferredLimb =
@@ -4445,6 +4694,12 @@ function collectCombatActions(char) {
 
             damageType:
                 damageType,
+
+            licenseInfo:
+                licenseInfo,
+
+            hasLicense:
+                hasLicense,
 
             mode:
                 compItem?.activation?.mode || null,
@@ -4833,6 +5088,16 @@ window.updateCombatActionPanel = function() {
 
         option.textContent =
             `${icon} ${action.name}${sideText}`;
+
+        if (
+            action.licenseInfo &&
+            !action.hasLicense
+        ) {
+            option.textContent +=
+                ` 🔒 ${action.licenseInfo.name || 'Licenza richiesta'}`;
+
+            option.disabled = true;
+        }
 
         // ==========================================
         // DATI AZIONE

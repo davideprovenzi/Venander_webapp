@@ -859,6 +859,57 @@ def get_compendium_item(compendium_id=None, name=None):
 
     return None
 
+def character_owns_compendium_item(character, compendium_id=None, name=None):
+    """Controlla zaino e lista armi senza dipendere dalla forma legacy dei dati."""
+    if not character:
+        return False
+
+    wanted_name = str(name or "").strip().casefold()
+
+    for collection in (character.backpack or [], character.weapons or []):
+        for entry in collection:
+            if isinstance(entry, str):
+                if wanted_name and entry.strip().casefold() == wanted_name:
+                    return True
+                continue
+
+            if not isinstance(entry, dict):
+                continue
+
+            if compendium_id and entry.get("compendium_id") == compendium_id:
+                return True
+
+            if wanted_name:
+                current_name = str(entry.get("name", "")).strip().casefold()
+                if current_name == wanted_name:
+                    return True
+
+    return False
+
+def missing_weapon_license(character, comp_item):
+    """Restituisce il nome della licenza mancante per le armi dei giocatori."""
+    if not character or character.role != "player" or not comp_item:
+        return None
+
+    if comp_item.get("class") != "Arma":
+        return None
+
+    weapon_data = comp_item.get("weapon") or {}
+    license_id = weapon_data.get("license_id")
+    license_name = weapon_data.get("license_name")
+
+    if not license_id and not license_name:
+        return None
+
+    if character_owns_compendium_item(
+        character,
+        compendium_id=license_id,
+        name=license_name
+    ):
+        return None
+
+    return license_name or license_id or "Licenza richiesta"
+
 def offset_to_cube(col, row):
     """Conversione Odd-R identica a static/utils.js."""
     q = col - (row - (row & 1)) // 2
@@ -1790,6 +1841,26 @@ def handle_declare_attack(data):
         if comp_item
         else (equipped_item or {}).get("name", requested_name)
     )
+
+    required_license = missing_weapon_license(
+        attacker,
+        comp_item
+    )
+
+    if required_license:
+        emit(
+            "dice_result",
+            {
+                "name": "SISTEMA",
+                "message": (
+                    "🔒 Attacco rifiutato: manca la licenza "
+                    f"<b>{html.escape(str(required_license))}</b>."
+                ),
+                "is_master_roll": False
+            },
+            to=request.sid
+        )
+        return
 
     server_speed = compendium_attack_speed(comp_item)
 
