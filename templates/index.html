@@ -175,6 +175,8 @@
 
         <h3 style="margin-top: 0; color: #c0392b; border-bottom: 1px solid #c0392b; padding-bottom: 5px;">👑 Pannello Master</h3>
 
+        <button id="btn-open-master-forge-panel" type="button" style="width:100%; margin-bottom:10px; padding:8px; border:0; border-radius:5px; background:#873600; color:white; cursor:pointer; font-weight:bold;">⚒️ Apri Fucina del Master</button>
+
         <!-- 1. SPAWN NPC (Chiuso di default) -->
         <div style="margin-top: 10px; border: 1px solid #c0392b; padding: 5px; border-radius: 5px; background: #fff;">
 
@@ -762,6 +764,73 @@
                 </select>
                 <input id="sidequest-title" type="text" maxlength="160" placeholder="Titolo della sidequest" style="width:100%; box-sizing:border-box; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;">
                 <textarea id="sidequest-description" maxlength="3000" rows="3" placeholder="Cosa devono fare / cosa stanno pagando..." style="width:100%; box-sizing:border-box; resize:vertical; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;"></textarea>
+
+                <div id="sidequest-forge-box" style="margin-bottom:7px; border:1px solid #d35400; border-radius:5px; background:#fdf2e9; overflow:hidden;">
+                    <div style="padding:7px; background:#f8c471; border-bottom:1px solid #d35400;">
+                        <div style="font-size:11px; font-weight:bold; color:#784212; margin-bottom:5px;">⚒️ ARMA DALLA FUCINA DEL MASTER</div>
+                        <div style="display:flex; gap:5px;">
+                            <select id="sidequest-forge-library" style="flex:1; min-width:0; padding:5px; border:1px solid #ca6f1e; border-radius:4px; background:white;">
+                                <option value="">-- Nessun modello salvato --</option>
+                            </select>
+                            <button id="btn-attach-forge-template" type="button" style="padding:5px 7px; border:0; border-radius:4px; background:#ca6f1e; color:white; cursor:pointer; font-weight:bold;">Allega</button>
+                            <button id="btn-open-master-forge" type="button" style="padding:5px 7px; border:0; border-radius:4px; background:#7d3c98; color:white; cursor:pointer; font-weight:bold;">Fucina</button>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-sidequest-forge" type="button" style="width:100%; padding:7px; border:0; background:#d35400; color:#fff; cursor:pointer; font-weight:bold; text-align:left;">🔨 Forgia arma una tantum</button>
+                    <div id="sidequest-forged-summary" style="display:none; padding:7px; font-size:11px; color:#784212; background:#fdebd0;"></div>
+                    <div id="sidequest-forge-form" style="display:none; padding:8px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <input id="forge-weapon-name" type="text" placeholder="Nome arma *" style="grid-column:span 2; padding:6px;">
+                            <input id="forge-weapon-brand" type="text" placeholder="Marca / Forgiatore" style="padding:6px;">
+                            <input id="forge-weapon-value" type="number" min="0" step="0.01" placeholder="Valore €" style="padding:6px;">
+                            <textarea id="forge-weapon-description" rows="2" placeholder="Descrizione" style="grid-column:span 2; padding:6px; resize:vertical;"></textarea>
+
+                            <input id="forge-weapon-damage" type="number" min="0" step="1" placeholder="Danno HP *" style="padding:6px;">
+                            <input id="forge-weapon-damage-type" type="text" placeholder="Tipo danno" style="padding:6px;">
+                            <select id="forge-weapon-characteristic" style="padding:6px;">
+                                <option value="DES">DES</option>
+                                <option value="FOR">FOR</option>
+                                <option value="PRC">PRC</option>
+                                <option value="ARG">ARG</option>
+                                <option value="VOL">VOL</option>
+                                <option value="SPI">SPI</option>
+                                <option value="VIR">VIR</option>
+                            </select>
+                            <input id="forge-weapon-hp" type="number" min="0" step="1" value="100" placeholder="Vita arma" style="padding:6px;">
+                            <input id="forge-weapon-action-cost" type="number" min="0" step="1" value="0" placeholder="Costo azione" style="padding:6px;">
+                            <input id="forge-weapon-speed" type="number" min="1" step="1" placeholder="Velocità attacco *" style="padding:6px;">
+                            <select id="forge-weapon-hands" style="padding:6px;">
+                                <option value="1">1 mano</option>
+                                <option value="2">2 mani</option>
+                            </select>
+                            <select id="forge-weapon-targeting" style="padding:6px;">
+                                <option value="Melee">Melee</option>
+                                <option value="Ranged">Ranged</option>
+                            </select>
+
+                            <input id="forge-weapon-ammo" type="text" placeholder="Munizioni" style="padding:6px;">
+                            <input id="forge-weapon-ammo-qty" type="number" min="0" step="1" placeholder="Q.tà munizioni" style="padding:6px;">
+                            <input id="forge-weapon-base-malus" type="number" step="1" placeholder="Malus base" style="padding:6px;">
+                            <input id="forge-weapon-aim-time" type="number" min="0" step="1" placeholder="Tempo di mira" style="padding:6px;">
+
+                            <input id="forge-weapon-range-1" type="number" min="0" step="0.1" placeholder="Distanza 1 (m)" style="padding:6px;">
+                            <input id="forge-weapon-malus-1" type="number" step="1" placeholder="Malus dist. 1" style="padding:6px;">
+                            <input id="forge-weapon-range-2" type="number" min="0" step="0.1" placeholder="Distanza 2 (m)" style="padding:6px;">
+                            <input id="forge-weapon-malus-2" type="number" step="1" placeholder="Malus dist. 2" style="padding:6px;">
+                            <input id="forge-weapon-range-3" type="number" min="0" step="0.1" placeholder="Distanza 3 (m)" style="padding:6px;">
+                            <input id="forge-weapon-malus-3" type="number" step="1" placeholder="Malus dist. 3" style="padding:6px;">
+
+                            <input id="forge-weapon-weight" type="number" min="0" step="0.1" value="0" placeholder="Peso" style="padding:6px;">
+                            <input id="forge-weapon-harmonization" type="number" min="0" step="1" value="0" placeholder="Armonizzazione" style="padding:6px;">
+                            <input id="forge-weapon-license" type="text" placeholder="Licenza richiesta (opzionale)" style="grid-column:span 2; padding:6px;">
+                        </div>
+                        <div style="display:flex; gap:6px; margin-top:7px;">
+                            <button id="btn-forge-sidequest-weapon" type="button" style="flex:1; padding:7px; border:0; border-radius:4px; background:#ca6f1e; color:white; cursor:pointer; font-weight:bold;">🔨 Forgia e allega</button>
+                            <button id="btn-remove-sidequest-weapon" type="button" style="padding:7px; border:0; border-radius:4px; background:#7f8c8d; color:white; cursor:pointer;">Rimuovi</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display:flex; gap:6px;">
                     <input id="sidequest-cost" type="number" min="0" step="1" value="0" placeholder="Costo €" style="width:105px; padding:6px; border:1px solid #c39bd3; border-radius:4px;">
                     <button id="btn-send-sidequest" type="button" style="flex:1; padding:7px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📜 Invia Sidequest</button>
@@ -778,6 +847,73 @@
                 <div style="display: flex; gap: 5px;">
                     <input type="text" id="custom-dice" placeholder="Es. 2d8, 3d12" style="flex: 1; padding: 6px; border: 1px solid #bdc3c7; border-radius: 4px; outline: none;">
                     <button id="btn-custom-dice" style="padding: 6px 12px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Tira</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         FUCINA DEL MASTER
+         ========================================== -->
+    <div id="master-forge-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:150; align-items:center; justify-content:center; padding:18px; box-sizing:border-box;">
+        <div style="width:min(1000px, 96vw); max-height:92vh; overflow:hidden; background:#fffaf4; border:3px solid #a04000; border-radius:10px; box-shadow:0 10px 35px rgba(0,0,0,.45); display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; background:#873600; color:white;">
+                <div>
+                    <div style="font-size:18px; font-weight:bold;">⚒️ Fucina del Master</div>
+                    <div style="font-size:11px; opacity:.9;">Crea modelli permanenti di armi da riutilizzare nelle task.</div>
+                </div>
+                <button id="btn-close-master-forge" type="button" style="border:0; background:#fff; color:#873600; border-radius:5px; padding:6px 10px; cursor:pointer; font-weight:bold;">✕ Chiudi</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:minmax(240px, 31%) 1fr; gap:10px; padding:10px; overflow:auto;">
+                <div style="border:1px solid #d5a86c; border-radius:7px; background:#fff; min-height:420px; display:flex; flex-direction:column;">
+                    <div style="padding:8px; border-bottom:1px solid #ead3b2; display:flex; gap:5px;">
+                        <button id="btn-master-forge-new" type="button" style="flex:1; padding:7px; border:0; border-radius:4px; background:#117864; color:white; cursor:pointer; font-weight:bold;">＋ Nuova arma</button>
+                    </div>
+                    <div id="master-forge-list" style="padding:7px; overflow-y:auto; max-height:68vh; display:flex; flex-direction:column; gap:6px;">
+                        <em style="font-size:12px; color:#777; text-align:center; padding:15px;">Nessun modello salvato.</em>
+                    </div>
+                </div>
+
+                <div style="border:1px solid #d5a86c; border-radius:7px; background:#fdf2e9; padding:10px;">
+                    <div id="master-forge-edit-label" style="font-weight:bold; color:#873600; margin-bottom:8px;">Nuova arma</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px;">
+                        <input id="master-forge-weapon-name" type="text" placeholder="Nome arma *" style="grid-column:span 2; padding:7px;">
+                        <input id="master-forge-weapon-brand" type="text" placeholder="Marca / Forgiatore" style="padding:7px;">
+                        <input id="master-forge-weapon-value" type="number" min="0" step="0.01" placeholder="Valore €" style="padding:7px;">
+                        <textarea id="master-forge-weapon-description" rows="3" placeholder="Descrizione" style="grid-column:span 2; padding:7px; resize:vertical;"></textarea>
+
+                        <input id="master-forge-weapon-damage" type="number" min="0" step="1" placeholder="Danno HP *" style="padding:7px;">
+                        <input id="master-forge-weapon-damage-type" type="text" placeholder="Tipo danno" style="padding:7px;">
+                        <select id="master-forge-weapon-characteristic" style="padding:7px;">
+                            <option value="DES">DES</option><option value="FOR">FOR</option><option value="PRC">PRC</option><option value="ARG">ARG</option><option value="VOL">VOL</option><option value="SPI">SPI</option><option value="VIR">VIR</option>
+                        </select>
+                        <input id="master-forge-weapon-hp" type="number" min="0" step="1" value="100" placeholder="Vita arma" style="padding:7px;">
+                        <input id="master-forge-weapon-action-cost" type="number" min="0" step="1" value="0" placeholder="Costo azione" style="padding:7px;">
+                        <input id="master-forge-weapon-speed" type="number" min="1" step="1" placeholder="Velocità attacco *" style="padding:7px;">
+                        <select id="master-forge-weapon-hands" style="padding:7px;"><option value="1">1 mano</option><option value="2">2 mani</option></select>
+                        <select id="master-forge-weapon-targeting" style="padding:7px;"><option value="Melee">Melee</option><option value="Ranged">Ranged</option></select>
+
+                        <input id="master-forge-weapon-ammo" type="text" placeholder="Munizioni" style="padding:7px;">
+                        <input id="master-forge-weapon-ammo-qty" type="number" min="0" step="1" placeholder="Q.tà munizioni" style="padding:7px;">
+                        <input id="master-forge-weapon-base-malus" type="number" step="1" placeholder="Malus base" style="padding:7px;">
+                        <input id="master-forge-weapon-aim-time" type="number" min="0" step="1" placeholder="Tempo di mira" style="padding:7px;">
+
+                        <input id="master-forge-weapon-range-1" type="number" min="0" step="0.1" placeholder="Distanza 1 (m)" style="padding:7px;">
+                        <input id="master-forge-weapon-malus-1" type="number" step="1" placeholder="Malus dist. 1" style="padding:7px;">
+                        <input id="master-forge-weapon-range-2" type="number" min="0" step="0.1" placeholder="Distanza 2 (m)" style="padding:7px;">
+                        <input id="master-forge-weapon-malus-2" type="number" step="1" placeholder="Malus dist. 2" style="padding:7px;">
+                        <input id="master-forge-weapon-range-3" type="number" min="0" step="0.1" placeholder="Distanza 3 (m)" style="padding:7px;">
+                        <input id="master-forge-weapon-malus-3" type="number" step="1" placeholder="Malus dist. 3" style="padding:7px;">
+
+                        <input id="master-forge-weapon-weight" type="number" min="0" step="0.1" value="0" placeholder="Peso" style="padding:7px;">
+                        <input id="master-forge-weapon-harmonization" type="number" min="0" step="1" value="0" placeholder="Armonizzazione" style="padding:7px;">
+                        <input id="master-forge-weapon-license" type="text" placeholder="Licenza richiesta (opzionale)" style="grid-column:span 2; padding:7px;">
+                    </div>
+                    <div style="display:flex; gap:7px; margin-top:10px;">
+                        <button id="btn-master-forge-save" type="button" style="flex:2; padding:9px; border:0; border-radius:5px; background:#ca6f1e; color:white; cursor:pointer; font-weight:bold;">💾 Salva nella Fucina</button>
+                        <button id="btn-master-forge-attach" type="button" style="flex:1; padding:9px; border:0; border-radius:5px; background:#7d3c98; color:white; cursor:pointer; font-weight:bold;">📜 Allega alla task</button>
+                    </div>
                 </div>
             </div>
         </div>

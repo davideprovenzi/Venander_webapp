@@ -112,7 +112,17 @@ class SideQuest(db.Model):
     # None = visibile a tutti i giocatori; altrimenti solo al personaggio indicato.
     target_char_id = db.Column(db.Integer, nullable=True)
     paid_by = db.Column(db.JSON, default=list)
+    # Ricompensa opzionale: definizione completa di un'arma forgiata dal Master.
+    reward_weapon = db.Column(db.JSON, nullable=True)
+    # Tiene traccia dei personaggi che hanno già ricevuto la ricompensa.
+    reward_delivered_to = db.Column(db.JSON, default=list)
     active = db.Column(db.Boolean, default=True)
+
+class MasterForgeWeapon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    definition = db.Column(db.JSON, nullable=False)
+
 
 # ==========================================
 # MEMORIA GLOBALE COMBATTIMENTO E SETUP DB
@@ -158,6 +168,25 @@ with app.app_context():
             text("ALTER TABLE character ADD COLUMN token_url TEXT DEFAULT ''")
         )
         db.session.commit()
+
+    # Migrazione leggera delle sidequest per supportare armi forgiate come ricompensa.
+    sidequest_columns = {
+        column["name"]
+        for column in inspector.get_columns("side_quest")
+    }
+
+    if "reward_weapon" not in sidequest_columns:
+        db.session.execute(
+            text("ALTER TABLE side_quest ADD COLUMN reward_weapon JSON")
+        )
+        db.session.commit()
+
+    if "reward_delivered_to" not in sidequest_columns:
+        db.session.execute(
+            text("ALTER TABLE side_quest ADD COLUMN reward_delivered_to JSON DEFAULT '[]'")
+        )
+        db.session.commit()
+
     if not WorldState.query.first():
         db.session.add(WorldState())
         db.session.commit()
@@ -249,6 +278,226 @@ def emit_character_update(char, extra=None):
 # ==========================================
 # SIDEQUEST / CHAT
 # ==========================================
+def _clean_int(value, default=None, minimum=None, maximum=None):
+    if value in (None, ""):
+        return default
+    try:
+        number = int(float(str(value).replace(",", ".")))
+    except (TypeError, ValueError):
+        return default
+    if minimum is not None:
+        number = max(minimum, number)
+    if maximum is not None:
+        number = min(maximum, number)
+    return number
+
+def _clean_float(value, default=None, minimum=None):
+    if value in (None, ""):
+        return default
+    try:
+        number = float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return default
+    if minimum is not None:
+        number = max(minimum, number)
+    return number
+
+def build_forged_weapon(raw):
+    """Valida i campi della forgia e costruisce una voce compatibile col compendio."""
+    if not isinstance(raw, dict):
+        return None
+
+    name = str(raw.get("name", "")).strip()[:120]
+    if not name:
+        return None
+
+    description = str(raw.get("description", "")).strip()[:2000]
+    brand = str(raw.get("brand", "")).strip()[:100] or "Forgiata dal Master"
+    targeting = str(raw.get("targeting", "Melee")).strip().title()
+    if targeting not in {"Melee", "Ranged"}:
+        targeting = "Melee"
+
+    characteristic = str(raw.get("characteristic", "DES")).strip().upper()[:12]
+    damage = _clean_int(raw.get("damage"), 0, 0, 100000)
+    damage_type = str(raw.get("damage_type", "")).strip()[:80] or None
+    hp = _clean_int(raw.get("hp"), 100, 0, 100000)
+    action_cost = _clean_int(raw.get("action_cost"), 0, 0, 100000)
+    attack_speed = _clean_int(raw.get("attack_speed"), None, 1, 1000)
+    hands = _clean_int(raw.get("hands"), 1, 1, 2)
+
+    if attack_speed is None:
+        return None
+
+    ammo = str(raw.get("ammo", "")).strip()[:100] or None
+    ammo_qty = _clean_int(raw.get("ammo_qty"), None, 0, 100000)
+    base_malus = _clean_int(raw.get("base_malus"), None, -100000, 100000)
+    aim_time = _clean_int(raw.get("aim_time"), None, 0, 100000)
+
+    range_bands = [
+        _clean_float(raw.get("range_1"), None, 0),
+        _clean_float(raw.get("range_2"), None, 0),
+        _clean_float(raw.get("range_3"), None, 0),
+    ]
+    range_malus = [
+        _clean_int(raw.get("range_malus_1"), None, -100000, 100000),
+        _clean_int(raw.get("range_malus_2"), None, -100000, 100000),
+        _clean_int(raw.get("range_malus_3"), None, -100000, 100000),
+    ]
+
+    if targeting == "Melee":
+        max_range = 1.0
+    else:
+        max_range = next((v for v in reversed(range_bands) if v is not None), None)
+
+    license_name = str(raw.get("license_name", "")).strip()[:160] or None
+    weight = _clean_float(raw.get("weight"), 0, 0)
+    harmonization = _clean_int(raw.get("harmonization"), 0, 0, 100000)
+    value_eur = _clean_float(raw.get("value_eur"), None, 0)
+
+    custom_id = f"CUSTOM-WPN-{uuid.uuid4().hex[:12].upper()}"
+    allowed_slots = ["mano_dx", "mano_sx"]
+
+    return {
+        "id": custom_id,
+        "name": name,
+        "brand": brand,
+        "class": "Arma",
+        "type": "Arma / corpo a corpo" if targeting == "Melee" else "Arma / distanza",
+        "text": {
+            "description": description or None,
+            "original_rules": None,
+            "effect_summary": None
+        },
+        "equipment": {
+            "slot": {
+                "raw": "Mano",
+                "family": "mano",
+                "position": None,
+                "count": hands,
+                "allowed_slots": allowed_slots,
+                "occupancy": "all" if hands == 2 else "one"
+            },
+            "cost_eur": value_eur,
+            "weight": weight,
+            "harmonization": harmonization,
+            "hp": hp
+        },
+        "requirements": {
+            "raw": f"Richiede {license_name} per l’uso." if license_name else None,
+            "items": [license_name] if license_name else [],
+            "limitations": None
+        },
+        "activation": {
+            "mode": "Attacco",
+            "speed": {
+                "activation": None,
+                "effect_or_action": attack_speed,
+                "reload": None
+            },
+            "cost": {
+                "PA": action_cost,
+                "PAA": None,
+                "PAV": None,
+                "PAP": None,
+                "maintenance": None
+            },
+            "condition": None
+        },
+        "combat": {
+            "damage": {
+                "formula": f"{damage} HP",
+                "type": damage_type
+            },
+            "healing": None,
+            "check": {
+                "required": characteristic,
+                "modifier": base_malus
+            },
+            "range": {
+                "max_m": max_range,
+                "movement_m": None
+            },
+            "area": {
+                "shape": None,
+                "size": None,
+                "angle_deg": None,
+                "targets": None
+            },
+            "duration": None,
+            "cooldown": None
+        },
+        "resource": {
+            "name": ammo,
+            "capacity": ammo_qty,
+            "consumption": 1 if ammo else None,
+            "reload_cost": None
+        },
+        "effects": {
+            "bonus_malus": None,
+            "state": None,
+            "protection": None,
+            "resistance": None,
+            "movement_modifier": None,
+            "conditional_modifiers": None,
+            "special_notes": {
+                "base_malus": base_malus,
+                "range_bands_m": range_bands,
+                "range_malus": range_malus,
+                "aim_time": aim_time
+            }
+        },
+        "source": "Arma forgiata dal Master",
+        "weapon": {
+            "damage": damage,
+            "damage_type": damage_type,
+            "characteristic": characteristic,
+            "action_cost": action_cost,
+            "attack_speed": attack_speed,
+            "hands": hands,
+            "targeting": targeting,
+            "ammo": ammo,
+            "ammo_qty": ammo_qty,
+            "base_malus": base_malus,
+            "range_bands_m": range_bands,
+            "range_malus": range_malus,
+            "aim_time": aim_time,
+            "license_id": None,
+            "license_name": license_name
+        }
+    }
+
+def forged_weapon_inventory_entry(definition, quest_id=None):
+    if not isinstance(definition, dict):
+        return None
+
+    return {
+        "compendium_id": definition.get("id"),
+        "name": definition.get("name") or "Arma forgiata",
+        "brand": definition.get("brand"),
+        "desc": (definition.get("text") or {}).get("description") or "Arma forgiata dal Master.",
+        "qty": 1,
+        "forged": True,
+        "forged_from_sidequest": quest_id,
+        "custom_definition": definition
+    }
+
+def serialize_master_forge_weapon(template):
+    definition = template.definition if isinstance(template.definition, dict) else {}
+    return {
+        "id": template.id,
+        "name": template.name,
+        "definition": definition
+    }
+
+def get_master_forge_library():
+    templates = MasterForgeWeapon.query.order_by(MasterForgeWeapon.name.asc(), MasterForgeWeapon.id.asc()).all()
+    return [serialize_master_forge_weapon(template) for template in templates]
+
+def emit_master_forge_library():
+    payload = get_master_forge_library()
+    for sid in list(master_sids):
+        socketio.emit("master_forge_library", payload, to=sid)
+
 def serialize_sidequest(quest):
     target_name = "Tutti i giocatori"
     if quest.target_char_id is not None:
@@ -270,6 +519,12 @@ def serialize_sidequest(quest):
         "target_char_id": quest.target_char_id,
         "target_name": target_name,
         "paid_by": paid_by,
+        "reward_weapon": quest.reward_weapon if isinstance(quest.reward_weapon, dict) else None,
+        "reward_delivered_to": [
+            int(raw_id)
+            for raw_id in (quest.reward_delivered_to or [])
+            if str(raw_id).lstrip("-").isdigit()
+        ],
         "active": bool(quest.active)
     }
 
@@ -376,6 +631,9 @@ def handle_register_session_role(data):
 
     if role == "master":
         master_sids.add(request.sid)
+
+        # Sincronizza la Fucina persistente del Master.
+        emit("master_forge_library", get_master_forge_library(), to=request.sid)
 
         # Se il Master ricarica la pagina mentre ci sono risultati
         # in attesa, glieli rimandiamo.
@@ -1513,6 +1771,76 @@ def handle_chat_message(data):
         to=request.sid
     )
 
+@socketio.on("master_forge_request")
+def handle_master_forge_request():
+    if request.sid not in master_sids:
+        return
+    emit("master_forge_library", get_master_forge_library(), to=request.sid)
+
+@socketio.on("master_forge_save")
+def handle_master_forge_save(data):
+    if request.sid not in master_sids:
+        return
+
+    data = data or {}
+    definition = build_forged_weapon(data.get("weapon"))
+    if not definition:
+        emit(
+            "master_forge_error",
+            {"message": "Arma non valida: controlla almeno nome, danno e velocità d'attacco."},
+            to=request.sid
+        )
+        return
+
+    definition["source"] = "Fucina del Master"
+
+    template = None
+    raw_id = data.get("template_id")
+    if raw_id not in (None, ""):
+        try:
+            template = db.session.get(MasterForgeWeapon, int(raw_id))
+        except (TypeError, ValueError):
+            template = None
+
+        if not template:
+            emit("master_forge_error", {"message": "Modello della Fucina non trovato."}, to=request.sid)
+            return
+
+        old_definition = template.definition if isinstance(template.definition, dict) else {}
+        if old_definition.get("id"):
+            definition["id"] = old_definition["id"]
+        template.name = definition.get("name") or "Arma forgiata"
+        template.definition = definition
+        flag_modified(template, "definition")
+    else:
+        template = MasterForgeWeapon(
+            name=definition.get("name") or "Arma forgiata",
+            definition=definition
+        )
+        db.session.add(template)
+
+    db.session.commit()
+    emit_master_forge_library()
+
+@socketio.on("master_forge_delete")
+def handle_master_forge_delete(data):
+    if request.sid not in master_sids:
+        return
+
+    try:
+        template_id = int((data or {}).get("template_id"))
+    except (TypeError, ValueError):
+        template_id = None
+
+    template = db.session.get(MasterForgeWeapon, template_id) if template_id else None
+    if not template:
+        emit("master_forge_error", {"message": "Modello della Fucina non trovato."}, to=request.sid)
+        return
+
+    db.session.delete(template)
+    db.session.commit()
+    emit_master_forge_library()
+
 @socketio.on("create_sidequest")
 def handle_create_sidequest(data):
     if request.sid not in master_sids:
@@ -1546,12 +1874,26 @@ def handle_create_sidequest(data):
             return
         target_char_id = target.id
 
+    raw_reward_weapon = data.get("reward_weapon")
+    reward_weapon = None
+    if raw_reward_weapon:
+        reward_weapon = build_forged_weapon(raw_reward_weapon)
+        if not reward_weapon:
+            emit(
+                "sidequest_error",
+                {"message": "Arma forgiata non valida: controlla nome e velocità d'attacco."},
+                to=request.sid
+            )
+            return
+
     quest = SideQuest(
         title=title,
         description=description,
         cost=cost,
         target_char_id=target_char_id,
         paid_by=[],
+        reward_weapon=reward_weapon,
+        reward_delivered_to=[],
         active=True
     )
     db.session.add(quest)
@@ -1614,6 +1956,72 @@ def handle_pay_sidequest(data):
         "is_system": True
     }
     emit_to_sidequest_viewers("chat_message", payment_message, quest)
+
+@socketio.on("deliver_sidequest_weapon")
+def handle_deliver_sidequest_weapon(data):
+    if request.sid not in master_sids:
+        return
+
+    data = data or {}
+    quest = db.session.get(SideQuest, data.get("quest_id"))
+    if not quest or not quest.active:
+        emit("sidequest_error", {"message": "Task non disponibile."}, to=request.sid)
+        return
+
+    if not isinstance(quest.reward_weapon, dict):
+        emit("sidequest_error", {"message": "Questa task non contiene un'arma forgiata."}, to=request.sid)
+        return
+
+    try:
+        recipient_id = int(data.get("char_id"))
+    except (TypeError, ValueError):
+        recipient_id = None
+
+    recipient = db.session.get(Character, recipient_id) if recipient_id else None
+    if not recipient or recipient.role != "player":
+        emit("sidequest_error", {"message": "Destinatario della ricompensa non valido."}, to=request.sid)
+        return
+
+    if quest.target_char_id is not None and int(quest.target_char_id) != int(recipient.id):
+        emit("sidequest_error", {"message": "Questa task è assegnata a un altro personaggio."}, to=request.sid)
+        return
+
+    delivered = []
+    for raw_id in (quest.reward_delivered_to or []):
+        try:
+            delivered.append(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+    if recipient.id in delivered:
+        emit("sidequest_error", {"message": f"{recipient.name} ha già ricevuto questa arma."}, to=request.sid)
+        return
+
+    inventory_entry = forged_weapon_inventory_entry(quest.reward_weapon, quest.id)
+    weapons = list(recipient.weapons or [])
+    weapons.append(inventory_entry)
+    recipient.weapons = weapons
+
+    delivered.append(recipient.id)
+    quest.reward_delivered_to = delivered
+    flag_modified(quest, "reward_delivered_to")
+    db.session.commit()
+
+    emit_character_update(recipient)
+    emit_sidequest_to_viewers("sidequest_update", quest)
+
+    reward_name = html.escape(str(quest.reward_weapon.get("name", "Arma forgiata")))
+    reward_message = {
+        "name": "🔨 FORGIA",
+        "message": (
+            f"Il Master consegna <b>{reward_name}</b> a "
+            f"<b>{html.escape(recipient.name)}</b> come ricompensa per "
+            f"<b>{html.escape(quest.title)}</b>."
+        ),
+        "is_master": True,
+        "is_system": True
+    }
+    emit_to_sidequest_viewers("chat_message", reward_message, quest)
 
 @socketio.on("close_sidequest")
 def handle_close_sidequest(data):
@@ -1870,10 +2278,14 @@ def handle_declare_attack(data):
     if not compendium_id and equipped_item:
         compendium_id = equipped_item.get("compendium_id")
 
-    comp_item = get_compendium_item(
-        compendium_id=compendium_id,
-        name=(equipped_item or {}).get("name") if equipped_item else requested_name
-    )
+    custom_definition = (equipped_item or {}).get("custom_definition")
+    if isinstance(custom_definition, dict):
+        comp_item = custom_definition
+    else:
+        comp_item = get_compendium_item(
+            compendium_id=compendium_id,
+            name=(equipped_item or {}).get("name") if equipped_item else requested_name
+        )
 
     weapon_name = (
         comp_item.get("name")

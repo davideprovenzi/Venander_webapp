@@ -137,6 +137,15 @@ function populatePlayerSheetUI(myChar) {
             // Conversione di sicurezza
             if (typeof item === 'string') item = { name: item, desc: "Nessuna descrizione" };
 
+            const weaponDefinition =
+                item.custom_definition && typeof item.custom_definition === 'object'
+                    ? item.custom_definition
+                    : findCompendioItem(item);
+
+            const forgedWeaponDetails = item.forged && weaponDefinition
+                ? sidequestRewardWeaponDetails(weaponDefinition).join(' • ')
+                : '';
+
             const li = document.createElement('li');
             li.style.background = '#fff';
             li.style.border = '1px solid #ccc';
@@ -147,7 +156,7 @@ function populatePlayerSheetUI(myChar) {
             if (canEdit) {
                 controlsHtml = `
                     <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
-                      <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value, 'weapon')" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
+                      <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value, 'weapon', '${String(item.compendium_id || '').replace(/'/g, "\\'")}')" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
                             <option value="">-- Assegna --</option>
                             <option value="mano_dx">Arma Dx</option>
                             <option value="mano_sx">Arma Sx</option>
@@ -162,6 +171,7 @@ function populatePlayerSheetUI(myChar) {
                     <strong style="color: #c0392b; font-size: 15px;">${item.name}</strong>
                 </div>
                 <div style="font-size: 12px; color: #7f8c8d; margin-top: 4px; font-style: italic; line-height: 1.3;">${item.desc}</div>
+                ${forgedWeaponDetails ? `<div style="font-size:11px;color:#a04000;margin-top:5px;line-height:1.35;">🔨 ${forgedWeaponDetails}</div>` : ''}
                 ${controlsHtml}
             `;
             weaponsContainer.appendChild(li);
@@ -896,7 +906,26 @@ const sidequestTitle = document.getElementById('sidequest-title');
 const sidequestDescription = document.getElementById('sidequest-description');
 const sidequestCost = document.getElementById('sidequest-cost');
 const sendSidequestBtn = document.getElementById('btn-send-sidequest');
+const sidequestForgeToggleBtn = document.getElementById('btn-toggle-sidequest-forge');
+const sidequestForgeForm = document.getElementById('sidequest-forge-form');
+const sidequestForgeSummary = document.getElementById('sidequest-forged-summary');
+const sidequestForgeBtn = document.getElementById('btn-forge-sidequest-weapon');
+const sidequestForgeRemoveBtn = document.getElementById('btn-remove-sidequest-weapon');
+const sidequestForgeLibrary = document.getElementById('sidequest-forge-library');
+const sidequestForgeAttachTemplateBtn = document.getElementById('btn-attach-forge-template');
+const openMasterForgeBtn = document.getElementById('btn-open-master-forge');
+const openMasterForgePanelBtn = document.getElementById('btn-open-master-forge-panel');
+const masterForgeModal = document.getElementById('master-forge-modal');
+const masterForgeList = document.getElementById('master-forge-list');
+const masterForgeEditLabel = document.getElementById('master-forge-edit-label');
+const closeMasterForgeBtn = document.getElementById('btn-close-master-forge');
+const masterForgeNewBtn = document.getElementById('btn-master-forge-new');
+const masterForgeSaveBtn = document.getElementById('btn-master-forge-save');
+const masterForgeAttachBtn = document.getElementById('btn-master-forge-attach');
 const sidequestStore = new Map();
+const masterForgeStore = new Map();
+let pendingSidequestWeapon = null;
+let masterForgeEditingId = null;
 
 // --- 1. APERTURA E CHIUSURA TENDINA ---
 dicePanelHeader?.addEventListener('click', () => {
@@ -1132,6 +1161,500 @@ function refreshSidequestTargetOptions() {
 }
 window.refreshSidequestTargetOptions = refreshSidequestTargetOptions;
 
+function forgeFieldValue(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const value = String(el.value ?? '').trim();
+    return value === '' ? null : value;
+}
+
+function forgeNumberValue(id) {
+    const raw = forgeFieldValue(id);
+    if (raw === null) return null;
+    const value = Number(String(raw).replace(',', '.'));
+    return Number.isFinite(value) ? value : null;
+}
+
+function formatForgedWeaponSummary(weapon) {
+    if (!weapon) return '';
+
+    const damage = weapon.damage ?? '?';
+    const speed = weapon.attack_speed ?? '?';
+    const hands = weapon.hands ?? 1;
+    const targeting = weapon.targeting || 'Melee';
+    const license = weapon.license_name ? ` • 🔒 ${weapon.license_name}` : '';
+
+    return `🔨 ${weapon.name} • ${damage} HP • Vel. ${speed} • ${hands} mano/i • ${targeting}${license}`;
+}
+
+function forgedDefinitionToDraft(definition) {
+    if (!definition || typeof definition !== 'object') return null;
+
+    const weapon = definition.weapon || {};
+    const equipment = definition.equipment || {};
+    const text = definition.text || {};
+    const ranges = Array.isArray(weapon.range_bands_m) ? weapon.range_bands_m : [];
+    const maluses = Array.isArray(weapon.range_malus) ? weapon.range_malus : [];
+
+    return {
+        name: definition.name || '',
+        brand: definition.brand || '',
+        value_eur: equipment.cost_eur ?? null,
+        description: text.description || '',
+        damage: weapon.damage ?? 0,
+        damage_type: weapon.damage_type || '',
+        characteristic: weapon.characteristic || 'DES',
+        hp: equipment.hp ?? 100,
+        action_cost: weapon.action_cost ?? 0,
+        attack_speed: weapon.attack_speed ?? null,
+        hands: weapon.hands ?? 1,
+        targeting: weapon.targeting || 'Melee',
+        ammo: weapon.ammo || '',
+        ammo_qty: weapon.ammo_qty ?? null,
+        base_malus: weapon.base_malus ?? null,
+        aim_time: weapon.aim_time ?? null,
+        range_1: ranges[0] ?? null,
+        range_malus_1: maluses[0] ?? null,
+        range_2: ranges[1] ?? null,
+        range_malus_2: maluses[1] ?? null,
+        range_3: ranges[2] ?? null,
+        range_malus_3: maluses[2] ?? null,
+        weight: equipment.weight ?? 0,
+        harmonization: equipment.harmonization ?? 0,
+        license_name: weapon.license_name || ''
+    };
+}
+
+function masterForgeFieldValue(suffix) {
+    const el = document.getElementById(`master-forge-weapon-${suffix}`);
+    if (!el) return null;
+    const value = String(el.value ?? '').trim();
+    return value === '' ? null : value;
+}
+
+function masterForgeNumberValue(suffix) {
+    const raw = masterForgeFieldValue(suffix);
+    if (raw === null) return null;
+    const value = Number(String(raw).replace(',', '.'));
+    return Number.isFinite(value) ? value : null;
+}
+
+function readMasterForgeDraft() {
+    const name = masterForgeFieldValue('name');
+    const damage = masterForgeNumberValue('damage');
+    const speed = masterForgeNumberValue('speed');
+
+    if (!name) {
+        alert("Inserisci il nome dell'arma.");
+        return null;
+    }
+    if (damage === null || damage < 0) {
+        alert('Inserisci un danno valido.');
+        return null;
+    }
+    if (speed === null || speed <= 0) {
+        alert("Inserisci una velocità d'attacco valida.");
+        return null;
+    }
+
+    return {
+        name,
+        brand: masterForgeFieldValue('brand'),
+        value_eur: masterForgeNumberValue('value'),
+        description: masterForgeFieldValue('description'),
+        damage,
+        damage_type: masterForgeFieldValue('damage-type'),
+        characteristic: masterForgeFieldValue('characteristic') || 'DES',
+        hp: masterForgeNumberValue('hp') ?? 100,
+        action_cost: masterForgeNumberValue('action-cost') ?? 0,
+        attack_speed: speed,
+        hands: masterForgeNumberValue('hands') ?? 1,
+        targeting: masterForgeFieldValue('targeting') || 'Melee',
+        ammo: masterForgeFieldValue('ammo'),
+        ammo_qty: masterForgeNumberValue('ammo-qty'),
+        base_malus: masterForgeNumberValue('base-malus'),
+        aim_time: masterForgeNumberValue('aim-time'),
+        range_1: masterForgeNumberValue('range-1'),
+        range_malus_1: masterForgeNumberValue('malus-1'),
+        range_2: masterForgeNumberValue('range-2'),
+        range_malus_2: masterForgeNumberValue('malus-2'),
+        range_3: masterForgeNumberValue('range-3'),
+        range_malus_3: masterForgeNumberValue('malus-3'),
+        weight: masterForgeNumberValue('weight') ?? 0,
+        harmonization: masterForgeNumberValue('harmonization') ?? 0,
+        license_name: masterForgeFieldValue('license')
+    };
+}
+
+function setMasterForgeField(suffix, value) {
+    const el = document.getElementById(`master-forge-weapon-${suffix}`);
+    if (!el) return;
+    el.value = value === null || value === undefined ? '' : String(value);
+}
+
+function populateMasterForgeForm(draft) {
+    const data = draft || {};
+    setMasterForgeField('name', data.name || '');
+    setMasterForgeField('brand', data.brand || '');
+    setMasterForgeField('value', data.value_eur ?? '');
+    setMasterForgeField('description', data.description || '');
+    setMasterForgeField('damage', data.damage ?? '');
+    setMasterForgeField('damage-type', data.damage_type || '');
+    setMasterForgeField('characteristic', data.characteristic || 'DES');
+    setMasterForgeField('hp', data.hp ?? 100);
+    setMasterForgeField('action-cost', data.action_cost ?? 0);
+    setMasterForgeField('speed', data.attack_speed ?? '');
+    setMasterForgeField('hands', data.hands ?? 1);
+    setMasterForgeField('targeting', data.targeting || 'Melee');
+    setMasterForgeField('ammo', data.ammo || '');
+    setMasterForgeField('ammo-qty', data.ammo_qty ?? '');
+    setMasterForgeField('base-malus', data.base_malus ?? '');
+    setMasterForgeField('aim-time', data.aim_time ?? '');
+    setMasterForgeField('range-1', data.range_1 ?? '');
+    setMasterForgeField('malus-1', data.range_malus_1 ?? '');
+    setMasterForgeField('range-2', data.range_2 ?? '');
+    setMasterForgeField('malus-2', data.range_malus_2 ?? '');
+    setMasterForgeField('range-3', data.range_3 ?? '');
+    setMasterForgeField('malus-3', data.range_malus_3 ?? '');
+    setMasterForgeField('weight', data.weight ?? 0);
+    setMasterForgeField('harmonization', data.harmonization ?? 0);
+    setMasterForgeField('license', data.license_name || '');
+}
+
+function resetMasterForgeEditor() {
+    masterForgeEditingId = null;
+    populateMasterForgeForm(null);
+    if (masterForgeEditLabel) masterForgeEditLabel.textContent = 'Nuova arma';
+    if (masterForgeSaveBtn) masterForgeSaveBtn.textContent = '💾 Salva nella Fucina';
+}
+
+function attachForgeDraftToSidequest(draft) {
+    if (!draft) return;
+    pendingSidequestWeapon = { ...draft };
+
+    if (sidequestForgeSummary) {
+        sidequestForgeSummary.textContent =
+            `✅ Allegata dalla Fucina: ${formatForgedWeaponSummary(pendingSidequestWeapon)}`;
+        sidequestForgeSummary.style.display = 'block';
+    }
+}
+
+function refreshMasterForgeSelect() {
+    if (!sidequestForgeLibrary) return;
+
+    const previous = sidequestForgeLibrary.value;
+    sidequestForgeLibrary.innerHTML = '';
+
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = masterForgeStore.size
+        ? '-- Seleziona un modello --'
+        : '-- Nessun modello salvato --';
+    sidequestForgeLibrary.appendChild(empty);
+
+    [...masterForgeStore.values()]
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'it'))
+        .forEach(template => {
+            const option = document.createElement('option');
+            option.value = String(template.id);
+            option.textContent = template.name || `Arma #${template.id}`;
+            sidequestForgeLibrary.appendChild(option);
+        });
+
+    if ([...sidequestForgeLibrary.options].some(opt => opt.value === previous)) {
+        sidequestForgeLibrary.value = previous;
+    }
+}
+
+function renderMasterForgeLibrary() {
+    refreshMasterForgeSelect();
+    if (!masterForgeList) return;
+
+    masterForgeList.innerHTML = '';
+    const templates = [...masterForgeStore.values()]
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'it'));
+
+    if (!templates.length) {
+        const empty = document.createElement('em');
+        empty.style.cssText = 'font-size:12px;color:#777;text-align:center;padding:15px;';
+        empty.textContent = 'Nessun modello salvato.';
+        masterForgeList.appendChild(empty);
+        return;
+    }
+
+    templates.forEach(template => {
+        const draft = forgedDefinitionToDraft(template.definition);
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:7px;border:1px solid #e0b27a;border-radius:5px;background:#fffaf4;';
+
+        const title = document.createElement('div');
+        title.style.cssText = 'font-weight:bold;color:#784212;font-size:12px;';
+        title.textContent = template.name || `Arma #${template.id}`;
+        row.appendChild(title);
+
+        const summary = document.createElement('div');
+        summary.style.cssText = 'font-size:10px;color:#7f5539;margin-top:3px;line-height:1.3;';
+        summary.textContent = formatForgedWeaponSummary(draft);
+        row.appendChild(summary);
+
+        const buttons = document.createElement('div');
+        buttons.style.cssText = 'display:flex;gap:4px;margin-top:6px;';
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.textContent = 'Modifica';
+        editBtn.style.cssText = 'flex:1;padding:4px;border:0;border-radius:3px;background:#2980b9;color:white;cursor:pointer;font-size:10px;';
+        editBtn.addEventListener('click', () => {
+            masterForgeEditingId = Number(template.id);
+            populateMasterForgeForm(draft);
+            if (masterForgeEditLabel) masterForgeEditLabel.textContent = `Modifica: ${template.name}`;
+            if (masterForgeSaveBtn) masterForgeSaveBtn.textContent = '💾 Salva modifiche';
+        });
+
+        const attachBtn = document.createElement('button');
+        attachBtn.type = 'button';
+        attachBtn.textContent = '📜 Allega';
+        attachBtn.style.cssText = 'flex:1;padding:4px;border:0;border-radius:3px;background:#7d3c98;color:white;cursor:pointer;font-size:10px;';
+        attachBtn.addEventListener('click', () => {
+            attachForgeDraftToSidequest(draft);
+            if (sidequestForgeLibrary) sidequestForgeLibrary.value = String(template.id);
+            if (masterForgeModal) masterForgeModal.style.display = 'none';
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = '🗑';
+        deleteBtn.style.cssText = 'padding:4px 7px;border:0;border-radius:3px;background:#c0392b;color:white;cursor:pointer;font-size:10px;';
+        deleteBtn.addEventListener('click', () => {
+            if (!confirm(`Eliminare "${template.name}" dalla Fucina? Le task già create non verranno modificate.`)) return;
+            socket.emit('master_forge_delete', { template_id: template.id });
+            if (masterForgeEditingId === Number(template.id)) resetMasterForgeEditor();
+        });
+
+        buttons.appendChild(editBtn);
+        buttons.appendChild(attachBtn);
+        buttons.appendChild(deleteBtn);
+        row.appendChild(buttons);
+        masterForgeList.appendChild(row);
+    });
+}
+
+openMasterForgeBtn?.addEventListener('click', () => {
+    if (!isMaster || !masterForgeModal) return;
+    masterForgeModal.style.display = 'flex';
+    socket.emit('master_forge_request');
+});
+
+openMasterForgePanelBtn?.addEventListener('click', () => {
+    if (!isMaster || !masterForgeModal) return;
+    masterForgeModal.style.display = 'flex';
+    socket.emit('master_forge_request');
+});
+
+closeMasterForgeBtn?.addEventListener('click', () => {
+    if (masterForgeModal) masterForgeModal.style.display = 'none';
+});
+
+masterForgeModal?.addEventListener('click', event => {
+    if (event.target === masterForgeModal) masterForgeModal.style.display = 'none';
+});
+
+masterForgeNewBtn?.addEventListener('click', () => {
+    resetMasterForgeEditor();
+});
+
+masterForgeSaveBtn?.addEventListener('click', () => {
+    if (!isMaster) return;
+    const weapon = readMasterForgeDraft();
+    if (!weapon) return;
+
+    socket.emit('master_forge_save', {
+        template_id: masterForgeEditingId,
+        weapon
+    });
+});
+
+masterForgeAttachBtn?.addEventListener('click', () => {
+    const weapon = readMasterForgeDraft();
+    if (!weapon) return;
+    attachForgeDraftToSidequest(weapon);
+    if (masterForgeModal) masterForgeModal.style.display = 'none';
+});
+
+sidequestForgeAttachTemplateBtn?.addEventListener('click', () => {
+    const templateId = Number(sidequestForgeLibrary?.value || 0);
+    const template = masterForgeStore.get(templateId);
+    if (!template) {
+        alert('Seleziona prima un modello dalla Fucina.');
+        return;
+    }
+    attachForgeDraftToSidequest(forgedDefinitionToDraft(template.definition));
+});
+
+socket.on('master_forge_library', templates => {
+    masterForgeStore.clear();
+    (templates || []).forEach(template => {
+        masterForgeStore.set(Number(template.id), template);
+    });
+    renderMasterForgeLibrary();
+});
+
+socket.on('master_forge_error', data => {
+    alert(data?.message || 'Operazione Fucina non riuscita.');
+});
+
+function clearSidequestForge() {
+    pendingSidequestWeapon = null;
+
+    const ids = [
+        'forge-weapon-name', 'forge-weapon-brand', 'forge-weapon-value',
+        'forge-weapon-description', 'forge-weapon-damage', 'forge-weapon-damage-type',
+        'forge-weapon-ammo', 'forge-weapon-ammo-qty', 'forge-weapon-base-malus',
+        'forge-weapon-aim-time', 'forge-weapon-range-1', 'forge-weapon-malus-1',
+        'forge-weapon-range-2', 'forge-weapon-malus-2', 'forge-weapon-range-3',
+        'forge-weapon-malus-3', 'forge-weapon-license'
+    ];
+
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    const hp = document.getElementById('forge-weapon-hp');
+    const actionCost = document.getElementById('forge-weapon-action-cost');
+    const weight = document.getElementById('forge-weapon-weight');
+    const harmonization = document.getElementById('forge-weapon-harmonization');
+    const hands = document.getElementById('forge-weapon-hands');
+    const targeting = document.getElementById('forge-weapon-targeting');
+    const characteristic = document.getElementById('forge-weapon-characteristic');
+    const speed = document.getElementById('forge-weapon-speed');
+
+    if (hp) hp.value = '100';
+    if (actionCost) actionCost.value = '0';
+    if (weight) weight.value = '0';
+    if (harmonization) harmonization.value = '0';
+    if (hands) hands.value = '1';
+    if (targeting) targeting.value = 'Melee';
+    if (characteristic) characteristic.value = 'DES';
+    if (speed) speed.value = '';
+
+    if (sidequestForgeSummary) {
+        sidequestForgeSummary.style.display = 'none';
+        sidequestForgeSummary.textContent = '';
+    }
+}
+
+sidequestForgeToggleBtn?.addEventListener('click', () => {
+    if (!sidequestForgeForm) return;
+    sidequestForgeForm.style.display =
+        sidequestForgeForm.style.display === 'none' ? 'block' : 'none';
+});
+
+sidequestForgeBtn?.addEventListener('click', () => {
+    const name = forgeFieldValue('forge-weapon-name');
+    const damage = forgeNumberValue('forge-weapon-damage');
+    const speed = forgeNumberValue('forge-weapon-speed');
+
+    if (!name) {
+        alert("Inserisci il nome dell'arma forgiata.");
+        return;
+    }
+    if (damage === null || damage < 0) {
+        alert('Inserisci un danno valido.');
+        return;
+    }
+    if (speed === null || speed <= 0) {
+        alert("Inserisci una velocità d'attacco valida.");
+        return;
+    }
+
+    pendingSidequestWeapon = {
+        name,
+        brand: forgeFieldValue('forge-weapon-brand'),
+        value_eur: forgeNumberValue('forge-weapon-value'),
+        description: forgeFieldValue('forge-weapon-description'),
+        damage,
+        damage_type: forgeFieldValue('forge-weapon-damage-type'),
+        characteristic: forgeFieldValue('forge-weapon-characteristic') || 'DES',
+        hp: forgeNumberValue('forge-weapon-hp') ?? 100,
+        action_cost: forgeNumberValue('forge-weapon-action-cost') ?? 0,
+        attack_speed: speed,
+        hands: forgeNumberValue('forge-weapon-hands') ?? 1,
+        targeting: forgeFieldValue('forge-weapon-targeting') || 'Melee',
+        ammo: forgeFieldValue('forge-weapon-ammo'),
+        ammo_qty: forgeNumberValue('forge-weapon-ammo-qty'),
+        base_malus: forgeNumberValue('forge-weapon-base-malus'),
+        aim_time: forgeNumberValue('forge-weapon-aim-time'),
+        range_1: forgeNumberValue('forge-weapon-range-1'),
+        range_malus_1: forgeNumberValue('forge-weapon-malus-1'),
+        range_2: forgeNumberValue('forge-weapon-range-2'),
+        range_malus_2: forgeNumberValue('forge-weapon-malus-2'),
+        range_3: forgeNumberValue('forge-weapon-range-3'),
+        range_malus_3: forgeNumberValue('forge-weapon-malus-3'),
+        weight: forgeNumberValue('forge-weapon-weight') ?? 0,
+        harmonization: forgeNumberValue('forge-weapon-harmonization') ?? 0,
+        license_name: forgeFieldValue('forge-weapon-license')
+    };
+
+    if (sidequestForgeSummary) {
+        sidequestForgeSummary.textContent =
+            `✅ Allegata: ${formatForgedWeaponSummary(pendingSidequestWeapon)}`;
+        sidequestForgeSummary.style.display = 'block';
+    }
+
+    if (sidequestForgeForm) sidequestForgeForm.style.display = 'none';
+});
+
+sidequestForgeRemoveBtn?.addEventListener('click', () => {
+    clearSidequestForge();
+});
+
+function sidequestRewardWeaponSummary(definition) {
+    if (!definition) return '';
+    const weapon = definition.weapon || {};
+    return formatForgedWeaponSummary({
+        name: definition.name,
+        damage: weapon.damage ?? definition?.combat?.damage?.formula,
+        attack_speed: weapon.attack_speed ?? definition?.activation?.speed?.effect_or_action,
+        hands: weapon.hands ?? definition?.equipment?.slot?.count,
+        targeting: weapon.targeting,
+        license_name: weapon.license_name
+    });
+}
+
+function sidequestRewardWeaponDetails(definition) {
+    if (!definition) return [];
+
+    const weapon = definition.weapon || {};
+    const equipment = definition.equipment || {};
+    const ranges = Array.isArray(weapon.range_bands_m) ? weapon.range_bands_m : [];
+    const maluses = Array.isArray(weapon.range_malus) ? weapon.range_malus : [];
+    const details = [
+        `Caratteristica: ${weapon.characteristic || '-'}`,
+        `Vita: ${equipment.hp ?? '-'}`,
+        `Costo azione: ${weapon.action_cost ?? '-'}`,
+        `Velocità: ${weapon.attack_speed ?? '-'}`,
+        `Mani: ${weapon.hands ?? '-'}`,
+        `Tipo: ${weapon.targeting || '-'}`
+    ];
+
+    if (weapon.ammo) details.push(`Munizioni: ${weapon.ammo} (${weapon.ammo_qty ?? '-'})`);
+    if (weapon.base_malus !== null && weapon.base_malus !== undefined) details.push(`Malus base: ${weapon.base_malus}`);
+    if (ranges.some(v => v !== null && v !== undefined)) {
+        details.push(`Distanze: ${ranges.map(v => v ?? '-').join(' / ')} m`);
+    }
+    if (maluses.some(v => v !== null && v !== undefined)) {
+        details.push(`Malus distanza: ${maluses.map(v => v ?? '-').join(' / ')}`);
+    }
+    if (weapon.aim_time !== null && weapon.aim_time !== undefined) details.push(`Tempo mira: ${weapon.aim_time}`);
+    if (equipment.weight !== null && equipment.weight !== undefined) details.push(`Peso: ${equipment.weight}`);
+    if (equipment.harmonization !== null && equipment.harmonization !== undefined) details.push(`Armonizzazione: ${equipment.harmonization}`);
+    if (equipment.cost_eur !== null && equipment.cost_eur !== undefined) details.push(`Valore: ${equipment.cost_eur} €`);
+    if (weapon.license_name) details.push(`Licenza: ${weapon.license_name}`);
+
+    return details;
+}
+
 function sidequestPlayerName(charId) {
     const character = (characters || []).find(char => Number(char.id) === Number(charId));
     return character?.name || `Giocatore #${charId}`;
@@ -1177,6 +1700,33 @@ function renderSidequestCard(quest) {
         card.appendChild(description);
     }
 
+    const rewardWeapon = quest.reward_weapon || null;
+    const deliveredTo = Array.isArray(quest.reward_delivered_to)
+        ? quest.reward_delivered_to.map(Number)
+        : [];
+
+    if (rewardWeapon) {
+        const rewardBox = document.createElement('div');
+        rewardBox.style.cssText = 'margin-top:7px;padding:7px;border:1px solid #dc7633;border-radius:5px;background:#fdf2e9;color:#784212;font-size:11px;line-height:1.4;';
+        const rewardTitle = document.createElement('strong');
+        rewardTitle.textContent = '🎁 Ricompensa forgiata';
+        rewardBox.appendChild(rewardTitle);
+        rewardBox.appendChild(document.createElement('br'));
+        const rewardText = document.createElement('span');
+        rewardText.textContent = sidequestRewardWeaponSummary(rewardWeapon);
+        rewardBox.appendChild(rewardText);
+
+        const detailText = sidequestRewardWeaponDetails(rewardWeapon);
+        if (detailText.length) {
+            const detail = document.createElement('div');
+            detail.style.cssText = 'margin-top:4px;color:#935116;';
+            detail.textContent = detailText.join(' • ');
+            rewardBox.appendChild(detail);
+        }
+
+        card.appendChild(rewardBox);
+    }
+
     const paidBy = Array.isArray(quest.paid_by) ? quest.paid_by.map(Number) : [];
 
     if (isMaster) {
@@ -1186,6 +1736,60 @@ function renderSidequestCard(quest) {
             ? `✅ Pagato da: ${paidBy.map(sidequestPlayerName).join(', ')}`
             : '⏳ Nessun pagamento ancora.';
         card.appendChild(paymentInfo);
+
+        if (rewardWeapon) {
+            const deliveryRow = document.createElement('div');
+            deliveryRow.style.cssText = 'display:flex;gap:5px;margin-top:8px;';
+
+            const recipientSelect = document.createElement('select');
+            recipientSelect.style.cssText = 'flex:1;min-width:0;padding:5px;border:1px solid #dc7633;border-radius:4px;background:white;';
+
+            const eligiblePlayers = (characters || []).filter(char =>
+                char.role === 'player' &&
+                (quest.target_char_id == null || Number(char.id) === Number(quest.target_char_id))
+            );
+
+            eligiblePlayers.forEach(char => {
+                const option = document.createElement('option');
+                option.value = char.id;
+                option.textContent = deliveredTo.includes(Number(char.id))
+                    ? `${char.name} — già consegnata`
+                    : char.name;
+                option.disabled = deliveredTo.includes(Number(char.id));
+                recipientSelect.appendChild(option);
+            });
+
+            const deliverBtn = document.createElement('button');
+            deliverBtn.type = 'button';
+            deliverBtn.textContent = '🎁 Consegna arma';
+            deliverBtn.style.cssText = 'padding:5px 8px;background:#d35400;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:bold;';
+
+            const hasRecipient = [...recipientSelect.options].some(opt => !opt.disabled);
+            if (!hasRecipient) {
+                deliverBtn.disabled = true;
+                deliverBtn.style.background = '#95a5a6';
+                deliverBtn.style.cursor = 'not-allowed';
+            } else {
+                const firstAvailable = [...recipientSelect.options].find(opt => !opt.disabled);
+                if (firstAvailable) recipientSelect.value = firstAvailable.value;
+            }
+
+            deliverBtn.addEventListener('click', () => {
+                const charId = parseInt(recipientSelect.value);
+                if (!charId) return;
+                const charName = sidequestPlayerName(charId);
+                if (!confirm(`Consegnare "${rewardWeapon.name}" a ${charName}?`)) return;
+                deliverBtn.disabled = true;
+                socket.emit('deliver_sidequest_weapon', {
+                    quest_id: quest.id,
+                    char_id: charId
+                });
+            });
+
+            deliveryRow.appendChild(recipientSelect);
+            deliveryRow.appendChild(deliverBtn);
+            card.appendChild(deliveryRow);
+        }
 
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
@@ -1229,6 +1833,13 @@ function renderSidequestCard(quest) {
                 socket.emit('pay_sidequest', { quest_id: quest.id });
             });
             card.appendChild(payBtn);
+        }
+
+        if (rewardWeapon && deliveredTo.includes(Number(myId))) {
+            const delivered = document.createElement('div');
+            delivered.style.cssText = 'margin-top:6px;padding:6px;text-align:center;background:#fdebd0;color:#935116;border-radius:4px;font-weight:bold;font-size:11px;';
+            delivered.textContent = `🎁 Ricompensa consegnata: ${rewardWeapon.name}`;
+            card.appendChild(delivered);
         }
     }
 }
@@ -1293,12 +1904,14 @@ sendSidequestBtn?.addEventListener('click', () => {
         title,
         description,
         cost,
-        target_char_id: targetValue === 'all' ? null : parseInt(targetValue)
+        target_char_id: targetValue === 'all' ? null : parseInt(targetValue),
+        reward_weapon: pendingSidequestWeapon
     });
 
     if (sidequestTitle) sidequestTitle.value = '';
     if (sidequestDescription) sidequestDescription.value = '';
     if (sidequestCost) sidequestCost.value = '0';
+    clearSidequestForge();
 });
 
 // --- 4. INVIO LANCIO DADI (BOTTONI E TASTIERA) ---
@@ -1972,6 +2585,10 @@ function characterHasWeaponLicense(char, compItem) {
 
 function findCompendioItem(inventoryItem) {
     if (!inventoryItem) return null;
+
+    if (inventoryItem.custom_definition && typeof inventoryItem.custom_definition === 'object') {
+        return inventoryItem.custom_definition;
+    }
 
     const items = getCompendioItems();
 
@@ -2792,6 +3409,10 @@ if (actionHeader && actionPanel) {
 function getEquippedCompendiumItem(itemData) {
     if (!itemData) return null;
 
+    if (itemData.custom_definition && typeof itemData.custom_definition === 'object') {
+        return itemData.custom_definition;
+    }
+
     return findCompendioItem({
         compendium_id: itemData.compendium_id || null,
         name: itemData.name
@@ -3554,7 +4175,16 @@ function returnEquippedItemToInventory(item, backpack, weapons) {
             item.durability_current ?? null,
 
         durability_max:
-            item.durability_max ?? null
+            item.durability_max ?? null,
+
+        custom_definition:
+            item.custom_definition || null,
+
+        forged:
+            !!item.forged,
+
+        forged_from_sidequest:
+            item.forged_from_sidequest || null
     };
 
     const originalType = item.original_type || 'backpack';
@@ -3566,7 +4196,13 @@ function returnEquippedItemToInventory(item, backpack, weapons) {
             compendium_id: cleanItem.compendium_id,
             name: cleanItem.name,
             desc: cleanItem.desc,
-            img: cleanItem.img
+            img: cleanItem.img,
+            brand: cleanItem.brand,
+            durability_current: cleanItem.durability_current,
+            durability_max: cleanItem.durability_max,
+            custom_definition: cleanItem.custom_definition,
+            forged: cleanItem.forged,
+            forged_from_sidequest: cleanItem.forged_from_sidequest
         });
 
     } else {
@@ -4004,10 +4640,18 @@ window.equipItem = function(
     // TROVA L'OGGETTO NEL NUOVO COMPENDIO
     // ==========================================
 
-    const compItem = findCompendioItem({
-        compendium_id: compendiumId || null,
-        name: itemName
+    const inventoryCandidate = [...weapons, ...backpack].find(entry => {
+        if (!entry || typeof entry === 'string') return false;
+        if (compendiumId && entry.compendium_id === compendiumId) return true;
+        return entry.name === itemName;
     });
+
+    const compItem =
+        inventoryCandidate?.custom_definition ||
+        findCompendioItem({
+            compendium_id: compendiumId || null,
+            name: itemName
+        });
 
     const slotInfo =
         compItem?.equipment?.slot || null;
@@ -4287,6 +4931,15 @@ window.equipItem = function(
         durability_current:
             sourceItem?.durability_current ??
             equipmentMaxHp,
+
+        custom_definition:
+            sourceItem?.custom_definition || null,
+
+        forged:
+            !!sourceItem?.forged,
+
+        forged_from_sidequest:
+            sourceItem?.forged_from_sidequest || null,
     };
 
     // ==========================================
