@@ -36,6 +36,8 @@ canvas {
     cursor: crosshair;
     border: 2px solid #000000;
     display: block;
+    /* La penna della tavoletta non deve attivare gesti del browser/Windows Ink */
+    touch-action: none;
 }
 
 #status-bar {
@@ -773,4 +775,882 @@ canvas {
 
 .master-dock-title:hover {
     background: rgba(192,57,43,0.38);
+}
+
+/* ==========================================
+   DOCK GIOCATORE - STESSO STILE DELLA DOCK MASTER
+   ========================================== */
+#player-panel {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 66px;
+    padding: 6px;
+    background: rgba(24, 28, 35, 0.94);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.38);
+    box-sizing: border-box;
+    z-index: 1050;
+}
+
+body.player-mode #player-panel {
+    display: block;
+}
+
+.player-dock-title {
+    background: rgba(41,128,185,0.22);
+    border-color: rgba(52,152,219,0.45);
+}
+
+.player-dock-title:hover {
+    background: rgba(41,128,185,0.38);
+}
+
+.player-tool-btn.master-tool-active {
+    background: #2980b9;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52,152,219,0.18);
+}
+
+#player-panel.player-dock-collapsed {
+    width: 58px;
+}
+
+#player-panel.player-dock-collapsed .master-tool-btn,
+#player-panel.player-dock-collapsed .master-dock-separator {
+    display: none !important;
+}
+
+/* Pannelli chiusi dalla dock: vince sugli stili inline impostati dagli aggiornamenti. */
+.player-dock-hidden {
+    display: none !important;
+}
+
+/* In modalità giocatore i vecchi comandi sparsi sono sostituiti dalla dock. */
+body.player-mode #sheet-btn,
+body.player-mode #rename-btn,
+body.player-mode #center-cam-btn,
+body.player-mode #btn-toggle-notes {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    #player-panel {
+        top: auto;
+        left: 8px;
+        bottom: 8px;
+        width: calc(100vw - 16px);
+        padding: 5px;
+    }
+
+    #player-panel .master-dock {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 4px;
+    }
+}
+
+/* ==========================================
+   TABELLA VELOCITÀ AZIONI (INTERATTIVA)
+   ========================================== */
+
+.action-speed-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.action-speed-chip {
+    padding: 5px 10px;
+    border: 1px solid #566573;
+    border-radius: 999px;
+    background: #2c3e50;
+    color: #ecf0f1;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.action-speed-chip:hover {
+    border-color: #3498db;
+}
+
+.action-speed-chip.active {
+    background: #3498db;
+    border-color: #3498db;
+    font-weight: bold;
+}
+
+.action-speed-group {
+    padding: 12px 9px 6px 9px;
+    color: #f1c40f;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #566573;
+}
+
+.action-speed-row td {
+    padding: 8px 9px;
+    border-bottom: 1px solid #34495e;
+}
+
+.action-speed-row .action-speed-number {
+    text-align: center;
+    font-weight: bold;
+}
+
+.action-speed-row.selectable {
+    cursor: pointer;
+}
+
+.action-speed-row.selectable:hover {
+    background: rgba(52, 152, 219, 0.25);
+}
+
+.action-speed-row.disabled {
+    opacity: 0.4;
+}
+
+.action-speed-empty {
+    padding: 16px;
+    text-align: center;
+    color: #bdc3c7;
+}
+
+/* ==========================================
+   SELETTORE ARTI MULTIPLI
+   ========================================== */
+
+.limb-picker {
+    margin-bottom: 8px;
+}
+
+.limb-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.limb-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border: 1px solid #566573;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #bdc3c7;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.limb-chip strong {
+    color: #ecf0f1;
+    font-size: 12px;
+}
+
+.limb-chip:hover {
+    border-color: #f1c40f;
+}
+
+.limb-chip.active {
+    background: rgba(241, 196, 15, 0.18);
+    border-color: #f1c40f;
+    color: #f1c40f;
+}
+
+.limb-chip.active strong {
+    color: #f1c40f;
+}
+
+.limb-picker-summary {
+    margin-top: 5px;
+    min-height: 14px;
+    font-size: 11px;
+    text-align: center;
+    color: #bdc3c7;
+}
+
+.limb-picker-summary.error {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+/* ==========================================
+   WIKI DEL MONDO
+   ========================================== */
+
+.wiki-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    background: rgba(0, 0, 0, 0.72);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.wiki-modal.open {
+    display: flex;
+}
+
+.wiki-window {
+    width: min(1100px, 96vw);
+    height: min(820px, 90vh);
+    display: flex;
+    flex-direction: column;
+    background: #1b232c;
+    color: #ecf0f1;
+    border: 2px solid #c9a227;
+    border-radius: 10px;
+    box-shadow: 0 12px 45px rgba(0, 0, 0, 0.75);
+    overflow: hidden;
+}
+
+.wiki-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #141a21;
+    border-bottom: 1px solid #3d4a57;
+}
+
+.wiki-header-title {
+    flex: 1;
+    font-size: 18px;
+    font-weight: bold;
+    color: #f4d35e;
+    letter-spacing: 1px;
+}
+
+.wiki-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.wiki-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #202a34;
+    border-right: 1px solid #3d4a57;
+}
+
+.wiki-page-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.wiki-list-category {
+    margin: 12px 4px 4px 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #c9a227;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.wiki-page-item {
+    display: block;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #d5dbdf;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.wiki-page-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.wiki-page-item.active {
+    background: rgba(201, 162, 39, 0.22);
+    color: #f4d35e;
+    font-weight: bold;
+}
+
+.wiki-page-item.secret {
+    color: #95a5a6;
+    font-style: italic;
+}
+
+.wiki-home-item {
+    font-weight: bold;
+}
+
+.wiki-list-empty {
+    padding: 10px 8px;
+    font-size: 12px;
+}
+
+.wiki-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.wiki-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 30px;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.wiki-view.hidden {
+    display: none;
+}
+
+.wiki-view h1 {
+    margin: 0 0 10px 0;
+    color: #f4d35e;
+    font-size: 26px;
+}
+
+.wiki-view h2,
+.wiki-view h3,
+.wiki-view h4 {
+    margin: 18px 0 6px 0;
+    color: #f4d35e;
+}
+
+.wiki-view p {
+    margin: 0 0 10px 0;
+}
+
+.wiki-muted {
+    color: #95a5a6;
+}
+
+.wiki-page-category {
+    font-size: 11px;
+    font-weight: bold;
+    color: #c9a227;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.wiki-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.wiki-secret-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.wiki-page-image {
+    display: block;
+    max-width: 100%;
+    max-height: 380px;
+    margin: 0 0 16px 0;
+    border-radius: 6px;
+    border: 1px solid #3d4a57;
+}
+
+.wiki-link {
+    color: #5dade2;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.wiki-link:hover {
+    color: #85c1e9;
+}
+
+.wiki-link-missing {
+    color: #e59866;
+}
+
+.wiki-backlinks {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #3d4a57;
+    font-size: 12px;
+    color: #95a5a6;
+}
+
+.wiki-category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.wiki-category-card {
+    padding: 10px 14px;
+    background: #222d38;
+    border: 1px solid #3d4a57;
+    border-radius: 6px;
+}
+
+.wiki-category-card h3 {
+    margin: 0 0 6px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.wiki-category-card ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.wiki-editor {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 20px;
+    overflow-y: auto;
+}
+
+.wiki-editor.open {
+    display: flex;
+}
+
+.wiki-editor-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.wiki-editor-row .wiki-input {
+    flex: 1;
+}
+
+.wiki-input {
+    padding: 8px;
+    border: 1px solid #566573;
+    border-radius: 4px;
+    background: #141a21;
+    color: #ecf0f1;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.wiki-input-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.wiki-textarea {
+    flex: 1;
+    min-height: 260px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.wiki-secret-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.wiki-image-preview {
+    display: none;
+    max-width: 260px;
+    max-height: 140px;
+    border-radius: 4px;
+    border: 1px solid #3d4a57;
+}
+
+.wiki-image-preview.visible {
+    display: block;
+}
+
+.wiki-help {
+    font-size: 11px;
+    color: #95a5a6;
+}
+
+.wiki-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.wiki-btn {
+    padding: 6px 12px;
+    border: 1px solid #566573;
+    border-radius: 4px;
+    background: #2c3e50;
+    color: #ecf0f1;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.wiki-btn:hover {
+    border-color: #c9a227;
+}
+
+.wiki-btn-primary {
+    background: #c9a227;
+    border-color: #c9a227;
+    color: #141a21;
+}
+
+.wiki-btn-danger {
+    background: #922b21;
+    border-color: #922b21;
+}
+
+.wiki-btn-close {
+    background: #c0392b;
+    border-color: #c0392b;
+}
+
+.wiki-master-only {
+    display: none;
+}
+
+.wiki-is-master .wiki-master-only {
+    display: inline-block;
+}
+
+/* Pallino "novità" sul pulsante Wiki dei giocatori */
+.wiki-open-btn.wiki-has-news {
+    position: relative;
+}
+
+.wiki-open-btn.wiki-has-news::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #e74c3c;
+    box-shadow: 0 0 6px #e74c3c;
+}
+
+@media (max-width: 700px) {
+    .wiki-body {
+        flex-direction: column;
+    }
+
+    .wiki-sidebar {
+        width: auto;
+        max-height: 35%;
+        border-right: none;
+        border-bottom: 1px solid #3d4a57;
+    }
+
+    .wiki-view {
+        padding: 16px;
+    }
+}
+
+/* ==========================================
+   ORDINE DI TURNO
+   ========================================== */
+
+.turn-interrupt-banner {
+    padding: 7px 9px;
+    border-radius: 5px;
+    background: #8e44ad;
+    color: #fff;
+    font-size: 12px;
+    text-align: center;
+}
+
+.turn-row {
+    padding: 6px 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+.turn-row.current {
+    background: #f9e79f;
+    border: 2px solid #e67e22;
+    color: #000;
+}
+
+.turn-row.acting {
+    border: 2px solid #8e44ad;
+    color: #000;
+}
+
+.turn-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.turn-row-name {
+    font-weight: bold;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.turn-row-meta {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.turn-row-frames {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+    font-size: 10px;
+}
+
+.turn-frame-move {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(41, 128, 185, 0.15);
+    color: #1f618d;
+    font-weight: bold;
+}
+
+.turn-frame-limb {
+    position: relative;
+    min-width: 38px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.turn-frame-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: -1;
+    background: rgba(39, 174, 96, 0.35);
+}
+
+.turn-frame-limb {
+    isolation: isolate;
+}
+
+.turn-frame-bar.low {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+.turn-row-effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.turn-effect {
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(39, 174, 96, 0.18);
+    color: #1e8449;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.turn-effect.harmful {
+    background: rgba(231, 76, 60, 0.18);
+    color: #b03a2e;
+}
+
+/* ==========================================
+   SCENE
+   ========================================== */
+
+.scene-box {
+    margin-bottom: 10px;
+    padding: 6px;
+    border: 1px solid #aed6f1;
+    border-radius: 4px;
+    background: #f4f9fd;
+}
+
+.scene-title {
+    margin-bottom: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #2471a3;
+}
+
+.scene-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.scene-empty {
+    font-size: 11px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.scene-row {
+    display: flex;
+    gap: 3px;
+}
+
+.scene-name {
+    flex: 1;
+    padding: 5px 6px;
+    border: 1px solid #d6eaf8;
+    border-radius: 3px;
+    background: #fff;
+    color: #2c3e50;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scene-name:hover {
+    border-color: #2980b9;
+}
+
+.scene-row.active .scene-name {
+    background: #2980b9;
+    border-color: #2980b9;
+    color: #fff;
+    font-weight: bold;
+    cursor: default;
+}
+
+.scene-icon-btn {
+    padding: 2px 6px;
+    border: 1px solid #d6eaf8;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.scene-input {
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 5px;
+    box-sizing: border-box;
+    border: 1px solid #aed6f1;
+    border-radius: 3px;
+}
+
+.scene-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.scene-actions button {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    border-radius: 3px;
+    background: #2980b9;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.scene-actions button + button {
+    background: #5d6d7e;
+}
+
+/* Handout del wiki */
+.wiki-share-panel {
+    display: none;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border: 1px solid #c9a227;
+    border-radius: 6px;
+    background: #222d38;
+}
+
+.wiki-share-panel.open {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.wiki-share-title {
+    font-weight: bold;
+    color: #f4d35e;
+}
+
+.wiki-share-option {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    cursor: pointer;
+}
+
+.wiki-handout-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(201, 162, 39, 0.2);
+    color: #f4d35e;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Esportazione resoconto della chat */
+.chat-export-bar {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid #dcdde1;
+    background: #f4f6f7;
+}
+
+.chat-export-bar button {
+    flex: 1;
+    padding: 5px 6px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    background: #fff;
+    color: #2c3e50;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.chat-export-bar button:hover {
+    border-color: #3498db;
 }

@@ -46,7 +46,7 @@
     <!-- Pulsante Scheda Fluttuante in basso a destra -->
     <button id="sheet-btn" style="display: none; position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #3498db; color: white; border: none; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.6); font-size: 28px; cursor: pointer; z-index: 1100; align-items: center; justify-content: center; transition: transform 0.2s ease, background 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.background='#2980b9';" onmouseout="this.style.transform='scale(1)'; this.style.background='#3498db';" title="Apri Scheda">📄</button>
 
-    <div id="combat-tracker" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 1000; width: 250px; background: rgba(255, 255, 255, 0.95); border: 2px solid #2c3e50; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden;">
+    <div id="combat-tracker" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 1000; width: 280px; background: rgba(255, 255, 255, 0.95); border: 2px solid #2c3e50; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden;">
 
         <div id="tracker-header" style="background: #2c3e50; color: white; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -79,7 +79,7 @@
     <!-- ==========================================
          2. PANNELLO EQUIPAGGIAMENTO (PAPER DOLL)
          ========================================== -->
-    <div id="equipped-panel" style="display: block; position: absolute; bottom: 40px; left: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
+    <div id="equipped-panel" style="display: block; position: absolute; bottom: 40px; left: 100px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
 
         <div id="equip-header" style="background: #1a252f; color: #3498db; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #3498db; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -125,7 +125,7 @@
     <!-- ==========================================
          3. PANNELLO GADGET (PAPER DOLL SEPARATA)
          ========================================== -->
-    <div id="gadget-panel" style="display: block; position: absolute; bottom: 40px; left: 320px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #9b59b6; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(155, 89, 182, 0.2);">
+    <div id="gadget-panel" style="display: block; position: absolute; bottom: 40px; left: 400px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #9b59b6; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(155, 89, 182, 0.2);">
 
         <div id="gadget-header" style="background: #1a252f; color: #bb8fce; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #9b59b6; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -202,6 +202,10 @@
 
             <button id="btn-open-master-forge-panel" class="master-tool-btn" type="button" title="Fucina del Master">
                 <span class="master-tool-icon">⚒️</span><span class="master-tool-label">Fucina</span>
+            </button>
+
+            <button class="master-tool-btn wiki-open-btn" type="button" title="Wiki del mondo">
+                <span class="master-tool-icon">📖</span><span class="master-tool-label">Wiki</span>
             </button>
 
             <div class="master-dock-separator"></div>
@@ -373,6 +377,17 @@
                 🗺️ Sfondo Mappa (Locale) <span style="font-size:12px;">▶</span>
             </h4>
             <div class="collapsible-content" style="display: none; padding-top: 10px;">
+                <!-- SCENE: mappa + disegni + nebbia salvati con un nome -->
+                <div class="scene-box">
+                    <div class="scene-title">🎬 Scene</div>
+                    <div id="scene-list" class="scene-list"></div>
+                    <input id="scene-name-input" class="scene-input" type="text" maxlength="100" placeholder="Nome scena (es. Taverna, Porto Nero)">
+                    <div class="scene-actions">
+                        <button id="scene-save-current-btn" type="button" title="Salva mappa, disegni e nebbia attuali come nuova scena">💾 Salva attuale</button>
+                        <button id="scene-new-empty-btn" type="button" title="Salva la scena aperta e passa a una mappa vuota">＋ Nuova vuota</button>
+                    </div>
+                </div>
+
                 <input type="file" id="map-file-input" accept="image/*" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box;">
 
                 <!-- NUOVO BOTTONE EDIT VISIVO -->
@@ -523,13 +538,57 @@
     </div>
 
     <!-- ==========================================
+         DOCK GIOCATORE
+         ========================================== -->
+
+    <div id="player-panel" aria-label="Strumenti Giocatore">
+        <div class="master-dock">
+            <button id="btn-player-dock-toggle" class="master-dock-title player-dock-title" type="button" title="Riduci / espandi strumenti" aria-expanded="true">👤</button>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="sheet" title="Apri la tua scheda">
+                <span class="master-tool-icon">📄</span><span class="master-tool-label">Scheda</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="equip" title="Mostra / nascondi armatura e armi">
+                <span class="master-tool-icon">🛡️</span><span class="master-tool-label">Armi</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="gadget" title="Mostra / nascondi gadget">
+                <span class="master-tool-icon">🧩</span><span class="master-tool-label">Gadget</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="notes" title="Blocco note">
+                <span class="master-tool-icon">📝</span><span class="master-tool-label">Appunti</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn wiki-open-btn" type="button" data-player-action="wiki" title="Wiki del mondo">
+                <span class="master-tool-icon">📖</span><span class="master-tool-label">Wiki</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="chat" title="Chat, dadi e sidequest">
+                <span class="master-tool-icon">💬</span><span class="master-tool-label">Chat</span>
+            </button>
+
+            <div class="master-dock-separator"></div>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="center" title="Centra la visuale sul tuo personaggio">
+                <span class="master-tool-icon">🎯</span><span class="master-tool-label">Centra</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn" type="button" data-player-action="rename" title="Rinomina il personaggio">
+                <span class="master-tool-icon">✏️</span><span class="master-tool-label">Nome</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
          PULSANTE SCHEDA
          ========================================== -->
 
     <div id="sheet-btn">📜</div>
     <button id="btn-toggle-notes" style="display: none; width: 100%; margin-top: 5px; padding: 10px; background: #f39c12; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">📝 I Miei Appunti</button>
     <!-- PANNELLO APPUNTI -->
-    <div id="notes-panel" style="display: none; position: absolute; top: 100px; left: 20px; z-index: 1000; background: rgba(255, 255, 255, 0.95); border: 2px solid #f39c12; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 300px;">
+    <div id="notes-panel" style="display: none; position: absolute; top: 100px; left: 100px; z-index: 1000; background: rgba(255, 255, 255, 0.95); border: 2px solid #f39c12; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 300px;">
         <div id="notes-header" style="background: #f39c12; color: white; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center; border-radius: 5px 5px 0 0;">
             <span id="notes-close-x" style="cursor: pointer; padding: 0 5px; font-size: 16px;" title="Chiudi Appunti">✖</span>
             <span>📝 Blocco Note 🖐️</span>
@@ -781,6 +840,10 @@
 
         <!-- Contenitore nascosto di default -->
         <div id="dice-panel-content" style="display: none; flex-direction: column; height: 75vh;">
+            <div class="chat-export-bar">
+                <button id="btn-chat-download" type="button" title="Scarica la chat di questa sessione come file di testo">💾 Scarica resoconto</button>
+                <button id="btn-chat-to-wiki" class="chat-export-master" type="button" title="Salva la chat come pagina segreta del wiki">📖 Salva nel wiki</button>
+            </div>
             <div id="chat-log" style="flex: 1; overflow-y: auto; padding: 12px; font-size: 14px; background: #fafafa; display: flex; flex-direction: column; gap: 8px;">
                 <div style="text-align: center; color: #95a5a6; font-size: 12px; margin-top: 10px;">Inizio sessione</div>
             </div>
@@ -1015,11 +1078,12 @@
 
         <div id="action-header" style="background: #c0392b; color: white; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
-            <span>⚔️ AZIONE OFFENSIVA 🖐️</span>
+            <span id="action-header-title">⚔️ AZIONI DI TURNO 🖐️</span>
             <span id="action-toggle" style="cursor: pointer; padding: 0 5px;" title="Riduci a icona">▼</span>
         </div>
 
         <div id="action-content" style="display: block;">
+            <button id="btn-end-interrupt" style="display: none; width: 100%; margin-bottom: 10px; padding: 9px; background: #8e44ad; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;"></button>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; font-size: 11px; text-align: center;">
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Dx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bd">60</strong>/60</div>
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Sx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bs">60</strong>/60</div>
@@ -1077,7 +1141,30 @@
                 Costo in Frame (110 - Vel): <strong id="attack-cost" style="color: #e74c3c; font-size: 14px;">25</strong>
             </div>
             <button id="btn-execute-attack" style="width: 100%; padding: 10px; background: #c0392b; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">SFERRA ATTACCO</button>
-            <button class="action-speed-table-open" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Tabella velocità azioni</button>
+
+            <!-- AZIONE DALLA TABELLA (movimento, oggetti, cure, gadget...) -->
+            <div id="table-action-section" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #555;">
+                <div style="font-size: 12px; font-weight: bold; color: #f1c40f; text-align: center; letter-spacing: 1px; margin-bottom: 8px;">🎬 ALTRA AZIONE</div>
+
+                <select id="table-action-category" style="width: 100%; padding: 5px; margin-bottom: 6px; border-radius: 3px; border: 1px solid #7f8c8d; background: #34495e; color: white;"></select>
+                <select id="table-action-select" style="width: 100%; padding: 5px; margin-bottom: 6px; border-radius: 3px; border: 1px solid #7f8c8d; background: #2c3e50; color: white; font-weight: bold;"></select>
+
+                <div id="table-action-limbs" class="limb-picker"></div>
+
+                <select id="table-action-radius" style="display: none; width: 100%; padding: 5px; margin-bottom: 8px; border-radius: 3px; border: 1px solid #7f8c8d; background: #34495e; color: white;">
+                    <option value="1">🎯 Raggio 1 esagono</option>
+                    <option value="2">🎯 Raggio 2 esagoni</option>
+                </select>
+
+                <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
+                    ⚡ Velocità: <strong id="table-action-speed" style="color: #f1c40f; font-size: 14px;">-</strong>
+                    &nbsp;·&nbsp;
+                    Frame: <strong id="table-action-frames" style="color: #e74c3c; font-size: 14px;">-</strong>
+                </div>
+
+                <button id="btn-execute-table-action" style="width: 100%; padding: 10px; background: #d68910; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">ESEGUI AZIONE</button>
+                <button class="action-speed-table-open" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Sfoglia tabella azioni</button>
+            </div>
         </div>
     </div>
 
@@ -1092,22 +1179,72 @@
             <option value="Scambio">⚔️ Scambio d'Attacco</option>
         </select>
 
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <select id="reaction-limb" style="flex: 1; padding: 5px; border-radius: 3px;">
-                <option value="bd">Braccio Dx</option>
-                <option value="bs">Braccio Sx</option>
-                <option value="gd">Gamba Dx</option>
-                <option value="gs">Gamba Sx</option>
-            </select>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
+            ⚡ Velocità
             <input type="number" id="reaction-speed" placeholder="Velocità" value="100" style="width: 70px; text-align: center; border-radius: 3px;">
         </div>
+
+        <div id="reaction-limbs" class="limb-picker" style="margin-bottom: 10px;"></div>
 
         <div style="text-align: center; margin-bottom: 15px; font-size: 12px; color: #bdc3c7;">
             Costo in Frame (110 - Vel): <strong id="reaction-cost" style="color: #e74c3c; font-size: 14px;">10</strong>
         </div>
 
         <button id="btn-execute-reaction" style="width: 100%; padding: 12px; background: #f39c12; color: black; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">DICHIARA REAZIONE</button>
-        <button class="action-speed-table-open" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Consulta tabella azioni</button>
+        <button class="action-speed-table-open" data-table-target="reaction" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Scegli difesa dalla tabella</button>
+    </div>
+
+    <!-- WIKI DEL MONDO -->
+    <div id="wiki-modal" class="wiki-modal" role="dialog" aria-label="Wiki del mondo">
+        <div class="wiki-window">
+            <div class="wiki-header">
+                <div class="wiki-header-title">📖 Wiki di Venander</div>
+                <button id="wiki-new-btn" class="wiki-btn wiki-btn-primary wiki-master-only" type="button">＋ Nuova pagina</button>
+                <button id="wiki-close-btn" class="wiki-btn wiki-btn-close" type="button" title="Chiudi">✕</button>
+            </div>
+
+            <div class="wiki-body">
+                <aside class="wiki-sidebar">
+                    <input id="wiki-search" class="wiki-input" type="text" placeholder="Cerca nel wiki...">
+                    <div id="wiki-page-list" class="wiki-page-list"></div>
+                </aside>
+
+                <main class="wiki-main">
+                    <!-- Lettura -->
+                    <article id="wiki-view" class="wiki-view"></article>
+
+                    <!-- Modifica (solo Master) -->
+                    <form id="wiki-editor" class="wiki-editor">
+                        <input id="wiki-edit-title" class="wiki-input wiki-input-title" type="text" placeholder="Titolo della pagina" maxlength="160" required>
+
+                        <div class="wiki-editor-row">
+                            <input id="wiki-edit-category" class="wiki-input" type="text" placeholder="Categoria (es. Luoghi, Fazioni, Personaggi)" maxlength="60" list="wiki-category-options">
+                            <datalist id="wiki-category-options"></datalist>
+                            <label class="wiki-secret-toggle" title="Le pagine segrete le vede solo il Master">
+                                <input id="wiki-edit-hidden" type="checkbox"> 🔒 Segreta
+                            </label>
+                        </div>
+
+                        <div class="wiki-editor-row">
+                            <input id="wiki-edit-image-url" class="wiki-input" type="text" placeholder="Immagine: URL oppure carica un file →">
+                            <label class="wiki-btn">🖼️ Carica<input id="wiki-edit-image-file" type="file" accept="image/*" hidden></label>
+                            <button id="wiki-edit-image-clear" class="wiki-btn" type="button" title="Rimuovi immagine">✕</button>
+                        </div>
+                        <img id="wiki-edit-image-preview" class="wiki-image-preview" alt="">
+
+                        <textarea id="wiki-edit-content" class="wiki-input wiki-textarea" placeholder="Scrivi la pagina..."></textarea>
+                        <div class="wiki-help">
+                            <b># Titolo</b> &nbsp; <b>## Sottotitolo</b> &nbsp; <b>**grassetto**</b> &nbsp; <i>*corsivo*</i> &nbsp; <b>- elenco</b> &nbsp; <b>[[Nome pagina]]</b> collega un'altra pagina
+                        </div>
+
+                        <div class="wiki-editor-actions">
+                            <button id="wiki-edit-cancel" class="wiki-btn" type="button">Annulla</button>
+                            <button class="wiki-btn wiki-btn-primary" type="submit">💾 Salva</button>
+                        </div>
+                    </form>
+                </main>
+            </div>
+        </div>
     </div>
 
     <!-- TABELLA VELOCITÀ AZIONI -->
@@ -1138,23 +1275,20 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 16px; background:#17202a; border-bottom:1px solid #34495e;">
                 <div>
                     <div style="font-size:18px; font-weight:bold;">📋 Velocità Azioni / Reazioni</div>
-                    <div style="font-size:11px; color:#bdc3c7; margin-top:3px;">Valori ufficiali della tabella azioni.</div>
+                    <div id="action-speed-table-hint" style="font-size:11px; color:#bdc3c7; margin-top:3px;">Clicca un'azione per selezionarla.</div>
                 </div>
                 <button id="action-speed-table-close" style="background:#c0392b; color:white; border:none; border-radius:4px; padding:7px 11px; cursor:pointer; font-weight:bold;">✕</button>
             </div>
 
-            <div style="display:flex; gap:8px; flex-wrap:wrap; padding:12px 16px; background:#253442;">
-                <input id="action-speed-search" type="text" placeholder="Cerca azione..." style="flex:1; min-width:200px; padding:8px; border-radius:4px; border:1px solid #7f8c8d;">
-                <select id="action-speed-category" style="min-width:190px; padding:8px; border-radius:4px; border:1px solid #7f8c8d;">
-                    <option value="">Tutte le categorie</option>
-                </select>
+            <div style="display:flex; flex-direction:column; gap:8px; padding:12px 16px; background:#253442;">
+                <input id="action-speed-search" type="text" placeholder="Cerca azione..." style="padding:8px; border-radius:4px; border:1px solid #7f8c8d;">
+                <div id="action-speed-categories" class="action-speed-chips"></div>
             </div>
 
             <div style="overflow:auto; padding:0 16px 16px 16px;">
                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
                     <thead style="position:sticky; top:0; background:#2c3e50; z-index:1;">
                         <tr>
-                            <th style="text-align:left; padding:9px; border-bottom:1px solid #566573;">Categoria</th>
                             <th style="text-align:left; padding:9px; border-bottom:1px solid #566573;">Azione</th>
                             <th style="text-align:center; padding:9px; border-bottom:1px solid #566573;">Velocità</th>
                             <th style="text-align:center; padding:9px; border-bottom:1px solid #566573;">Frame</th>
@@ -1309,8 +1443,10 @@
     <script src="/static/utils.js"></script>
     <script src="/static/game.js"></script>
     <script src="/static/renderer.js"></script>
+    <script src="/static/drawing.js"></script>
     <script src="/static/ui.js"></script>
     <script src="/static/control.js"></script>
+    <script src="/static/wiki.js"></script>
 
 </body>
 </html>

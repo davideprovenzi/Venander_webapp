@@ -86,7 +86,7 @@ class Line(db.Model):
 class DrawItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.String(50), nullable=False, unique=True)
-    type = db.Column(db.String(20), default="line") # 'line', 'circle', 'square', 'triangle', 'icon'
+    type = db.Column(db.String(20), default="line") # 'stroke', 'line' (vecchi segmenti), 'rectangle', 'circle', 'square', 'triangle', 'icon'
     sx = db.Column(db.Float, nullable=False)
     sy = db.Column(db.Float, nullable=False)
     ex = db.Column(db.Float, default=0.0)
@@ -94,6 +94,21 @@ class DrawItem(db.Model):
     color = db.Column(db.String(20), default="#000000")
     size = db.Column(db.Integer, default=3) # Usato per lo spessore o per il raggio
     img_data = db.Column(db.Text, nullable=True) # Conterrà l'immagine convertita
+    points = db.Column(db.JSON, nullable=True) # Solo 'stroke': lista di [x, y, spessore]
+
+    def to_dict(self):
+        return {
+            "uid": self.uid,
+            "type": self.type,
+            "sx": self.sx,
+            "sy": self.sy,
+            "ex": self.ex,
+            "ey": self.ey,
+            "c": self.color,
+            "w": self.size,
+            "img": self.img_data,
+            "points": self.points
+        }
 
 class WorldState(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -103,6 +118,19 @@ class WorldState(db.Model):
     map_dy = db.Column(db.Integer, default=0)
     fow_enabled = db.Column(db.Boolean, default=False)
     revealed_hexes = db.Column(db.JSON, default=list)
+    active_scene_id = db.Column(db.Integer, nullable=True) # Scena aperta in questo momento
+
+class Scene(db.Model):
+    """Mappa salvata con i suoi disegni e la nebbia di guerra."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    map_url = db.Column(db.Text, default="")
+    map_scale = db.Column(db.Float, default=1.0)
+    map_dx = db.Column(db.Integer, default=0)
+    map_dy = db.Column(db.Integer, default=0)
+    fow_enabled = db.Column(db.Boolean, default=False)
+    revealed_hexes = db.Column(db.JSON, default=list)
+    drawings = db.Column(db.JSON, default=list)
 
 class SideQuest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -117,6 +145,41 @@ class SideQuest(db.Model):
     # Tiene traccia dei personaggi che hanno già ricevuto la ricompensa.
     reward_delivered_to = db.Column(db.JSON, default=list)
     active = db.Column(db.Boolean, default=True)
+
+class WikiPage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    category = db.Column(db.String(60), default="Generale")
+    content = db.Column(db.Text, default="")
+    image = db.Column(db.Text, nullable=True) # URL o data URI dell'illustrazione
+    # Le pagine segrete le vede solo il Master, finché non le rivela.
+    hidden = db.Column(db.Boolean, default=False)
+    # Consegnata come handout: questi personaggi la vedono anche se segreta
+    shared_with = db.Column(db.JSON, default=list)
+
+    def is_visible_to(self, role, char_id):
+        if role == "master" or not self.hidden:
+            return True
+        return char_id is not None and char_id in (self.shared_with or [])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "category": self.category or "Generale",
+            "content": self.content or "",
+            "image": self.image,
+            "hidden": bool(self.hidden),
+            "shared_with": list(self.shared_with or [])
+        }
+
+    def payload_for(self, role, char_id):
+        """Ai giocatori non serve sapere a chi altro è stata consegnata."""
+        data = self.to_dict()
+        if role != "master":
+            data["shared_with"] = []
+            data["handout"] = bool(self.hidden)
+        return data
 
 class MasterForgeWeapon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -139,8 +202,14 @@ combat_state = {
     "current_index": 0,
     "epicenter": {"x": 0, "y": 0},
     "players_pa": {},  # Dizionario per memorizzare i PA dei giocatori
-    "players_limbs":{}
+    "players_limbs":{},
+    # Interruzioni da Minacciare in attesa: la prima è quella in corso
+    "interrupts": []
 }
+
+# Aree minacciate. Separate da combat_state perché quelle degli NPC
+# le vede solo il Master (combat_state viene inviato a tutti).
+combat_threats = []
 
 # Funzione per leggere sempre i dati aggiornati dal database
 def get_world_state():
@@ -184,6 +253,40 @@ with app.app_context():
     if "reward_delivered_to" not in sidequest_columns:
         db.session.execute(
             text("ALTER TABLE side_quest ADD COLUMN reward_delivered_to JSON DEFAULT '[]'")
+        )
+        db.session.commit()
+
+    # Migrazione leggera: i tratti liberi salvano tutti i punti in un'unica riga.
+    draw_item_columns = {
+        column["name"]
+        for column in inspector.get_columns("draw_item")
+    }
+
+    if "points" not in draw_item_columns:
+        db.session.execute(
+            text("ALTER TABLE draw_item ADD COLUMN points JSON")
+        )
+        db.session.commit()
+
+    world_state_columns = {
+        column["name"]
+        for column in inspector.get_columns("world_state")
+    }
+
+    if "active_scene_id" not in world_state_columns:
+        db.session.execute(
+            text("ALTER TABLE world_state ADD COLUMN active_scene_id INTEGER")
+        )
+        db.session.commit()
+
+    wiki_columns = {
+        column["name"]
+        for column in inspector.get_columns("wiki_page")
+    }
+
+    if "shared_with" not in wiki_columns:
+        db.session.execute(
+            text("ALTER TABLE wiki_page ADD COLUMN shared_with JSON DEFAULT '[]'")
         )
         db.session.commit()
 
@@ -255,6 +358,144 @@ def get_public_char_data(char):
         "is_invisible": char.is_invisible
     }
 
+
+# ==========================================
+# PERMESSI
+# Il server non si fida del client: il Master può tutto,
+# un giocatore agisce solo sul personaggio con cui si è registrato.
+# ==========================================
+LIMB_KEYS = ("bd", "bs", "gd", "gs")
+DEFAULT_LIMB_FRAMES = 60
+DEFAULT_MOVE_FRAMES = 120
+
+# Raggio visivo dei giocatori con la nebbia di guerra (come VISION_RADIUS in game.js)
+VISION_RADIUS = 3
+
+# Frame per passo: devono coincidere con i pulsanti del popup movimento
+MOVE_FRAME_COSTS = {"Camminata": 20, "Corsa": 15, "Furtivo": 25}
+
+def is_master_request():
+    return request.sid in master_sids
+
+def controls_character(char):
+    """True se chi invia l'evento può agire per questo personaggio."""
+    if char is None:
+        return False
+
+    if is_master_request():
+        return True
+
+    return char.role == "player" and client_character_ids.get(request.sid) == char.id
+
+def current_combat_actor_id():
+    if not combat_state.get("is_active") or not combat_state.get("turn_order"):
+        return None
+
+    try:
+        return int(combat_state["turn_order"][combat_state["current_index"]]["id"])
+    except (KeyError, IndexError, TypeError, ValueError):
+        return None
+
+def acting_combatant_id():
+    """Chi può agire ora: chi sta interrompendo con Minacciare, altrimenti chi è di turno."""
+    if combat_state.get("interrupts"):
+        return combat_state["interrupts"][0]["threatener_id"]
+    return current_combat_actor_id()
+
+def is_players_turn(char):
+    """In combattimento un giocatore agisce solo nel proprio turno; il Master sempre."""
+    if is_master_request() or not combat_state.get("is_active"):
+        return True
+
+    return acting_combatant_id() == char.id
+
+def get_limb_frames(char_id):
+    limbs = combat_state["players_limbs"].setdefault(
+        str(char_id),
+        {limb: DEFAULT_LIMB_FRAMES for limb in LIMB_KEYS}
+    )
+
+    for limb in LIMB_KEYS:
+        limbs.setdefault(limb, DEFAULT_LIMB_FRAMES)
+
+    return limbs
+
+def spend_limb_frames(char_id, shares, cost):
+    """Scala il costo diviso tra più arti. Restituisce un messaggio d'errore o None."""
+    clean_shares = {}
+
+    for limb, amount in (shares or {}).items():
+        if limb not in LIMB_KEYS:
+            return "Arto non valido."
+        try:
+            amount = int(amount)
+        except (TypeError, ValueError):
+            return "Ripartizione dei frame non valida."
+        if amount < 0:
+            return "Ripartizione dei frame non valida."
+        if amount:
+            clean_shares[limb] = amount
+
+    if sum(clean_shares.values()) != cost:
+        return f"La ripartizione dei frame non corrisponde al costo ({cost})."
+
+    limbs = get_limb_frames(char_id)
+
+    for limb, amount in clean_shares.items():
+        if limbs[limb] < amount:
+            return f"Frame insufficienti nell'arto {limb.upper()}: ne servono {amount}, ne hai {limbs[limb]}."
+
+    for limb, amount in clean_shares.items():
+        limbs[limb] -= amount
+
+    socketio.emit("sync_limbs", {"char_id": char_id, "limbs": limbs})
+    return None
+
+def threats_visible_to(role):
+    # Le minacce degli NPC restano segrete ai giocatori
+    return [t for t in combat_threats if role == "master" or t["owner_role"] == "player"]
+
+def emit_threats():
+    for sid, role in list(client_roles.items()):
+        socketio.emit("threats_update", threats_visible_to(role), to=sid)
+
+def clear_threats_of(char_id):
+    """Una minaccia dura fino al turno successivo di chi l'ha dichiarata."""
+    global combat_threats
+    before = len(combat_threats)
+    combat_threats = [t for t in combat_threats if t["char_id"] != char_id]
+    if len(combat_threats) != before:
+        emit_threats()
+
+def find_threat_stop(mover, path):
+    """Primo esagono del percorso in cui il personaggio entra in un'area nemica minacciata.
+
+    Restituisce (indice nel percorso, minacce scattate) oppure (None, []).
+    """
+    def inside(threat, hex_pos):
+        return hex_distance(hex_pos[0], hex_pos[1], threat["x"], threat["y"]) <= threat["radius"]
+
+    enemy_threats = [
+        t for t in combat_threats
+        if t["char_id"] != mover.id and t["owner_role"] != mover.role
+    ]
+
+    for index in range(1, len(path)):
+        entered = [
+            t for t in enemy_threats
+            if inside(t, path[index]) and not inside(t, path[index - 1])
+        ]
+        if entered:
+            return index, entered
+
+    return None, []
+
+def emit_combat_error(message):
+    emit("dice_result", {"name": "SISTEMA", "message": f"⚠️ {html.escape(message)}", "is_master_roll": False}, to=request.sid)
+
+def clean_character_name(value):
+    """I nomi finiscono in molti messaggi HTML: niente caratteri di markup."""
+    return re.sub(r"[<>&\"'`]", "", str(value or "")).strip()[:60]
 
 def get_char_data_for_role(char, role):
     return get_char_data(char) if role == "master" else get_public_char_data(char)
@@ -648,6 +889,16 @@ def handle_register_session_role(data):
     if previous_role != role or previous_char_id != char_id:
         emit_sidequest_list_to_sid(request.sid, role, char_id)
 
+    # Gli handout del wiki dipendono dal personaggio scelto.
+    if previous_role != role or previous_char_id != char_id:
+        emit_wiki_list_to_sid(request.sid, role)
+
+    # Il Master riceve anche le minacce degli NPC e le scene.
+    if previous_role != role:
+        socketio.emit("threats_update", threats_visible_to(role), to=request.sid)
+        if role == "master":
+            socketio.emit("scene_list", get_scene_list(), to=request.sid)
+
 @socketio.on("disconnect")
 def handle_disconnect():
     master_sids.discard(request.sid)
@@ -658,8 +909,7 @@ def handle_disconnect():
 def handle_connect():
     # init_state viene inviato subito dopo register_session_role, così il server
     # sa se deve fornire dati completi (Master) o pubblici (Giocatore).
-    draw_items = DrawItem.query.all()
-    draw_list = [{"uid": d.uid, "type": d.type, "sx": d.sx, "sy": d.sy, "ex": d.ex, "ey": d.ey, "c": d.color, "w": d.size, "img": d.img_data} for d in draw_items]
+    draw_list = [d.to_dict() for d in DrawItem.query.all()]
 
     emit("combat_update", combat_state)
     emit("init_drawings", draw_list) # Invia i nuovi disegni
@@ -670,12 +920,18 @@ def handle_connect():
 # ==========================================
 @socketio.on("toggle_combat")
 def handle_toggle_combat():
+    if not is_master_request():
+        return
+
     global combat_state
     combat_state["is_active"] = not combat_state["is_active"]
 
     # Un nuovo stato di combattimento invalida richieste e risultati precedenti.
     pending_attacks.clear()
     pending_combat_results.clear()
+    combat_state["interrupts"] = []
+    combat_threats.clear()
+    emit_threats()
 
     if combat_state["is_active"]:
         characters = Character.query.filter_by(is_hidden=False).all()
@@ -724,6 +980,17 @@ def handle_next_turn():
     global combat_state
     if not combat_state["is_active"] or not combat_state["turn_order"]:
         return
+
+    # Il turno lo chiude il Master o chi controlla il personaggio di turno
+    if not controls_character(db.session.get(Character, current_combat_actor_id())):
+        return
+
+    # Prima si chiudono le interruzioni in corso (il Master può forzare)
+    if combat_state["interrupts"]:
+        if not is_master_request():
+            emit_combat_error("C'è un'interruzione in corso: aspetta che finisca.")
+            return
+        combat_state["interrupts"] = []
 
     # Scala effetti per turno
     current_actor_info = combat_state["turn_order"][combat_state["current_index"]]
@@ -814,6 +1081,9 @@ def handle_next_turn():
             combat_state["turn_order"][combat_state["current_index"]]["start_x"] = next_char.pos_x
             combat_state["turn_order"][combat_state["current_index"]]["start_y"] = next_char.pos_y
 
+    # Le minacce di chi inizia il turno scadono
+    clear_threats_of(current_combat_actor_id())
+
     emit("combat_update", combat_state, broadcast=True)
 # ==========================================
 # GESTIONE PEDINE E MAPPA
@@ -821,10 +1091,10 @@ def handle_next_turn():
 @socketio.on("register_player")
 def handle_register_player(data):
     char_id = data.get("char_id")
-    name = data.get("name", "").strip()
+    name = clean_character_name(data.get("name", ""))
     if not char_id or not name: return
     char = db.session.get(Character, char_id)
-    if not char or char.role != "player": return
+    if not char or char.role != "player" or not controls_character(char): return
 
     existing = Character.query.filter(Character.name == name, Character.id != char_id).first()
     if existing: return
@@ -843,11 +1113,21 @@ def handle_move(data):
         return
 
     move_id = data.get("move_id")
+    mode = data.get("mode")
 
     with movement_lock:
         char = db.session.get(Character, char_id)
-        if not char or char.role == "master":
+        if not char or char.role == "master" or not controls_character(char):
             return
+
+        def reject(reason):
+            emit("move_rejected", {
+                "char_id": char_id,
+                "move_id": move_id,
+                "reason": reason,
+                "current_x": char.pos_x,
+                "current_y": char.pos_y
+            })
 
         occupied = Character.query.filter(
             Character.pos_x == target_x,
@@ -856,20 +1136,75 @@ def handle_move(data):
         ).first()
 
         if occupied:
-            emit("move_rejected", {
-                "char_id": char_id,
-                "move_id": move_id,
-                "reason": "occupied",
-                "current_x": char.pos_x,
-                "current_y": char.pos_y
-            })
+            reject("occupied")
             return
+
+        # Entrando in un'area minacciata da un nemico ci si ferma lì
+        triggered_threats = []
+        in_combat_now = combat_state.get("is_active") and combat_state.get("turn_order")
+        if in_combat_now and combat_threats:
+            path = hex_line(char.pos_x, char.pos_y, target_x, target_y)
+            stop_index, triggered_threats = find_threat_stop(char, path)
+
+            if stop_index is not None:
+                # Se l'esagono è occupato si ferma sull'ultimo libero prima
+                for index in range(stop_index, 0, -1):
+                    hx, hy = path[index]
+                    if not Character.query.filter(
+                        Character.pos_x == hx, Character.pos_y == hy, Character.id != char_id
+                    ).first():
+                        target_x, target_y = hx, hy
+                        break
+                else:
+                    target_x, target_y = char.pos_x, char.pos_y
+
+        # In combattimento il movimento costa frame, calcolati qui e non dal client.
+        # Il Master può comunque riposizionare liberamente (senza andatura).
+        move_cost = None
+        in_combat = combat_state.get("is_active") and any(
+            int(entry.get("id", -1)) == char.id for entry in combat_state.get("turn_order", [])
+        )
+
+        if in_combat:
+            if not is_players_turn(char):
+                reject("not_your_turn")
+                return
+
+            if mode in MOVE_FRAME_COSTS:
+                steps = hex_distance(char.pos_x, char.pos_y, target_x, target_y)
+                move_cost = steps * MOVE_FRAME_COSTS[mode]
+                frames = int(combat_state["players_pa"].get(str(char.id), DEFAULT_MOVE_FRAMES))
+
+                if move_cost > frames:
+                    reject("frames")
+                    return
+            elif not is_master_request():
+                reject("frames")
+                return
 
         char.pos_x = target_x
         char.pos_y = target_y
         db.session.commit()
 
-    emit_character_update(char, {"_move_id": move_id})
+        if move_cost is not None:
+            combat_state["players_pa"][str(char.id)] = frames - move_cost
+
+    # Il movimento può essere stato accorciato da una minaccia
+    emit_character_update(char, {"_move_id": move_id, "_stopped_by_threat": bool(triggered_threats)})
+
+    if move_cost is not None:
+        socketio.emit("sync_pa", {"char_id": char.id, "pa": frames - move_cost})
+        socketio.emit("dice_result", {
+            "name": char.name,
+            "message": (
+                f"si sposta di <b>{steps} passi</b> ({html.escape(mode)}) "
+                f"consumando <b>{move_cost} Frame</b> movimento."
+            ),
+            "is_master_roll": False
+        })
+
+    if triggered_threats:
+        start_threat_interrupts(char, triggered_threats)
 
 @socketio.on("spawn_npc")
 def handle_spawn_npc(data):
@@ -897,7 +1232,7 @@ def handle_spawn_npc(data):
             return
 
         new_npc = Character(
-            name=data.get("name", "Mostro"),
+            name=clean_character_name(data.get("name")) or "Mostro",
             role="npc",
             pos_x=target_x,
             pos_y=target_y,
@@ -947,7 +1282,7 @@ def handle_spend_pa(data):
     amount = int(data.get("amount", 1))
 
     char = db.session.get(Character, char_id)
-    if not char: return
+    if not controls_character(char): return
 
     current_pa_stats = dict(char.pa_stats) if char.pa_stats else {}
     if stat_key not in current_pa_stats:
@@ -970,7 +1305,7 @@ def handle_reset_pa(data):
     cost_type = data.get("cost_type")
 
     char = db.session.get(Character, char_id)
-    if not char: return
+    if not controls_character(char): return
 
     can_reset = False
     if cost_type == "stamina" and char.stamina_current >= 15:
@@ -1014,9 +1349,12 @@ def handle_master_set_bank(data):
 @socketio.on("update_xp")
 def handle_update_xp(data):
     char = db.session.get(Character, data.get("char_id"))
-    if not char: return
+    if not controls_character(char): return
     try:
-        char.xp = max(0, char.xp + int(data.get("amount", 0)))
+        amount = int(data.get("amount", 0))
+        # I giocatori possono solo spendere (acquisti nel negozio); dare soldi spetta al Master
+        if not is_master_request() and (amount > 0 or char.xp + amount < 0): return
+        char.xp = max(0, char.xp + amount)
         db.session.commit()
         emit_character_update(char)
     except (TypeError, ValueError): return
@@ -1033,9 +1371,10 @@ def handle_delete_character(data):
 
 @socketio.on("toggle_hidden")
 def handle_toggle_hidden(data):
-    char = db.session.get(Character, data.get("char_id"))
-    if char and char.role == "npc" and request.sid not in master_sids:
+    if not is_master_request():
         return
+
+    char = db.session.get(Character, data.get("char_id"))
     if char and char.role != "master":
         char.is_hidden = bool(data.get("is_hidden", False))
         db.session.commit()
@@ -1044,8 +1383,7 @@ def handle_toggle_hidden(data):
 @socketio.on("update_character_sheet")
 def handle_update_character_sheet(data):
     char = db.session.get(Character, data.get("char_id"))
-    if not char: return
-    if char.role == "npc" and request.sid not in master_sids: return
+    if not controls_character(char): return
     if "photo_url" in data: char.photo_url = data["photo_url"]
     if "token_url" in data: char.token_url = data["token_url"]
     if "lore" in data: char.lore = data["lore"]
@@ -1062,10 +1400,20 @@ def handle_update_character_sheet(data):
 @socketio.on("buy_skill")
 def handle_buy_skill(data):
     char = db.session.get(Character, data.get("char_id"))
-    if not char: return
+    if not controls_character(char): return
 
-    cost = int(data.get("cost", 0))
     skill_name = data.get("skill_name")
+
+    # Il prezzo viene dal negozio del personaggio, non dal client
+    shop_item = next(
+        (item for item in (char.shop or []) if isinstance(item, dict) and item.get("name") == skill_name),
+        None
+    )
+    if not shop_item and not is_master_request(): return
+    try:
+        cost = int((shop_item or {}).get("cost", data.get("cost", 0)))
+    except (TypeError, ValueError):
+        return
 
     current_skills = list(char.skills) if char.skills else []
     if char.xp < cost or not skill_name or skill_name in current_skills: return
@@ -1206,6 +1554,38 @@ def missing_weapon_license(character, comp_item):
         return None
 
     return license_name or license_id or "Licenza richiesta"
+
+def cube_to_offset(q, r):
+    col = q + (r - (r & 1)) // 2
+    return col, r
+
+def cube_round(q, r, s):
+    rq, rr, rs = round(q), round(r), round(s)
+    dq, dr, ds = abs(rq - q), abs(rr - r), abs(rs - s)
+    if dq > dr and dq > ds:
+        rq = -rr - rs
+    elif dr > ds:
+        rr = -rq - rs
+    return rq, rr
+
+def hex_line(x1, y1, x2, y2):
+    """Esagoni attraversati andando in linea retta da (x1,y1) a (x2,y2), estremi inclusi."""
+    a = offset_to_cube(int(x1), int(y1))
+    b = offset_to_cube(int(x2), int(y2))
+    steps = hex_distance(x1, y1, x2, y2)
+
+    if steps == 0:
+        return [(int(x1), int(y1))]
+
+    line = []
+    for i in range(steps + 1):
+        t = i / steps
+        # Piccola spinta per non cadere esattamente sui bordi tra due esagoni
+        q = a[0] + (b[0] - a[0]) * t + 1e-6
+        r = a[1] + (b[1] - a[1]) * t + 2e-6
+        s = a[2] + (b[2] - a[2]) * t - 3e-6
+        line.append(cube_to_offset(*cube_round(q, r, s)))
+    return line
 
 def offset_to_cube(col, row):
     """Conversione Odd-R identica a static/utils.js."""
@@ -1567,6 +1947,9 @@ def set_equipment_current_hp(character, slot_key, new_hp):
 
 @socketio.on("add_skill_to_shop")
 def handle_add_skill_to_shop(data):
+    if not is_master_request():
+        return
+
     char = db.session.get(Character, data.get("char_id"))
     skill_data = data.get("skill")
     if not char or not skill_data: return
@@ -1582,10 +1965,13 @@ def handle_add_skill_to_shop(data):
 @socketio.on("roll_dice")
 def handle_roll_dice(data):
     char = db.session.get(Character, data.get("char_id")) if data.get("char_id") else None
-    dice_expr = data.get("dice", "1d20").lower().strip()
-    is_master = bool(data.get("is_master", False))
+    # Nessuno può tirare a nome di un personaggio altrui
+    if char and not controls_character(char):
+        char = None
+    dice_expr = str(data.get("dice", "1d20")).lower().strip()[:20]
+    is_master = is_master_request()
 
-    name = char.name if char else "Sconosciuto"
+    name = html.escape(char.name) if char else "Sconosciuto"
     if is_master: name = f"👑 [MASTER] {name}"
 
     match = re.match(r"^(\d*)d(\d+)$", dice_expr)
@@ -1597,7 +1983,7 @@ def handle_roll_dice(data):
         detail = f" <span style='font-size:11px; color:#7f8c8d;'>({'+'.join(map(str, rolls))})</span>" if num > 1 else ""
         msg = f"ha tirato {num}d{sides}: <strong style='font-size:16px; color:#2c3e50;'>{total}</strong>{detail}"
     else:
-        msg = f"ha provato a tirare '<i>{dice_expr}</i>', ma non è un formato valido."
+        msg = f"ha provato a tirare '<i>{html.escape(dice_expr)}</i>', ma non è un formato valido."
 
     result_data = {"name": name, "message": msg, "is_master_roll": is_master}
     emit("dice_result", result_data, to=request.sid if is_master else None, broadcast=not is_master)
@@ -2041,18 +2427,283 @@ def handle_close_sidequest(data):
 
 @socketio.on("clear_drawings")
 def handle_clear_drawings():
+    if request.sid not in master_sids:
+        return
+
     db.session.query(DrawItem).delete()
     db.session.query(Line).delete() # Puliamo anche le vecchie linee per sicurezza
     db.session.commit()
     emit("clear_lines", broadcast=True)
 
-@socketio.on("delete_drawing")
-def handle_delete_drawing(data):
-    uid = data.get("uid")
-    if uid:
-        DrawItem.query.filter_by(uid=uid).delete()
-        db.session.commit()
-        emit("drawing_deleted", {"uid": uid}, broadcast=True)
+@socketio.on("delete_drawings")
+def handle_delete_drawings(data):
+    if request.sid not in master_sids:
+        return
+
+    # La gomma può cancellare più disegni con un solo passaggio
+    uids = [str(uid) for uid in (data or {}).get("uids", []) if uid]
+    if not uids:
+        return
+
+    DrawItem.query.filter(DrawItem.uid.in_(uids)).delete(synchronize_session=False)
+    db.session.commit()
+    emit("drawing_deleted", {"uids": uids}, broadcast=True, include_self=False)
+
+# ==========================================
+# SCENE
+# Ogni scena conserva mappa, disegni e nebbia. Cambiando scena quella
+# aperta viene salvata in automatico, come delle schede.
+# Le pedine restano dove sono: il gruppo viaggia con il Master.
+# ==========================================
+def get_scene_list():
+    ws = WorldState.query.first()
+    return {
+        "active_id": ws.active_scene_id if ws else None,
+        "scenes": [
+            {"id": scene.id, "name": scene.name}
+            for scene in Scene.query.order_by(Scene.id).all()
+        ]
+    }
+
+def emit_scene_list():
+    emit_to_masters("scene_list", get_scene_list())
+
+def snapshot_world_into(scene):
+    ws = WorldState.query.first()
+    scene.map_url = ws.map_url or ""
+    scene.map_scale = ws.map_scale
+    scene.map_dx = ws.map_dx
+    scene.map_dy = ws.map_dy
+    scene.fow_enabled = bool(ws.fow_enabled)
+    scene.revealed_hexes = list(ws.revealed_hexes or [])
+    scene.drawings = [item.to_dict() for item in DrawItem.query.all()]
+
+def save_active_scene():
+    ws = WorldState.query.first()
+    active = db.session.get(Scene, ws.active_scene_id) if ws.active_scene_id else None
+    if active:
+        snapshot_world_into(active)
+
+def apply_scene(scene):
+    ws = WorldState.query.first()
+    ws.map_url = scene.map_url or ""
+    ws.map_scale = scene.map_scale or 1.0
+    ws.map_dx = scene.map_dx or 0
+    ws.map_dy = scene.map_dy or 0
+    ws.fow_enabled = bool(scene.fow_enabled)
+    ws.revealed_hexes = list(scene.revealed_hexes or [])
+    ws.active_scene_id = scene.id
+
+    DrawItem.query.delete()
+    for item in scene.drawings or []:
+        db.session.add(DrawItem(
+            uid=item["uid"],
+            type=item.get("type", "line"),
+            sx=item.get("sx", 0),
+            sy=item.get("sy", 0),
+            ex=item.get("ex", 0),
+            ey=item.get("ey", 0),
+            color=item.get("c", "#000000"),
+            size=item.get("w", 3),
+            img_data=item.get("img"),
+            points=item.get("points")
+        ))
+
+def broadcast_world_after_scene_change():
+    socketio.emit("map_update", get_world_state())
+    socketio.emit("init_drawings", [item.to_dict() for item in DrawItem.query.all()])
+    emit_scene_list()
+
+def clean_scene_name(value):
+    return str(value or "").strip()[:100]
+
+@socketio.on("scene_create")
+def handle_scene_create(data):
+    if not is_master_request():
+        return
+
+    data = data or {}
+    name = clean_scene_name(data.get("name"))
+    if not name:
+        return
+
+    save_active_scene()
+
+    scene = Scene(name=name)
+    db.session.add(scene)
+
+    if data.get("empty"):
+        # Scena vuota: si parte da una mappa pulita
+        scene.drawings = []
+        scene.revealed_hexes = []
+        db.session.flush()
+        apply_scene(scene)
+    else:
+        # Salva quello che c'è adesso come nuova scena
+        snapshot_world_into(scene)
+        db.session.flush()
+        WorldState.query.first().active_scene_id = scene.id
+
+    db.session.commit()
+    broadcast_world_after_scene_change()
+
+@socketio.on("scene_load")
+def handle_scene_load(data):
+    if not is_master_request():
+        return
+
+    scene = db.session.get(Scene, (data or {}).get("id"))
+    if not scene:
+        return
+
+    save_active_scene()
+    apply_scene(scene)
+    db.session.commit()
+    broadcast_world_after_scene_change()
+
+    socketio.emit("dice_result", {
+        "name": "SISTEMA",
+        "message": f"🎬 Cambio scena: <b>{html.escape(scene.name)}</b>",
+        "is_master_roll": False
+    })
+
+@socketio.on("scene_rename")
+def handle_scene_rename(data):
+    if not is_master_request():
+        return
+
+    data = data or {}
+    scene = db.session.get(Scene, data.get("id"))
+    name = clean_scene_name(data.get("name"))
+    if not scene or not name:
+        return
+
+    scene.name = name
+    db.session.commit()
+    emit_scene_list()
+
+@socketio.on("scene_delete")
+def handle_scene_delete(data):
+    if not is_master_request():
+        return
+
+    scene = db.session.get(Scene, (data or {}).get("id"))
+    if not scene:
+        return
+
+    # La mappa attuale resta com'è, semplicemente non è più legata a una scena
+    ws = WorldState.query.first()
+    if ws.active_scene_id == scene.id:
+        ws.active_scene_id = None
+
+    db.session.delete(scene)
+    db.session.commit()
+    emit_scene_list()
+
+# ==========================================
+# WIKI DEL MONDO
+# Scrive solo il Master; i giocatori leggono le pagine non segrete.
+# ==========================================
+WIKI_MAX_CONTENT = 100_000
+WIKI_MAX_IMAGE = 5_000_000
+
+def emit_wiki_list_to_sid(sid, role):
+    char_id = client_character_ids.get(sid)
+    pages = WikiPage.query.order_by(WikiPage.category, WikiPage.title).all()
+    visible = [page.payload_for(role, char_id) for page in pages if page.is_visible_to(role, char_id)]
+    socketio.emit("wiki_list", visible, to=sid)
+
+def broadcast_wiki_page(page):
+    """Il Master riceve sempre la pagina; i giocatori solo se possono vederla."""
+    for sid, role in list(client_roles.items()):
+        char_id = client_character_ids.get(sid)
+        if page.is_visible_to(role, char_id):
+            socketio.emit("wiki_page_saved", page.payload_for(role, char_id), to=sid)
+        else:
+            # Pagina appena nascosta: i giocatori la tolgono dal loro wiki
+            socketio.emit("wiki_page_removed", {"id": page.id}, to=sid)
+
+def clean_wiki_image(value):
+    image = str(value or "").strip()
+
+    if not image or len(image) > WIKI_MAX_IMAGE:
+        return None
+
+    if image.startswith("data:image/") or image.startswith(("http://", "https://", "/static/")):
+        return image
+
+    return None
+
+@socketio.on("wiki_save_page")
+def handle_wiki_save_page(data):
+    if request.sid not in master_sids:
+        return
+
+    data = data or {}
+    title = str(data.get("title", "")).strip()[:160]
+
+    if not title:
+        return
+
+    page = db.session.get(WikiPage, data.get("id")) if data.get("id") else None
+
+    if page is None:
+        page = WikiPage()
+        db.session.add(page)
+
+    page.title = title
+    page.category = str(data.get("category", "")).strip()[:60] or "Generale"
+    page.content = str(data.get("content", ""))[:WIKI_MAX_CONTENT]
+    page.image = clean_wiki_image(data.get("image"))
+    page.hidden = bool(data.get("hidden", False))
+
+    db.session.commit()
+    broadcast_wiki_page(page)
+
+@socketio.on("wiki_share_page")
+def handle_wiki_share_page(data):
+    """Consegna una pagina (handout) a personaggi scelti, anche se è segreta."""
+    if not is_master_request():
+        return
+
+    data = data or {}
+    page = db.session.get(WikiPage, data.get("id"))
+    if not page:
+        return
+
+    char_ids = []
+    for raw_id in data.get("char_ids", []):
+        char = db.session.get(Character, raw_id)
+        if char and char.role == "player":
+            char_ids.append(char.id)
+
+    if not char_ids:
+        return
+
+    page.shared_with = sorted(set(page.shared_with or []) | set(char_ids))
+    db.session.commit()
+    broadcast_wiki_page(page)
+
+    # Apre la pagina come popup per i destinatari connessi
+    for sid, char_id in list(client_character_ids.items()):
+        if char_id in char_ids:
+            socketio.emit("wiki_handout", {"id": page.id}, to=sid)
+
+@socketio.on("wiki_delete_page")
+def handle_wiki_delete_page(data):
+    if request.sid not in master_sids:
+        return
+
+    page = db.session.get(WikiPage, (data or {}).get("id"))
+
+    if not page:
+        return
+
+    page_id = page.id
+    db.session.delete(page)
+    db.session.commit()
+
+    socketio.emit("wiki_page_removed", {"id": page_id})
 
 # ==========================================
 # PING
@@ -2070,8 +2721,19 @@ def handle_draw_laser(data):
     # Ritrasmette la scia del laser a tutti gli altri giocatori
     emit("show_laser", data, broadcast=True, include_self=False)
 
+@socketio.on("draw_stroke_progress")
+def handle_draw_stroke_progress(data):
+    if request.sid not in master_sids:
+        return
+
+    # Anteprima del tratto in corso: non si salva, arriva completo con draw_item
+    emit("draw_stroke_progress", data, broadcast=True, include_self=False)
+
 @socketio.on("draw_item")
 def handle_draw_item(data):
+    if request.sid not in master_sids:
+        return
+
     try:
         data = dict(data or {})
 
@@ -2085,29 +2747,17 @@ def handle_draw_item(data):
             ex=data.get("ex", 0),
             ey=data.get("ey", 0),
             color=data.get("c", "#000000"),
-            size=data.get("w", 3),
-            img_data=data.get("img", None)
+            size=round(data.get("w", 3)),
+            img_data=data.get("img", None),
+            points=data.get("points", None)
         )
 
         db.session.add(new_item)
         db.session.commit()
 
-        # Ritrasmette solo dati JSON puliti.
-        payload = {
-            "uid": new_item.uid,
-            "type": new_item.type,
-            "sx": new_item.sx,
-            "sy": new_item.sy,
-            "ex": new_item.ex,
-            "ey": new_item.ey,
-            "c": new_item.color,
-            "w": new_item.size,
-            "img": new_item.img_data
-        }
-
         socketio.emit(
             "draw_item",
-            payload,
+            new_item.to_dict(),
             skip_sid=request.sid
         )
 
@@ -2118,6 +2768,9 @@ def handle_draw_item(data):
 
 @socketio.on("update_drawing")
 def handle_update_drawing(data):
+    if request.sid not in master_sids:
+        return
+
     try:
         data = dict(data or {})
 
@@ -2139,27 +2792,17 @@ def handle_update_drawing(data):
         if data.get("c") is not None:
             item.color = data.get("c")
         if data.get("w") is not None:
-            item.size = data.get("w")
+            item.size = round(data.get("w"))
         if "img" in data:
             item.img_data = data.get("img")
+        if data.get("points") is not None:
+            item.points = data.get("points")
 
         db.session.commit()
 
-        payload = {
-            "uid": item.uid,
-            "type": item.type,
-            "sx": item.sx,
-            "sy": item.sy,
-            "ex": item.ex,
-            "ey": item.ey,
-            "c": item.color,
-            "w": item.size,
-            "img": item.img_data
-        }
-
         socketio.emit(
             "drawing_updated",
-            payload,
+            item.to_dict(),
             skip_sid=request.sid
         )
 
@@ -2172,17 +2815,161 @@ def handle_update_drawing(data):
 # ==========================================
 @socketio.on("combat_msg")
 def handle_combat_msg(data):
+    if not is_master_request():
+        return
+
     # Questo invia un messaggio di sistema senza attivare il controllo dadi!
     emit("dice_result", {"name": data["name"], "message": data["message"], "is_master_roll": False}, broadcast=True)
 
 @socketio.on("sync_pa")
 def handle_sync_pa(data):
+    if not is_master_request():
+        return
+
     # Salva il valore in memoria per resistere ai ricaricamenti di pagina
     combat_state["players_pa"][str(data["char_id"])] = data["pa"]
-    emit("sync_pa", data, broadcast=True, include_self=False)
+    emit("sync_pa", data, broadcast=True)
+
+THREAT_ACTION = "Minacciare un'area"
+THREAT_MAX_RADIUS = 2
+
+def start_threat_interrupts(intruder, threats):
+    for threat in threats:
+        threatener = db.session.get(Character, threat["char_id"])
+        if not threatener:
+            continue
+
+        combat_state["interrupts"].append({
+            "threat_id": threat["id"],
+            "threatener_id": threatener.id,
+            "threatener_name": threatener.name,
+            "intruder_id": intruder.id,
+            "intruder_name": intruder.name
+        })
+
+        # Una minaccia segreta di un NPC si rivela solo quando scatta
+        socketio.emit("dice_result", {
+            "name": "SISTEMA",
+            "message": (
+                f"⚡ <b>{html.escape(intruder.name)}</b> entra nell'area minacciata da "
+                f"<b>{html.escape(threatener.name)}</b>, che agisce per primo!"
+            ),
+            "is_master_roll": False
+        })
+
+    socketio.emit("combat_update", combat_state)
+
+@socketio.on("declare_threat")
+def handle_declare_threat(data):
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+
+    if not combat_state.get("is_active") or not controls_character(char) or not is_players_turn(char):
+        return
+
+    try:
+        center_x = int(data.get("x"))
+        center_y = int(data.get("y"))
+        radius = max(1, min(THREAT_MAX_RADIUS, int(data.get("radius", 1))))
+    except (TypeError, ValueError):
+        return
+
+    rule = get_action_speed_rule(THREAT_ACTION)
+    if not rule:
+        emit_combat_error("Azione di minaccia non presente nella tabella.")
+        return
+
+    cost = int(rule.get("frames", 0))
+    limb_error = spend_limb_frames(char.id, data.get("limb_shares") or {}, cost)
+    if limb_error:
+        emit_combat_error(limb_error)
+        return
+
+    combat_threats.append({
+        "id": str(uuid.uuid4()),
+        "char_id": char.id,
+        "char_name": char.name,
+        "owner_role": char.role,
+        "x": center_x,
+        "y": center_y,
+        "radius": radius
+    })
+    emit_threats()
+
+    # Le minacce degli NPC non si annunciano ai giocatori
+    message = {
+        "name": char.name,
+        "message": f"minaccia un'area (raggio {radius}) spendendo <b>{cost} Frame</b>.",
+        "is_master_roll": False
+    }
+    if char.role == "npc":
+        emit_to_masters("dice_result", message)
+    else:
+        emit("dice_result", message, broadcast=True)
+
+@socketio.on("end_interrupt")
+def handle_end_interrupt():
+    if not combat_state.get("interrupts"):
+        return
+
+    interrupt = combat_state["interrupts"][0]
+    if not controls_character(db.session.get(Character, interrupt["threatener_id"])):
+        return
+
+    combat_state["interrupts"].pop(0)
+    socketio.emit("dice_result", {
+        "name": "SISTEMA",
+        "message": f"⚡ Fine interruzione di <b>{html.escape(interrupt['threatener_name'])}</b>.",
+        "is_master_roll": False
+    })
+    socketio.emit("combat_update", combat_state)
+
+@socketio.on("perform_table_action")
+def handle_perform_table_action(data):
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+
+    if not combat_state.get("is_active") or not controls_character(char) or not is_players_turn(char):
+        return
+
+    rule = get_action_speed_rule(data.get("action"))
+    if not rule or rule.get("action") == THREAT_ACTION:
+        emit_combat_error("Azione non presente nella tabella.")
+        return
+
+    try:
+        cost = int(rule.get("frames"))
+    except (TypeError, ValueError):
+        return
+
+    shares = data.get("limb_shares") or {}
+    limb_error = spend_limb_frames(char.id, shares, cost)
+    if limb_error:
+        emit_combat_error(limb_error)
+        return
+
+    limb_names = {"bd": "Braccio Dx", "bs": "Braccio Sx", "gd": "Gamba Dx", "gs": "Gamba Sx"}
+    split = ", ".join(
+        f"{limb_names[limb]} {int(shares[limb])}"
+        for limb in LIMB_KEYS
+        if int(shares.get(limb) or 0)
+    )
+
+    emit("dice_result", {
+        "name": char.name,
+        "message": (
+            f"esegue <b>{html.escape(str(rule.get('action')))}</b> "
+            f"({html.escape(str(rule.get('category', '')))}, Vel {rule.get('speed')}, "
+            f"<b>{cost} Frame</b>: {split})."
+        ),
+        "is_master_roll": False
+    }, broadcast=True)
 
 @socketio.on("toggle_invisible")
 def handle_toggle_invisible(data):
+    if not is_master_request():
+        return
+
     char = db.session.get(Character, data.get("char_id"))
     if char and char.role != "master":
         char.is_invisible = bool(data.get("is_invisible", False))
@@ -2191,6 +2978,9 @@ def handle_toggle_invisible(data):
 
 @socketio.on("set_map")
 def handle_set_map(data):
+    if not is_master_request():
+        return
+
     ws = WorldState.query.first()
     ws.map_url = data.get("url", ws.map_url)
     ws.map_scale = float(data.get("scale", ws.map_scale))
@@ -2204,6 +2994,9 @@ def handle_set_map(data):
 # ==========================================
 @socketio.on("toggle_global_fow")
 def handle_toggle_global_fow(data):
+    if not is_master_request():
+        return
+
     ws = WorldState.query.first()
     ws.fow_enabled = data.get("enabled", False)
     db.session.commit()
@@ -2211,6 +3004,9 @@ def handle_toggle_global_fow(data):
 
 @socketio.on("reset_fow")
 def handle_reset_fow():
+    if not is_master_request():
+        return
+
     ws = WorldState.query.first()
     ws.revealed_hexes = []
     db.session.commit()
@@ -2219,7 +3015,23 @@ def handle_reset_fow():
 @socketio.on("reveal_hexes")
 def handle_reveal_hexes(data):
     ws = WorldState.query.first()
-    new_hexes = data.get("hexes", [])
+    new_hexes = [str(h) for h in (data or {}).get("hexes", [])]
+
+    if not is_master_request():
+        char = db.session.get(Character, client_character_ids.get(request.sid))
+        if not char:
+            return
+
+        # Solo le caselle entro il raggio visivo del proprio personaggio
+        def in_vision(hex_str):
+            try:
+                col, row = (int(v) for v in hex_str.split(","))
+            except ValueError:
+                return False
+            return hex_distance(char.pos_x, char.pos_y, col, row) <= VISION_RADIUS
+
+        new_hexes = [h for h in new_hexes if in_vision(h)]
+
     current_set = set(ws.revealed_hexes)
     current_set.update(new_hexes)
     ws.revealed_hexes = list(current_set)
@@ -2228,6 +3040,9 @@ def handle_reveal_hexes(data):
 
 @socketio.on("sync_fow_hexes")
 def handle_sync_fow(hex_list):
+    if not is_master_request():
+        return
+
     ws = WorldState.query.first()
     ws.revealed_hexes = hex_list
     db.session.commit()
@@ -2236,8 +3051,11 @@ def handle_sync_fow(hex_list):
 # Gestione attacco limbs
 @socketio.on("sync_limbs")
 def handle_sync_limbs(data):
+    if not is_master_request():
+        return
+
     combat_state["players_limbs"][str(data["char_id"])] = data["limbs"]
-    emit("sync_limbs", data, broadcast=True, include_self=False)
+    emit("sync_limbs", data, broadcast=True)
 
 @socketio.on("declare_attack")
 def handle_declare_attack(data):
@@ -2248,6 +3066,13 @@ def handle_declare_attack(data):
 
     if not attacker or not defender or attacker.id == defender.id:
         return
+
+    if not controls_character(attacker) or not is_players_turn(attacker):
+        return
+
+    attack_limb = str(data.get("limb", "bd"))
+    if attack_limb not in LIMB_KEYS:
+        attack_limb = "bd"
 
     requested_name = str(data.get("weapon", "Mani Nude")).strip() or "Mani Nude"
     source_slot = data.get("source_slot") or None
@@ -2370,6 +3195,12 @@ def handle_declare_attack(data):
         weapon_name=weapon_name
     )
 
+    # Il costo dell'attacco si paga con l'arto scelto, solo dopo tutti i controlli
+    limb_error = spend_limb_frames(attacker.id, {attack_limb: max(0, 110 - server_speed)}, max(0, 110 - server_speed))
+    if limb_error:
+        emit_combat_error(limb_error)
+        return
+
     attack_id = str(uuid.uuid4())
 
     attack = {
@@ -2457,6 +3288,10 @@ def handle_resolve_reaction(data):
         pending_attacks.pop(attack_id, None)
         return
 
+    # Reagisce solo chi controlla il difensore
+    if not controls_character(defender):
+        return
+
     try:
         att_speed = int(attack["speed"])
     except (TypeError, ValueError):
@@ -2474,9 +3309,25 @@ def handle_resolve_reaction(data):
         "Schivata": "Schivare"
     }
 
-    reaction_rule = get_action_speed_rule(
-        reaction_action_map.get(reaction)
-    )
+    # Le voci "Difesa" della tabella indicano con quale meccanica si risolvono
+    # (es. "Alzare uno scudo" -> Parata). Velocità e meccanica arrivano
+    # dal compendio, mai dal client.
+    reaction_rule = None
+    reaction_action = str(data.get("reaction_action") or "").strip()
+
+    if reaction_action:
+        reaction_rule = get_action_speed_rule(reaction_action)
+
+        if reaction_rule and reaction_rule.get("reaction") in {"Schivata", "Parata"}:
+            reaction = reaction_rule["reaction"]
+        else:
+            reaction_rule = None
+            reaction_action = ""
+
+    if not reaction_rule and reaction != "Scambio":
+        reaction_rule = get_action_speed_rule(
+            reaction_action_map.get(reaction)
+        )
 
     if reaction_rule:
         try:
@@ -2496,7 +3347,26 @@ def handle_resolve_reaction(data):
     if def_speed <= 0:
         return
 
-    if def_limb_key not in {"bd", "bs", "gd", "gs"}:
+    if def_limb_key not in LIMB_KEYS:
+        def_limb_key = "bd"
+
+    # Costo della reazione: dalla tabella, oppure 110 - velocità (Scambio)
+    try:
+        reaction_cost = int(reaction_rule.get("frames")) if reaction_rule else max(0, 110 - def_speed)
+    except (TypeError, ValueError):
+        reaction_cost = max(0, 110 - def_speed)
+
+    limb_shares = data.get("limb_shares") or {def_limb_key: reaction_cost}
+    limb_error = spend_limb_frames(defender.id, limb_shares, reaction_cost)
+    if limb_error:
+        emit_combat_error(limb_error)
+        return
+
+    # L'arto principale (quello che para) deve essere tra quelli usati
+    if def_limb_key not in limb_shares:
+        def_limb_key = max(limb_shares, key=lambda limb: int(limb_shares[limb] or 0))
+
+    if def_limb_key not in LIMB_KEYS:
         def_limb_key = "bd"
 
     damage = attack.get("resolved_damage")
@@ -2518,6 +3388,7 @@ def handle_resolve_reaction(data):
         "defender_name": defender.name,
         "weapon": weapon_name,
         "reaction_type": reaction,
+        "reaction_label": reaction_action or reaction,
         "def_limb": def_limb_key,
         "att_speed": att_speed,
         "def_speed": def_speed,
@@ -2671,7 +3542,7 @@ def handle_master_publish_combat_result(data):
         public_message = (
             "⚔️ <b>RISOLUZIONE SCONTRO</b> ⚔️"
             f"<br>Attacco ({html.escape(str(result.get('weapon', 'Attacco')))}): <b>{att_roll}</b>"
-            f"<br>Difesa ({html.escape(str(reaction))}): <b>{def_roll}</b>"
+            f"<br>Difesa ({html.escape(str(result.get('reaction_label') or reaction))}): <b>{def_roll}</b>"
             f"<br>Danno impostato dal Master: <b>{damage}</b>"
         )
 
@@ -2718,6 +3589,9 @@ def handle_get_npc_tokens():
 
 @socketio.on("save_npc_token")
 def handle_save_npc_token(data):
+    if not is_master_request():
+        return
+
     name = str(data.get("name", "")).strip()
     image_data = data.get("image_data", "")
 

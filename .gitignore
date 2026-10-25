@@ -1,1 +1,7 @@
-.venv
+# Database della partita: è lo stato di gioco locale, non codice
+instance/
+
+# Python
+__pycache__/
+*.pyc
+.venv/

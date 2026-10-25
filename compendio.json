@@ -17585,31 +17585,36 @@
         "category": "Difesa",
         "action": "Parare",
         "speed": 80,
-        "frames": 30
+        "frames": 30,
+        "reaction": "Parata"
       },
       {
         "category": "Difesa",
         "action": "Schivare",
         "speed": 70,
-        "frames": 40
+        "frames": 40,
+        "reaction": "Schivata"
       },
       {
         "category": "Difesa",
         "action": "Proteggersi con le braccia",
         "speed": 80,
-        "frames": 30
+        "frames": 30,
+        "reaction": "Parata"
       },
       {
         "category": "Difesa",
         "action": "Alzare uno scudo",
         "speed": 80,
-        "frames": 30
+        "frames": 30,
+        "reaction": "Parata"
       },
       {
         "category": "Difesa",
         "action": "Mettersi completamente al riparo",
         "speed": 30,
-        "frames": 80
+        "frames": 80,
+        "reaction": "Schivata"
       },
       {
         "category": "Oggetti",
@@ -17784,6 +17789,13 @@
         "action": "Disattivare un gadget",
         "speed": 90,
         "frames": 20
+      },
+      {
+        "category": "Tattica",
+        "action": "Minacciare un'area",
+        "speed": 70,
+        "frames": 40,
+        "special": "threat"
       }
     ]
   }

@@ -6,8 +6,11 @@ function drawSingleItem(item) {
     ctx.strokeStyle = item.c;
     ctx.fillStyle = item.c;
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    if (item.type === 'line' || !item.type) {
+    if (item.type === 'stroke') {
+        drawStroke(item.points || []);
+    } else if (item.type === 'line' || !item.type) {
         ctx.lineWidth = item.w;
         ctx.moveTo(item.sx, item.sy);
         ctx.lineTo(item.ex, item.ey);
@@ -73,11 +76,142 @@ function drawSingleItem(item) {
     }
 }
 
+// Tratto libero: ogni punto è [x, y, spessore] (lo spessore varia con la pressione della penna)
+function drawStroke(points) {
+    if (!points.length) return;
+
+    if (points.length === 1) {
+        const [x, y, w] = points[0];
+        ctx.arc(x, y, w / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        return;
+    }
+
+    // Raggruppa i segmenti consecutivi con lo stesso spessore in un unico path
+    ctx.lineWidth = points[1][2];
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) {
+        const [x, y, w] = points[i];
+        if (w !== ctx.lineWidth) {
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.lineWidth = w;
+            ctx.moveTo(points[i - 1][0], points[i - 1][1]);
+        }
+        ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
 function drawLines() {
     drawings.forEach(item => drawSingleItem(item));
     if (currentTempShape) {
         drawSingleItem(currentTempShape); // Disegna l'anteprima in tempo reale
     }
+}
+
+// ==========================================
+// AREE MINACCIATE (Minacciare)
+// ==========================================
+
+function traceHex(centerX, centerY) {
+    HEX_CORNERS.forEach((corner, i) => {
+        if (i === 0) ctx.moveTo(centerX + corner.x, centerY + corner.y);
+        else ctx.lineTo(centerX + corner.x, centerY + corner.y);
+    });
+    ctx.closePath();
+}
+
+// Path di tutti gli esagoni entro il raggio dal centro
+function traceHexArea(col, row, radius) {
+    ctx.beginPath();
+    for (let r = row - radius; r <= row + radius; r++) {
+        for (let c = col - radius - 1; c <= col + radius + 1; c++) {
+            if (hexDistance(col, row, c, r) > radius) continue;
+            const center = hexToPixel(c, r);
+            traceHex(center.x, center.y);
+        }
+    }
+}
+
+function drawThreatArea(threat, fill, stroke, label, dashed) {
+    ctx.save();
+    traceHexArea(threat.x, threat.y, threat.radius);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    if (dashed) ctx.setLineDash([6, 4]);
+    ctx.stroke();
+
+    if (label) {
+        const center = hexToPixel(threat.x, threat.y);
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.strokeText(label, center.x, center.y - HEX_SIZE * 0.9);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, center.x, center.y - HEX_SIZE * 0.9);
+    }
+    ctx.restore();
+}
+
+function drawThreats() {
+    if (!combatState.is_active) return;
+
+    combatThreats.forEach(threat => {
+        // Arancione per i giocatori, viola per gli NPC (che vede solo il Master)
+        const isNpc = threat.owner_role === 'npc';
+        drawThreatArea(
+            threat,
+            isNpc ? 'rgba(142, 68, 173, 0.22)' : 'rgba(230, 126, 34, 0.22)',
+            isNpc ? '#8e44ad' : '#e67e22',
+            `⚠️ ${threat.char_name}`,
+            false
+        );
+    });
+
+    // Anteprima mentre si sceglie il centro dell'area
+    if (window.threatPlacement && window.hoveredHex) {
+        drawThreatArea(
+            { x: window.hoveredHex.col, y: window.hoveredHex.row, radius: window.threatPlacement.radius },
+            'rgba(241, 196, 15, 0.18)',
+            '#f1c40f',
+            '',
+            true
+        );
+    }
+}
+
+// Contorno del disegno selezionato e cursore della gomma (solo per il Master)
+function drawDrawingOverlays() {
+    if (!isMaster || !isDrawingMode) return;
+
+    ctx.save();
+    ctx.lineWidth = 2 / camera.zoom;
+
+    if (window.selectedDrawing) {
+        const b = getDrawingBounds(window.selectedDrawing);
+        const pad = 5 / camera.zoom;
+        ctx.strokeStyle = '#e74c3c';
+        ctx.setLineDash([5 / camera.zoom, 5 / camera.zoom]);
+        ctx.strokeRect(b.minX - pad, b.minY - pad, b.maxX - b.minX + pad * 2, b.maxY - b.minY + pad * 2);
+    }
+
+    if (window.eraserCursor) {
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#f39c12';
+        ctx.fillStyle = 'rgba(243, 156, 18, 0.15)';
+        ctx.beginPath();
+        ctx.arc(window.eraserCursor.x, window.eraserCursor.y, ERASER_RADIUS_PX / camera.zoom, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 function drawGrid() {
@@ -376,9 +510,57 @@ function drawTokens() {
             ctx.fillText(hpText, centerX, centerY + radius + 12);
         }
 
+        drawEffectBadges(char, centerX, centerY, radius);
+
         ctx.restore();
 
     });
+}
+
+// Pallini sugli effetti a tempo: rosso se fanno danno, verde altrimenti.
+// Mostra l'iniziale dell'effetto e i turni rimasti.
+function drawEffectBadges(char, centerX, centerY, radius) {
+    const effects = getTimedEffects(char);
+    if (!effects.length) return;
+
+    const badgeRadius = 8;
+    const shown = effects.slice(0, 3);
+
+    ctx.save();
+    ctx.font = 'bold 9px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    shown.forEach((effect, i) => {
+        // In fila sul bordo in alto a destra della pedina
+        const angle = -Math.PI / 4 + i * 0.55;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius - radius * 0.4;
+
+        ctx.beginPath();
+        ctx.arc(x, y, badgeRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = Number(effect.hpChange) < 0 ? '#c0392b' : '#27ae60';
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        const initial = String(effect.name || '?').trim().charAt(0).toUpperCase();
+        ctx.fillText(`${initial}${effect.turns}`, x, y + 0.5);
+    });
+
+    if (effects.length > shown.length) {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        const x = centerX + radius + 4;
+        const y = centerY + radius * 0.2;
+        ctx.strokeText(`+${effects.length - shown.length}`, x, y);
+        ctx.fillText(`+${effects.length - shown.length}`, x, y);
+    }
+
+    ctx.restore();
 }
 
 // Aggiunge un segmento laser e programma la sua cancellazione dopo 1.5 secondi
@@ -959,26 +1141,12 @@ function render() {
 
     // 3. Disegni e Forme geometriche (Sopra la griglia, sotto le pedine)
     drawLines();
-    // Evidenziazione Disegno Selezionato (Solo per il Master)
-    if (isMaster && isDrawingMode && window.selectedDrawing) {
-        const sd = window.selectedDrawing;
-        ctx.save();
-        ctx.strokeStyle = '#e74c3c'; // Rosso fuoco
-        ctx.setLineDash([5, 5]);
-        ctx.lineWidth = 2;
-        if (sd.type === 'rectangle') {
-            // Cornice per i rettangoli
-            ctx.strokeRect(Math.min(sd.sx, sd.ex) - 5, Math.min(sd.sy, sd.ey) - 5, Math.abs(sd.ex - sd.sx) + 10, Math.abs(sd.ey - sd.sy) + 10);
-        } else {
-            // Cerchio per sticker, linee o altre forme
-            ctx.beginPath();
-            ctx.arc(sd.sx, sd.sy, (sd.w || 20) + 10, 0, 2 * Math.PI);
-            ctx.stroke();
-        }
-        ctx.restore();
-    }
+    drawDrawingOverlays();
 
     drawFogOfWar();
+
+    // Aree minacciate sopra la nebbia, sotto le pedine
+    drawThreats();
 
     // 3.1 Percorso Movimento (Sopra le pedine)
     drawMovementPath();

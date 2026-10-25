@@ -1052,7 +1052,8 @@ socket.on('dice_result', (data) => {
     div.style.padding = '8px 10px'; div.style.borderRadius = '5px'; div.style.lineHeight = '1.4';
     if (data.is_master_roll) { div.style.background = '#fadbd8'; div.style.borderLeft = '4px solid #c0392b'; div.style.color = '#c0392b'; }
     else { div.style.background = '#e8f8f5'; div.style.borderLeft = '4px solid #1abc9c'; div.style.color = '#2c3e50'; }
-    div.innerHTML = `<strong style="display:block; font-size:13px; margin-bottom:2px;">${data.name}</strong>${data.message}`;
+    // Il nome è testo semplice; il messaggio è HTML composto dal server
+    div.innerHTML = `<strong style="display:block; font-size:13px; margin-bottom:2px;">${escapeHtml(data.name)}</strong>${data.message}`;
     chatLog.appendChild(div);
 
     // Auto-apertura se arriva un messaggio e la tendina è chiusa
@@ -2188,6 +2189,210 @@ function findActionSpeedRule(actionName) {
     ) || null;
 }
 
+// ==========================================
+// TABELLA VELOCITÀ AZIONI (INTERATTIVA)
+// Le azioni scelte compilano velocità e frame nel pannello di turno
+// ("Altra azione") oppure nella finestra di reazione (solo "Difesa").
+// ==========================================
+
+const ACTION_CATEGORY_ICONS = {
+    'Movimento': '🏃',
+    'Corpo a corpo': '👊',
+    'Armi bianche': '🗡️',
+    'Lancio': '🎯',
+    'Armi da fuoco': '🔫',
+    'Difesa': '🛡️',
+    'Oggetti': '📦',
+    'Interazione': '🔍',
+    'Medica': '🩹',
+    'Gadget': '🧩',
+    'Tattica': '⚠️'
+};
+
+const LIMB_LABELS = {
+    bd: 'Braccio Dx',
+    bs: 'Braccio Sx',
+    gd: 'Gamba Dx',
+    gs: 'Gamba Sx'
+};
+
+// ==========================================
+// SELETTORE ARTI MULTIPLI
+// Le azioni costose si pagano con più arti insieme (es. arrampicarsi
+// usa braccia e gambe): il costo si divide il più equamente possibile.
+// ==========================================
+
+const LIMB_KEYS = ['bd', 'bs', 'gd', 'gs'];
+const DEFAULT_LIMBS = { bd: 60, bs: 60, gd: 60, gs: 60 };
+
+// Divide il costo tra gli arti scelti senza superare i frame di ciascuno.
+// Restituisce { bd: 23, ... } oppure null se i frame non bastano.
+function splitFramesAcrossLimbs(cost, limbs, available) {
+    const total = limbs.reduce((sum, limb) => sum + (available[limb] || 0), 0);
+
+    if (!limbs.length || total < cost) {
+        return null;
+    }
+
+    // Prima gli arti con meno frame: la parte che non riescono a pagare passa agli altri
+    const ordered = [...limbs].sort((a, b) => (available[a] || 0) - (available[b] || 0));
+    const shares = {};
+    let remaining = cost;
+
+    ordered.forEach((limb, index) => {
+        const take = Math.min(
+            available[limb] || 0,
+            Math.ceil(remaining / (ordered.length - index))
+        );
+        shares[limb] = take;
+        remaining -= take;
+    });
+
+    return shares;
+}
+
+// Arti proposti: si aggiungono nell'ordine preferito finché i frame bastano
+function suggestLimbs(cost, available, preferred) {
+    const chosen = [];
+    let total = 0;
+
+    for (const limb of preferred) {
+        if ((available[limb] || 0) <= 0) continue;
+        chosen.push(limb);
+        total += available[limb];
+        if (total >= cost) break;
+    }
+
+    return chosen.length ? chosen : [preferred[0]];
+}
+
+function formatLimbShares(shares) {
+    return LIMB_KEYS
+        .filter(limb => shares[limb])
+        .map(limb => `${LIMB_LABELS[limb]} ${shares[limb]}`)
+        .join(', ');
+}
+
+// L'arto che paga di più è quello "principale" (es. il braccio che para)
+function getMainLimb(shares, preferred = LIMB_KEYS) {
+    return [...preferred].sort((a, b) => (shares[b] || 0) - (shares[a] || 0))[0];
+}
+
+function createLimbPicker(containerId) {
+    const picker = {
+        cost: 0,
+        available: { ...DEFAULT_LIMBS },
+        preferred: LIMB_KEYS,
+        selected: new Set(['bd'])
+    };
+
+    picker.getShares = () =>
+        splitFramesAcrossLimbs(picker.cost, LIMB_KEYS.filter(limb => picker.selected.has(limb)), picker.available);
+
+    picker.render = () => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const shares = picker.getShares() || {};
+        container.innerHTML = '';
+
+        const grid = document.createElement('div');
+        grid.className = 'limb-picker-grid';
+
+        LIMB_KEYS.forEach(limb => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'limb-chip';
+            chip.classList.toggle('active', picker.selected.has(limb));
+            chip.title = 'Clicca per usare / non usare questo arto';
+
+            const name = document.createElement('span');
+            name.textContent = LIMB_LABELS[limb];
+
+            const frames = document.createElement('strong');
+            frames.textContent = shares[limb]
+                ? `${picker.available[limb]} → ${picker.available[limb] - shares[limb]}`
+                : `${picker.available[limb]}`;
+
+            chip.appendChild(name);
+            chip.appendChild(frames);
+
+            chip.addEventListener('click', () => {
+                if (picker.selected.has(limb)) {
+                    picker.selected.delete(limb);
+                } else {
+                    picker.selected.add(limb);
+                }
+                picker.render();
+            });
+
+            grid.appendChild(chip);
+        });
+
+        const summary = document.createElement('div');
+        summary.className = 'limb-picker-summary';
+
+        if (!picker.selected.size) {
+            summary.textContent = 'Scegli almeno un arto.';
+            summary.classList.add('error');
+        } else if (!picker.getShares()) {
+            const total = LIMB_KEYS
+                .filter(limb => picker.selected.has(limb))
+                .reduce((sum, limb) => sum + picker.available[limb], 0);
+            summary.textContent = `Frame insufficienti: servono ${picker.cost}, ne hai ${total}. Aggiungi un arto.`;
+            summary.classList.add('error');
+        } else if (picker.selected.size > 1) {
+            summary.textContent = `Costo diviso tra ${picker.selected.size} arti.`;
+        }
+
+        container.appendChild(grid);
+        container.appendChild(summary);
+    };
+
+    // Aggiorna costo e frame disponibili; con suggest=true propone di nuovo gli arti
+    picker.update = ({ cost, available, preferred, suggest = false }) => {
+        if (cost !== undefined) picker.cost = cost;
+        if (available) picker.available = { ...DEFAULT_LIMBS, ...available };
+        if (preferred) picker.preferred = preferred;
+        if (suggest) picker.selected = new Set(suggestLimbs(picker.cost, picker.available, picker.preferred));
+        picker.render();
+    };
+
+    return picker;
+}
+
+const LIMB_ORDER_ARMS = ['bd', 'bs', 'gd', 'gs'];
+const LIMB_ORDER_LEGS = ['gd', 'gs', 'bd', 'bs'];
+
+const tableActionLimbPicker = createLimbPicker('table-action-limbs');
+const reactionLimbPicker = createLimbPicker('reaction-limbs');
+
+function getCurrentActorId() {
+    return getActingCombatantId();
+}
+
+// Chi ha aperto la tabella: 'action' (pannello di turno) o 'reaction' (difesa)
+let actionSpeedTableTarget = 'action';
+let actionSpeedTableCategory = '';
+
+function getCategoryIcon(category) {
+    return ACTION_CATEGORY_ICONS[category] || '•';
+}
+
+function getActionCategories() {
+    return [...new Set(
+        getActionSpeedEntries()
+            .map(entry => entry.category)
+            .filter(Boolean)
+    )];
+}
+
+// ==========================================
+// REAZIONI
+// Le voci "Difesa" con il campo "reaction" diventano reazioni:
+// il campo dice con quale meccanica si risolvono (Parata / Schivata).
+// ==========================================
+
 function getReactionTableActionName(reactionType) {
     const map = {
         Parata: 'Parare',
@@ -2197,172 +2402,318 @@ function getReactionTableActionName(reactionType) {
     return map[reactionType] || null;
 }
 
-function applyReactionSpeedFromTable() {
-    const typeSelect =
-        document.getElementById('reaction-type');
+function populateReactionOptions() {
+    const select = document.getElementById('reaction-type');
+    const defenses = getActionSpeedEntries().filter(entry => entry.reaction);
 
-    const speedInput =
-        document.getElementById('reaction-speed');
-
-    const costEl =
-        document.getElementById('reaction-cost');
-
-    if (!typeSelect || !speedInput || !costEl) {
+    if (!select || !defenses.length || select.dataset.fromTable === '1') {
         return;
     }
 
-    const tableAction =
-        getReactionTableActionName(
-            typeSelect.value
-        );
+    select.innerHTML = '';
 
-    const rule =
-        tableAction
-            ? findActionSpeedRule(tableAction)
-            : null;
+    defenses.forEach(entry => {
+        const option = document.createElement('option');
+        option.value = entry.action;
+        option.dataset.reaction = entry.reaction;
+        option.textContent =
+            `${entry.reaction === 'Parata' ? '🛡️' : '💨'} ${entry.action} (Vel ${entry.speed} · ${entry.frames} Frame)`;
+        select.appendChild(option);
+    });
+
+    const exchange = document.createElement('option');
+    exchange.value = 'Scambio';
+    exchange.dataset.reaction = 'Scambio';
+    exchange.textContent = "⚔️ Scambio d'Attacco (velocità manuale)";
+    select.appendChild(exchange);
+
+    select.dataset.fromTable = '1';
+}
+
+// Restituisce la meccanica, l'azione della tabella e la sua regola
+function getSelectedReaction() {
+    const option = document.getElementById('reaction-type')?.selectedOptions[0];
+
+    if (!option) {
+        return { type: 'Schivata', action: null, rule: null };
+    }
+
+    // Senza compendio restano le vecchie opzioni Parata / Schivata / Scambio
+    const fromTable = !!option.dataset.reaction;
+    const type = option.dataset.reaction || option.value;
+
+    if (type === 'Scambio') {
+        return { type, action: null, rule: null };
+    }
+
+    const action = fromTable ? option.value : getReactionTableActionName(type);
+
+    return {
+        type,
+        action: fromTable ? action : null,
+        rule: findActionSpeedRule(action)
+    };
+}
+
+function applyReactionSpeedFromTable() {
+    populateReactionOptions();
+
+    const speedInput = document.getElementById('reaction-speed');
+    const costEl = document.getElementById('reaction-cost');
+
+    if (!speedInput || !costEl) {
+        return;
+    }
+
+    const { type, rule } = getSelectedReaction();
+
+    // Parata con le braccia, schivata con le gambe
+    const preferred = type === 'Schivata' ? LIMB_ORDER_LEGS : LIMB_ORDER_ARMS;
+
+    const defenderId = pendingIncomingAttack?.defender_id;
+    const available = window.playersLimbs?.[defenderId];
 
     if (rule) {
-        speedInput.value =
-            rule.speed;
-
-        speedInput.readOnly =
-            true;
-
-        speedInput.style.opacity =
-            '0.8';
-
-        costEl.innerText =
-            rule.frames;
-
+        speedInput.value = rule.speed;
+        speedInput.readOnly = true;
+        speedInput.style.opacity = '0.8';
+        costEl.innerText = rule.frames;
+        reactionLimbPicker.update({ cost: Number(rule.frames) || 0, available, preferred, suggest: true });
         return;
     }
 
-    speedInput.readOnly =
-        false;
+    speedInput.readOnly = false;
+    speedInput.style.opacity = '1';
+    speedInput.value = '';
+    speedInput.placeholder = 'Velocità';
+    costEl.innerText = '-';
+    reactionLimbPicker.update({ cost: 0, available, preferred, suggest: true });
+}
 
-    speedInput.style.opacity =
-        '1';
+// ==========================================
+// PANNELLO DI TURNO: "ALTRA AZIONE"
+// ==========================================
 
-    speedInput.value =
-        '';
+function populateTableActionSection() {
+    const categorySelect = document.getElementById('table-action-category');
 
-    speedInput.placeholder =
-        'Velocità';
+    // Si popola una sola volta, appena il compendio è disponibile
+    if (!categorySelect || categorySelect.options.length) {
+        return;
+    }
 
-    costEl.innerText =
-        '-';
+    getActionCategories().forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = `${getCategoryIcon(category)} ${category}`;
+        categorySelect.appendChild(option);
+    });
+
+    renderTableActionOptions();
+}
+
+function renderTableActionOptions(selectedAction) {
+    const category = document.getElementById('table-action-category')?.value;
+    const actionSelect = document.getElementById('table-action-select');
+
+    if (!actionSelect) return;
+
+    actionSelect.innerHTML = '';
+
+    getActionSpeedEntries()
+        .filter(entry => entry.category === category)
+        .forEach(entry => {
+            const option = document.createElement('option');
+            option.value = entry.action;
+            option.textContent = `${entry.action} (${entry.frames} F)`;
+            actionSelect.appendChild(option);
+        });
+
+    if (selectedAction) {
+        actionSelect.value = selectedAction;
+    }
+
+    updateTableActionInfo();
+}
+
+function getSelectedTableAction() {
+    return findActionSpeedRule(
+        document.getElementById('table-action-select')?.value
+    );
+}
+
+function updateTableActionInfo() {
+    const entry = getSelectedTableAction();
+
+    document.getElementById('table-action-speed').innerText = entry ? entry.speed : '-';
+    document.getElementById('table-action-frames').innerText = entry ? entry.frames : '-';
+
+    // Solo Minacciare chiede il raggio dell'area
+    const radiusSelect = document.getElementById('table-action-radius');
+    if (radiusSelect) radiusSelect.style.display = entry?.special === 'threat' ? 'block' : 'none';
+
+    // Proposta di arti: il movimento parte dalle gambe, il resto dalle braccia
+    tableActionLimbPicker.update({
+        cost: entry ? Number(entry.frames) || 0 : 0,
+        available: window.playersLimbs?.[getCurrentActorId()],
+        preferred: entry?.category === 'Movimento' ? LIMB_ORDER_LEGS : LIMB_ORDER_ARMS,
+        suggest: true
+    });
+}
+
+// Frame cambiati (nuovo turno, altre azioni): aggiorna senza cambiare gli arti scelti
+function refreshTableActionLimbs() {
+    tableActionLimbPicker.update({ available: window.playersLimbs?.[getCurrentActorId()] });
+}
+
+function selectTableAction(entry) {
+    populateTableActionSection();
+
+    const categorySelect = document.getElementById('table-action-category');
+    if (!categorySelect) return;
+
+    categorySelect.value = entry.category;
+    renderTableActionOptions(entry.action);
+}
+
+document.getElementById('table-action-category')?.addEventListener('change', () => renderTableActionOptions());
+document.getElementById('table-action-select')?.addEventListener('change', updateTableActionInfo);
+
+document.getElementById('btn-end-interrupt')?.addEventListener('click', () => socket.emit('end_interrupt'));
+
+document.getElementById('btn-execute-table-action')?.addEventListener('click', () => {
+    const entry = getSelectedTableAction();
+
+    if (!entry) {
+        alert("Scegli prima un'azione dalla tabella.");
+        return;
+    }
+
+    const actorId = getCurrentActorId();
+    if (actorId === null) return;
+
+    const cost = Number(entry.frames) || 0;
+
+    tableActionLimbPicker.update({ available: window.playersLimbs[actorId] });
+    const shares = tableActionLimbPicker.getShares();
+
+    if (!shares) {
+        alert(`Frame insufficienti negli arti scelti! Ne servono ${cost}: aggiungi un altro arto.`);
+        return;
+    }
+
+    if (!confirm(`🎬 Confermi "${entry.action}"?\nCosto: ${cost} Frame (${formatLimbShares(shares)})`)) {
+        return;
+    }
+
+    // Minacciare: prima si sceglie il centro dell'area sulla mappa (vedi control.js)
+    if (entry.special === 'threat') {
+        window.threatPlacement = {
+            char_id: actorId,
+            radius: parseInt(document.getElementById('table-action-radius')?.value) || 1,
+            limb_shares: shares
+        };
+        statusBar.innerText = "🎯 Clicca il centro dell'area da minacciare (Esc per annullare).";
+        return;
+    }
+
+    // Il server verifica il costo, scala i frame e lo annuncia in chat
+    socket.emit('perform_table_action', {
+        char_id: actorId,
+        action: entry.action,
+        limb_shares: shares
+    });
+});
+
+// ==========================================
+// FINESTRA TABELLA
+// ==========================================
+
+function renderActionSpeedCategoryChips() {
+    const container = document.getElementById('action-speed-categories');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    ['', ...getActionCategories()].forEach(category => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'action-speed-chip';
+        chip.classList.toggle('active', category === actionSpeedTableCategory);
+        chip.textContent = category ? `${getCategoryIcon(category)} ${category}` : 'Tutte';
+
+        chip.addEventListener('click', () => {
+            actionSpeedTableCategory = category;
+            renderActionSpeedTable();
+        });
+
+        container.appendChild(chip);
+    });
+}
+
+// In difesa si possono scegliere solo le voci che sono reazioni
+function isActionSpeedEntrySelectable(entry) {
+    return actionSpeedTableTarget !== 'reaction' || !!entry.reaction;
 }
 
 function renderActionSpeedTable() {
-    const body =
-        document.getElementById(
-            'action-speed-table-body'
-        );
+    const body = document.getElementById('action-speed-table-body');
+    const searchInput = document.getElementById('action-speed-search');
 
-    const categorySelect =
-        document.getElementById(
-            'action-speed-category'
-        );
-
-    const searchInput =
-        document.getElementById(
-            'action-speed-search'
-        );
-
-    if (!body || !categorySelect || !searchInput) {
+    if (!body || !searchInput) {
         return;
     }
 
-    const entries =
-        getActionSpeedEntries();
+    renderActionSpeedCategoryChips();
 
-    if (
-        categorySelect.options.length <= 1
-    ) {
-        const categories =
-            [...new Set(
-                entries
-                    .map(entry => entry.category)
-                    .filter(Boolean)
-            )];
+    const search = searchInput.value.trim().toLowerCase();
 
-        categories.forEach(category => {
-            const option =
-                document.createElement('option');
+    const filtered = getActionSpeedEntries().filter(entry => {
+        const matchesCategory =
+            !actionSpeedTableCategory ||
+            entry.category === actionSpeedTableCategory;
 
-            option.value =
-                category;
+        const matchesSearch =
+            !search ||
+            `${entry.category || ''} ${entry.action || ''}`.toLowerCase().includes(search);
 
-            option.textContent =
-                category;
-
-            categorySelect.appendChild(
-                option
-            );
-        });
-    }
-
-    const selectedCategory =
-        categorySelect.value;
-
-    const search =
-        searchInput.value
-            .trim()
-            .toLowerCase();
-
-    const filtered =
-        entries.filter(entry => {
-            const matchesCategory =
-                !selectedCategory ||
-                entry.category ===
-                    selectedCategory;
-
-            const haystack =
-                `${entry.category || ''} ${entry.action || ''}`
-                    .toLowerCase();
-
-            const matchesSearch =
-                !search ||
-                haystack.includes(search);
-
-            return (
-                matchesCategory &&
-                matchesSearch
-            );
-        });
+        return matchesCategory && matchesSearch;
+    });
 
     body.innerHTML = '';
 
+    let lastCategory = null;
+
     filtered.forEach(entry => {
-        const tr =
-            document.createElement('tr');
+        // Intestazione di gruppo per ogni categoria
+        if (entry.category !== lastCategory) {
+            lastCategory = entry.category;
 
-        [
-            entry.category,
-            entry.action,
-            entry.speed,
-            entry.frames
-        ].forEach((value, index) => {
-            const td =
-                document.createElement('td');
+            const groupRow = document.createElement('tr');
+            const groupCell = document.createElement('td');
+            groupCell.colSpan = 3;
+            groupCell.className = 'action-speed-group';
+            groupCell.textContent = `${getCategoryIcon(entry.category)} ${entry.category}`;
+            groupRow.appendChild(groupCell);
+            body.appendChild(groupRow);
+        }
 
-            td.textContent =
-                value ?? '';
+        const tr = document.createElement('tr');
+        tr.className = 'action-speed-row';
 
-            td.style.padding =
-                '8px 9px';
+        if (isActionSpeedEntrySelectable(entry)) {
+            tr.classList.add('selectable');
+            tr.title = 'Clicca per selezionare';
+            tr.addEventListener('click', () => pickActionSpeedEntry(entry));
+        } else {
+            tr.classList.add('disabled');
+            tr.title = 'Non utilizzabile come reazione';
+        }
 
-            td.style.borderBottom =
-                '1px solid #34495e';
-
-            if (index >= 2) {
-                td.style.textAlign =
-                    'center';
-
-                td.style.fontWeight =
-                    'bold';
-            }
-
+        [entry.action, entry.speed, entry.frames].forEach((value, index) => {
+            const td = document.createElement('td');
+            td.textContent = value ?? '';
+            if (index > 0) td.className = 'action-speed-number';
             tr.appendChild(td);
         });
 
@@ -2370,99 +2721,73 @@ function renderActionSpeedTable() {
     });
 
     if (filtered.length === 0) {
-        const tr =
-            document.createElement('tr');
-
-        const td =
-            document.createElement('td');
-
-        td.colSpan = 4;
-        td.textContent =
-            'Nessuna azione trovata.';
-
-        td.style.padding =
-            '16px';
-
-        td.style.textAlign =
-            'center';
-
-        td.style.color =
-            '#bdc3c7';
-
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 3;
+        td.className = 'action-speed-empty';
+        td.textContent = 'Nessuna azione trovata.';
         tr.appendChild(td);
         body.appendChild(tr);
     }
 }
 
-function openActionSpeedTable() {
-    const modal =
-        document.getElementById(
-            'action-speed-table-modal'
-        );
+function pickActionSpeedEntry(entry) {
+    if (actionSpeedTableTarget === 'reaction') {
+        populateReactionOptions();
+        document.getElementById('reaction-type').value = entry.action;
+        applyReactionSpeedFromTable();
+    } else {
+        selectTableAction(entry);
+    }
 
+    closeActionSpeedTable();
+}
+
+function openActionSpeedTable(target) {
+    const modal = document.getElementById('action-speed-table-modal');
     if (!modal) return;
+
+    actionSpeedTableTarget = target === 'reaction' ? 'reaction' : 'action';
+
+    // In difesa si parte direttamente dalle reazioni
+    actionSpeedTableCategory = actionSpeedTableTarget === 'reaction' ? 'Difesa' : '';
+
+    const hint = document.getElementById('action-speed-table-hint');
+    if (hint) {
+        hint.textContent = actionSpeedTableTarget === 'reaction'
+            ? 'Clicca una difesa per usarla come reazione.'
+            : "Clicca un'azione per compilare velocità e frame.";
+    }
+
+    const searchInput = document.getElementById('action-speed-search');
+    if (searchInput) searchInput.value = '';
 
     renderActionSpeedTable();
 
-    modal.style.display =
-        'flex';
+    modal.style.display = 'flex';
+    searchInput?.focus();
 }
 
 function closeActionSpeedTable() {
-    const modal =
-        document.getElementById(
-            'action-speed-table-modal'
-        );
+    const modal = document.getElementById('action-speed-table-modal');
 
     if (modal) {
-        modal.style.display =
-            'none';
+        modal.style.display = 'none';
     }
 }
 
-document.querySelectorAll(
-    '.action-speed-table-open'
-).forEach(button => {
-    button.addEventListener(
-        'click',
-        openActionSpeedTable
-    );
+document.querySelectorAll('.action-speed-table-open').forEach(button => {
+    button.addEventListener('click', () => openActionSpeedTable(button.dataset.tableTarget));
 });
 
-document.getElementById(
-    'action-speed-table-close'
-)?.addEventListener(
-    'click',
-    closeActionSpeedTable
-);
+document.getElementById('action-speed-table-close')?.addEventListener('click', closeActionSpeedTable);
+document.getElementById('action-speed-search')?.addEventListener('input', renderActionSpeedTable);
 
-document.getElementById(
-    'action-speed-search'
-)?.addEventListener(
-    'input',
-    renderActionSpeedTable
-);
-
-document.getElementById(
-    'action-speed-category'
-)?.addEventListener(
-    'change',
-    renderActionSpeedTable
-);
-
-document.getElementById(
-    'action-speed-table-modal'
-)?.addEventListener(
-    'click',
-    (event) => {
-        if (
-            event.target.id ===
-            'action-speed-table-modal'
-        ) {
-            closeActionSpeedTable();
-        }
+document.getElementById('action-speed-table-modal')?.addEventListener('click', (event) => {
+    if (event.target.id === 'action-speed-table-modal') {
+        closeActionSpeedTable();
     }
-);
+});
 
 
 function getAllBrands() {
@@ -5760,10 +6085,8 @@ window.updateCombatActionPanel = function() {
 
         if (currentActor) {
 
-            activeCharId =
-                currentActor.id !== undefined
-                    ? currentActor.id
-                    : currentActor.char_id;
+            // Durante un'interruzione agisce chi minaccia
+            activeCharId = getActingCombatantId();
 
             const selectElem =
                 document.getElementById(
@@ -5805,6 +6128,26 @@ window.updateCombatActionPanel = function() {
     }
 
     panel.style.display = 'block';
+
+    // Interruzione da Minacciare: il pannello passa a chi minaccia
+    const interrupt = combatState.interrupts?.[0];
+    const headerTitle = document.getElementById('action-header-title');
+    if (headerTitle) {
+        headerTitle.textContent = interrupt
+            ? `⚡ INTERRUZIONE: ${interrupt.threatener_name}`
+            : '⚔️ AZIONI DI TURNO 🖐️';
+    }
+    const endInterruptBtn = document.getElementById('btn-end-interrupt');
+    if (endInterruptBtn) {
+        endInterruptBtn.style.display = interrupt ? 'block' : 'none';
+        endInterruptBtn.textContent = interrupt
+            ? `✅ Fine interruzione (${interrupt.intruder_name} riprende)`
+            : '';
+    }
+
+    // Categorie e azioni della tabella (una volta sola, a compendio caricato)
+    populateTableActionSection();
+    refreshTableActionLimbs();
 
     // ==========================================
     // FRAME ARTI
@@ -6253,6 +6596,16 @@ window.updateCombatActionPanel = function() {
     }
 };
 
+// Frame degli arti aggiornati dal server (azioni, attacchi, reazioni)
+socket.on('sync_limbs', (data) => {
+    if (!data) return;
+    window.playersLimbs[data.char_id] = data.limbs;
+    // Il tracker legge i frame da combatState
+    if (combatState.players_limbs) combatState.players_limbs[data.char_id] = data.limbs;
+    window.updateCombatActionPanel();
+    renderTurnOrderList();
+});
+
 // Modifica anche l'ascoltatore per chiamarla correttamente
 socket.on('combat_update', (data) => {
     if (data.players_limbs) window.playersLimbs = data.players_limbs;
@@ -6335,8 +6688,7 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
     const cost = 110 - speed < 0 ? 0 : 110 - speed;
 
     // Recupera l'ID di chi sta attaccando (Giocatore o NPC)
-    const currentActor = combatState.turn_order[combatState.current_index];
-    const attackerId = currentActor.id !== undefined ? currentActor.id : currentActor.char_id;
+    const attackerId = getActingCombatantId();
 
     if (!targetId) { alert("Seleziona un bersaglio!"); return; }
 
@@ -6388,9 +6740,7 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
         return; // Annulla l'attacco
     }
 
-    // Se confermato, scala i frame ed emette l'attacco
-    myLimbs[limb] -= cost;
-    socket.emit('sync_limbs', { char_id: attackerId, limbs: myLimbs });
+    // I frame li scala il server, dopo aver validato l'attacco
 
     const attackerName = characters.find(c => c.id === attackerId).name;
 
@@ -6413,6 +6763,9 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
 
         speed:
             speed,
+
+        limb:
+            limb,
 
         // NUOVI DATI
         compendium_id:
@@ -6556,13 +6909,13 @@ socket.on('incoming_attack', (data) => {
         'defense-alert-text'
     ).innerHTML = `
 
-        <b>${data.attacker_name}</b>
+        <b>${escapeHtml(data.attacker_name)}</b>
         sta attaccando
         <b>${targetChar.name}</b>
 
         con
 
-        <b>${data.weapon}</b>
+        <b>${escapeHtml(data.weapon)}</b>
 
         a
 
@@ -6595,13 +6948,13 @@ document.getElementById('reaction-speed')?.addEventListener('input', (e) => {
     let speed = parseInt(e.target.value) || 0;
     let cost = 110 - speed;
     document.getElementById('reaction-cost').innerText = cost < 0 ? 0 : cost;
+    reactionLimbPicker.update({ cost: Math.max(0, cost) });
 });
 
 document.getElementById('btn-execute-reaction')?.addEventListener('click', () => {
     if (!pendingIncomingAttack) return;
 
-    const reactionType = document.getElementById('reaction-type').value;
-    const limb = document.getElementById('reaction-limb').value;
+    const reaction = getSelectedReaction();
 
     const speed =
         parseInt(
@@ -6629,22 +6982,27 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
     // L'ID del difensore reale (Giocatore o NPC)
     const defenderId = pendingIncomingAttack.defender_id;
 
-    let myLimbs = window.playersLimbs[defenderId] || {bd: 60, bs: 60, gd: 60, gs: 60};
-    if (myLimbs[limb] < cost) {
-        alert(`Frame insufficienti per reagire a questa velocità! Ne servono ${cost}, ne hai ${myLimbs[limb]}`);
+    reactionLimbPicker.update({ cost, available: window.playersLimbs[defenderId] });
+    const shares = reactionLimbPicker.getShares();
+
+    if (!shares) {
+        alert(`Frame insufficienti negli arti scelti! Ne servono ${cost}: aggiungi un altro arto.`);
         return;
     }
 
-    // Scala i frame e chiudi la finestra
-    myLimbs[limb] -= cost;
-    socket.emit('sync_limbs', { char_id: defenderId, limbs: myLimbs });
+    // L'arto che paga di più è quello che para (conta per l'equipaggiamento)
+    const limb = getMainLimb(shares, reactionLimbPicker.preferred);
+
+    // I frame li scala il server insieme alla risoluzione
 
     // Invia i dati precisi ad app.py per il calcolo matematico
     socket.emit('resolve_reaction', {
         attack_id: pendingIncomingAttack.attack_id,
-        reaction_type: reactionType,
+        reaction_type: reaction.type,
+        reaction_action: reaction.action,
         def_limb: limb,
-        def_speed: speed
+        def_speed: speed,
+        limb_shares: shares
     });
 
     document.getElementById('defense-modal').style.display = 'none';
@@ -6764,18 +7122,18 @@ socket.on(
 
         summary.innerHTML = `
 
-            <b>${data.attacker_name}</b>
+            <b>${escapeHtml(data.attacker_name)}</b>
             attacca
-            <b>${data.defender_name}</b>
+            <b>${escapeHtml(data.defender_name)}</b>
 
             <br>
 
-            ⚔️ ${data.weapon}
+            ⚔️ ${escapeHtml(data.weapon)}
 
             <br>
 
             🛡️ Reazione:
-            <b>${data.reaction_type}</b>
+            <b>${escapeHtml(data.reaction_label || data.reaction_type)}</b>
 
             ${
                 data.distance !== null &&
@@ -6789,7 +7147,7 @@ socket.on(
             ${
                 data.damage_formula
 
-                ? `<br>💥 Formula: ${data.damage_formula}`
+                ? `<br>💥 Formula: ${escapeHtml(data.damage_formula)}`
 
                 : ''
             }
@@ -6831,7 +7189,7 @@ function buildMasterCombatMessage(
         `${data.defender_name} con ${data.weapon}.\n\n` +
 
         `Attacco: ${data.att_roll}\n` +
-        `Difesa (${data.reaction_type}): ${data.def_roll}\n` +
+        `Difesa (${data.reaction_label || data.reaction_type}): ${data.def_roll}\n` +
         `Danno: ${data.damage ?? 0}`
     );
 }
@@ -7114,4 +7472,164 @@ socket.on(
             window.closeMasterToolSections();
         }
     });
+})();
+
+// ==========================================
+// DOCK GIOCATORE - STESSO STILE DELLA DOCK MASTER
+// ==========================================
+(() => {
+    const panel = document.getElementById('player-panel');
+    const toggle = document.getElementById('btn-player-dock-toggle');
+    const buttons = Array.from(
+        document.querySelectorAll('.player-tool-btn[data-player-action]')
+    );
+
+    const equipPanelEl = document.getElementById('equipped-panel');
+    const gadgetPanelEl = document.getElementById('gadget-panel');
+
+    if (!panel) return;
+
+    function isPlayerSession() {
+        const value = userSelect?.value;
+        return !!value && value !== '0' && value !== 'master';
+    }
+
+    function isPanelVisible(el) {
+        return !!el && !el.classList.contains('player-dock-hidden') && el.style.display !== 'none';
+    }
+
+    // Allinea lo stato "attivo" dei bottoni con i pannelli realmente aperti.
+    function syncPlayerDock() {
+        const states = {
+            equip: isPanelVisible(equipPanelEl),
+            gadget: isPanelVisible(gadgetPanelEl),
+            notes: isPanelVisible(document.getElementById('notes-panel')),
+            chat: dicePanelContent?.style.display !== 'none'
+        };
+
+        buttons.forEach(button => {
+            const action = button.dataset.playerAction;
+            button.classList.toggle('master-tool-active', !!states[action]);
+        });
+    }
+
+    function updatePlayerMode() {
+        const playerMode = isPlayerSession();
+        document.body.classList.toggle('player-mode', playerMode);
+
+        // Il Master gestisce le doll con la selezione: niente pannelli nascosti dalla dock.
+        if (!playerMode) {
+            equipPanelEl?.classList.remove('player-dock-hidden');
+            gadgetPanelEl?.classList.remove('player-dock-hidden');
+        }
+
+        syncPlayerDock();
+    }
+
+    const actions = {
+        sheet: () => document.getElementById('sheet-btn')?.click(),
+        equip: () => equipPanelEl?.classList.toggle('player-dock-hidden'),
+        gadget: () => gadgetPanelEl?.classList.toggle('player-dock-hidden'),
+        notes: () => document.getElementById('btn-toggle-notes')?.click(),
+        chat: () => dicePanelHeader?.click(),
+        center: () => document.getElementById('center-cam-btn')?.click(),
+        rename: () => document.getElementById('rename-btn')?.click()
+    };
+
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (!isPlayerSession()) return;
+
+            actions[button.dataset.playerAction]?.();
+            syncPlayerDock();
+        });
+    });
+
+    toggle?.addEventListener('click', () => {
+        const collapsed = panel.classList.toggle('player-dock-collapsed');
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.title = collapsed ? 'Espandi strumenti' : 'Riduci strumenti';
+    });
+
+    // Appunti e chat si possono chiudere anche dai loro pannelli.
+    document.addEventListener('click', () => requestAnimationFrame(syncPlayerDock));
+
+    userSelect?.addEventListener('change', updatePlayerMode);
+    updatePlayerMode();
+})();
+
+// ==========================================
+// RESOCONTO DELLA SESSIONE
+// Esporta la chat (dadi, combattimento, messaggi) vista da questo browser
+// dall'apertura della pagina: come file o come pagina segreta del wiki.
+// ==========================================
+(() => {
+    const downloadBtn = document.getElementById('btn-chat-download');
+    const wikiBtn = document.getElementById('btn-chat-to-wiki');
+
+    // Una riga per messaggio: "Nome: testo"
+    function getChatLogLines() {
+        return Array.from(chatLog?.children || [])
+            .map(entry => {
+                const name = entry.querySelector('strong')?.textContent.trim() || '';
+                const full = entry.textContent.replace(/\s+/g, ' ').trim();
+                const text = name && full.startsWith(name) ? full.slice(name.length).trim() : full;
+                return { name, text };
+            })
+            .filter(line => line.text && line.text !== 'Inizio sessione');
+    }
+
+    function getSessionLabel() {
+        const now = new Date();
+        return now.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    downloadBtn?.addEventListener('click', () => {
+        const lines = getChatLogLines();
+        if (!lines.length) {
+            alert('La chat è ancora vuota.');
+            return;
+        }
+
+        const body = lines.map(line => (line.name ? `${line.name}: ${line.text}` : line.text)).join('\n');
+        const blob = new Blob([`Resoconto Venander - ${getSessionLabel()}\n\n${body}\n`], { type: 'text/plain;charset=utf-8' });
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `resoconto-${new Date().toISOString().slice(0, 10)}.txt`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    });
+
+    wikiBtn?.addEventListener('click', () => {
+        if (!isMaster) return;
+
+        const lines = getChatLogLines();
+        if (!lines.length) {
+            alert('La chat è ancora vuota.');
+            return;
+        }
+
+        const title = `Resoconto ${getSessionLabel()}`;
+        if (!confirm(`Salvare la chat come pagina segreta "${title}" nel wiki?`)) return;
+
+        socket.emit('wiki_save_page', {
+            title,
+            category: 'Resoconti',
+            hidden: true,
+            content: lines.map(line => (line.name ? `- **${line.name}**: ${line.text}` : `- ${line.text}`)).join('\n')
+        });
+
+        statusBar.innerText = `📖 Resoconto salvato nel wiki (segreto): "${title}".`;
+    });
+
+    // Il pulsante del wiki è solo per il Master
+    function syncChatExportButtons() {
+        if (wikiBtn) wikiBtn.style.display = isMaster ? 'inline-block' : 'none';
+    }
+
+    userSelect?.addEventListener('change', () => setTimeout(syncChatExportButtons, 0));
+    // Il ruolo può essere ripristinato dopo il caricamento: ricontrolla all'apertura della chat
+    document.getElementById('dice-panel-header')?.addEventListener('click', syncChatExportButtons);
+    syncChatExportButtons();
 })();

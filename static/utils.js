@@ -58,3 +58,13 @@ function hexDistance(x1, y1, x2, y2) {
     const b = offsetToCube(x2, y2);
     return Math.max(Math.abs(a.q - b.q), Math.abs(a.r - b.r), Math.abs(a.s - b.s));
 }
+
+// Rende sicuro un testo prima di inserirlo in un innerHTML
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}

@@ -23,6 +23,12 @@ window.addEventListener('keydown', e => {
             changed = true;
         }
 
+        if (window.threatPlacement) {
+            window.threatPlacement = null;
+            if (typeof statusBar !== 'undefined') statusBar.innerText = 'Minaccia annullata.';
+            changed = true;
+        }
+
         if (window.isRulerMode) {
             window.isRulerMode = false;
             window.rulerStart = null;
@@ -79,6 +85,16 @@ canvas.addEventListener('click', (event) => {
     // Se stavamo disegnando o spostando la mappa, ignora il click
     if (justFinishedAction) return;
     if (event.shiftKey || isDrawingMode) return;
+
+    // Minacciare: il clic sceglie il centro dell'area
+    if (window.threatPlacement) {
+        const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        socket.emit('declare_threat', { ...window.threatPlacement, x: threatHex.col, y: threatHex.row });
+        window.threatPlacement = null;
+        statusBar.innerText = '';
+        requestRender();
+        return;
+    }
 
     // ==========================================
     // LOGICA NORMALE: SELEZIONE E MOVIMENTO PEDINE
@@ -178,6 +194,12 @@ canvas.addEventListener('click', (event) => {
             if (Number(activeId) === Number(currentCharacterId)) isMyTurn = true;
         }
 
+        // Durante un'interruzione da Minacciare nessuno si muove
+        if (combatState.is_active && combatState.interrupts?.length) {
+            statusBar.innerText = "⚡ Interruzione in corso: aspetta che finisca.";
+            return;
+        }
+
         // SE SIAMO IN COMBATTIMENTO E TOCCA A ME
         if (combatState.is_active && isMyTurn && myChar) {
             const dist = hexDistance(myChar.x, myChar.y, gridX, gridY);
@@ -239,7 +261,9 @@ canvas.addEventListener('click', (event) => {
                             char_id: pending.charId,
                             target_x: pending.x,
                             target_y: pending.y,
-                            move_id: moveId
+                            move_id: moveId,
+                            // Il server ricalcola il costo in frame dall'andatura
+                            mode: modeName
                         };
 
                         const movingChar = characters.find(
@@ -260,9 +284,7 @@ canvas.addEventListener('click', (event) => {
                             fromY: movingChar.y,
                             combat: true,
                             paBefore: framesBefore,
-                            paAfter: framesAfter,
-                            combatName: movingChar.name,
-                            combatMessage: `si sposta di <b>${dist} passi</b> (${modeName}) consumando <b>${requiredFrames} Frame</b> movimento.`
+                            paAfter: framesAfter
                         };
 
                         // Aggiornamento locale immediato. I Frame vengono mostrati
@@ -392,9 +414,15 @@ canvas.addEventListener('click', (event) => {
     }
 });
 
-canvas.addEventListener('mousedown', (event) => {
+// Usiamo i Pointer Events: funzionano uguale col mouse, ma gestiscono
+// anche la penna della tavoletta grafica (pressione, niente tratti spezzati).
+canvas.addEventListener('pointerdown', (event) => {
 
-    if (event.button !== 0) return;
+    // Tasto sinistro, oppure la punta gomma della penna (solo in modalità disegno)
+    if (event.button !== 0 && !(isPenEraser(event) && isMaster && isDrawingMode)) return;
+
+    // Tiene il tratto agganciato al canvas anche se la penna esce per un attimo
+    canvas.setPointerCapture(event.pointerId);
 
     const pos = getWorldPos(event);
 
@@ -452,81 +480,9 @@ canvas.addEventListener('mousedown', (event) => {
         return;
     }
 
-    // 2. DISEGNO MASTER
-    if (isMaster && isDrawingMode) {
-        const tool = document.getElementById('draw-tool-select')?.value || 'line';
+    // 2. DISEGNO MASTER (vedi drawing.js)
+    if (drawingPointerDown(event, pos)) return;
 
-        // Strumento "Manina" per spostare e selezionare
-        if (tool === 'select') {
-            let found = null;
-            // Cerca al contrario per prendere l'elemento più "sopra"
-            for (let i = drawings.length - 1; i >= 0; i--) {
-                const d = drawings[i];
-                let isHit = false;
-
-                if (d.type === 'rectangle') {
-                    // Clic dentro l'area del rettangolo
-                    isHit = pos.x >= Math.min(d.sx, d.ex) && pos.x <= Math.max(d.sx, d.ex) &&
-                            pos.y >= Math.min(d.sy, d.ey) && pos.y <= Math.max(d.sy, d.ey);
-                } else if (d.type === 'circle' || d.type === 'icon' || d.type === 'square') {
-                    // Clic dentro il raggio della forma o dell'icona
-                    const radius = d.type === 'icon' ? (d.w || 20) : (d.w || 20);
-                    isHit = Math.hypot(d.sx - pos.x, d.sy - pos.y) <= radius + 10;
-                } else {
-                    // Linee: controlla inizio, fine, o se clicchi in un punto qualsiasi nel mezzo
-                    const distStart = Math.hypot(d.sx - pos.x, d.sy - pos.y);
-                    const distEnd = Math.hypot((d.ex || d.sx) - pos.x, (d.ey || d.sy) - pos.y);
-
-                    if (distStart < 25 || distEnd < 25) {
-                        isHit = true;
-                    } else if (d.ex !== undefined && d.ey !== undefined) {
-                        // Matematica per calcolare la distanza del mouse dal segmento della linea
-                        const lineLen = Math.hypot(d.ex - d.sx, d.ey - d.sy);
-                        if (lineLen > 0) {
-                            const t = ((pos.x - d.sx) * (d.ex - d.sx) + (pos.y - d.sy) * (d.ey - d.sy)) / (lineLen * lineLen);
-                            if (t >= 0 && t <= 1) {
-                                const projX = d.sx + t * (d.ex - d.sx);
-                                const projY = d.sy + t * (d.ey - d.sy);
-                                // Se il mouse è a meno di 15 pixel dalla linea, la afferra
-                                if (Math.hypot(projX - pos.x, projY - pos.y) < 15) isHit = true;
-                            }
-                        }
-                    }
-                }
-
-                if (isHit) { found = d; break; }
-            }
-
-            // Salva la selezione per l'eliminazione
-            window.selectedDrawing = found;
-
-            if (found) {
-                window.draggingDrawing = found;
-                window.dragOffset.sx = pos.x - found.sx;
-                window.dragOffset.sy = pos.y - found.sy;
-                window.dragOffset.ex = pos.x - (found.ex || found.sx);
-                window.dragOffset.ey = pos.y - (found.ey || found.sy);
-                canvas.style.cursor = 'grabbing';
-            }
-            render(); // Ridisegna per mostrare il contorno di selezione
-            return;
-        }
-
-        if (tool === 'line') {
-            isDrawing = true;
-        } else {
-            if (tool === 'icon' && !currentIconBase64) { alert("Carica un'icona!"); return; }
-            isDrawingShape = true;
-            shapeStartX = pos.x;
-            shapeStartY = pos.y;
-            const baseWidth = parseInt(document.getElementById('draw-width')?.value) || 20;
-            const color = isEraserMode ? '#ffffff' : (document.getElementById('draw-color')?.value || '#000000');
-            // Genera ID unico
-            const newUid = Date.now().toString() + Math.floor(Math.random()*1000);
-            currentTempShape = { uid: newUid, type: tool, sx: shapeStartX, sy: shapeStartY, ex: pos.x, ey: pos.y, c: color, w: baseWidth, img: currentIconBase64 };
-        }
-        return;
-    }
     // 3. SE NESSUNO DEI PRECEDENTI, INIZIA IL PANNING
     isPanning = true;
     panStartX = event.clientX - camera.x;
@@ -534,7 +490,7 @@ canvas.addEventListener('mousedown', (event) => {
     canvas.style.cursor = 'grabbing';
 });
 
-canvas.addEventListener('mousemove', (event) => {
+canvas.addEventListener('pointermove', (event) => {
 
     // --- NUOVO: MODIFICA MAPPA (Trascinamento e Scala continui) ---
     if (window.isEditingMap && window.mapDragAction) {
@@ -621,16 +577,6 @@ canvas.addEventListener('mousemove', (event) => {
         render(); // Ridisegna per muovere la linea tratteggiata
     }
 
-    // Trascinamento Disegno Esistente
-    if (window.draggingDrawing) {
-        window.draggingDrawing.sx = currentX - window.dragOffset.sx;
-        window.draggingDrawing.sy = currentY - window.dragOffset.sy;
-        window.draggingDrawing.ex = currentX - window.dragOffset.ex;
-        window.draggingDrawing.ey = currentY - window.dragOffset.ey;
-        render();
-        return;
-    }
-
     // Gestione Laser
     if (isLaserDrawing) {
         const currentCharacter = getSelectedCharacter();
@@ -643,47 +589,11 @@ canvas.addEventListener('mousemove', (event) => {
         return;
     }
 
-    // Gestione Tratto Libero
-    if (isDrawing && isMaster && isDrawingMode) {
-        const baseWidth = parseInt(document.getElementById('draw-width')?.value) || 3;
-        const color = isEraserMode ? '#ffffff' : (document.getElementById('draw-color')?.value || '#000000');
-        const width = isEraserMode ? baseWidth * 2 : baseWidth;
-
-        const itemData = {
-            uid: (window.crypto && typeof window.crypto.randomUUID === 'function')
-                ? window.crypto.randomUUID()
-                : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            type: 'line',
-            sx: lastX,
-            sy: lastY,
-            ex: currentX,
-            ey: currentY,
-            c: color,
-            w: width
-        };
-        drawings.push(itemData);
-        render();
-        socket.emit('draw_item', itemData);
-        lastX = currentX;
-        lastY = currentY;
-    }
-
-    // Gestione Forme in anteprima
-    if (isDrawingShape && isMaster && isDrawingMode && currentTempShape) {
-        if (currentTempShape.type === 'rectangle') {
-            currentTempShape.ex = currentX; // Il rettangolo traccia dall'inizio alla fine
-            currentTempShape.ey = currentY;
-        } else {
-            const dx = currentX - shapeStartX;
-            const dy = currentY - shapeStartY;
-            const dragSize = Math.sqrt(dx*dx + dy*dy);
-            if (dragSize > 5) currentTempShape.w = dragSize;
-        }
-        render();
-    }
+    // Disegno, gomma, forme e spostamento disegni (vedi drawing.js)
+    drawingPointerMove(event, pos);
 });
 
-canvas.addEventListener('mouseup', () => {
+function endPointerAction() {
 
     // --- NUOVO: MODIFICA MAPPA (Salvataggio Rilascio) ---
     if (window.mapDragAction) {
@@ -710,59 +620,19 @@ canvas.addEventListener('mouseup', () => {
         canvas.style.cursor = isMaster ? "pointer" : "crosshair";
     }
 
-    if (isDrawing || isDrawingShape) {
+    if (drawingPointerUp()) {
         justFinishedAction = true; // Evita di selezionare una pedina per sbaglio
-
-        if (isDrawingShape && currentTempShape) {
-            drawings.push(currentTempShape); // Salva la forma definita
-
-            // Invia al server solo dati serializzabili.
-            // Il renderer può aver aggiunto imageObj (istanza Image), che non va mai spedita via Socket.IO.
-            const drawingPayload = {
-                uid: currentTempShape.uid,
-                type: currentTempShape.type,
-                sx: currentTempShape.sx,
-                sy: currentTempShape.sy,
-                ex: currentTempShape.ex,
-                ey: currentTempShape.ey,
-                c: currentTempShape.c,
-                w: currentTempShape.w,
-                img: currentTempShape.img || null
-            };
-
-            socket.emit('draw_item', drawingPayload);
-            currentTempShape = null;
-            render();
-        }
-
-        isDrawing = false;
-        isDrawingShape = false;
-    }
-
-    if (window.draggingDrawing) {
-        // Non inviare imageObj: è un oggetto DOM e non è serializzabile.
-        const drawingPayload = {
-            uid: window.draggingDrawing.uid,
-            type: window.draggingDrawing.type,
-            sx: window.draggingDrawing.sx,
-            sy: window.draggingDrawing.sy,
-            ex: window.draggingDrawing.ex,
-            ey: window.draggingDrawing.ey,
-            c: window.draggingDrawing.c,
-            w: window.draggingDrawing.w,
-            img: window.draggingDrawing.img || null
-        };
-
-        socket.emit('update_drawing', drawingPayload); // Salva la nuova posizione sul server
-        window.draggingDrawing = null;
-        canvas.style.cursor = "pointer";
-        return;
     }
 
     isLaserDrawing = false;
 
     // Sblocca il click normale dopo un brevissimo istante
     setTimeout(() => { justFinishedAction = false; }, 100);
-});
+}
 
-canvas.addEventListener('mouseout', () => { isDrawing = false; isLaserDrawing = false; });
+canvas.addEventListener('pointerup', endPointerAction);
+canvas.addEventListener('pointercancel', endPointerAction);
+canvas.addEventListener('pointerleave', () => {
+    isLaserDrawing = false;
+    drawingPointerLeave();
+});

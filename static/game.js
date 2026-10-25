@@ -23,16 +23,6 @@ let mapScale = 1.0;
 let mapDx = 0;
 let mapDy = 0;
 
-window.draggingDrawing = null;
-window.dragOffset = {
-    sx: 0,
-    sy: 0,
-    ex: 0,
-    ey: 0
-};
-
-window.selectDrawing = null;
-
 window.fowEnabled = false;
 window.revealedHexes = new Set();
 
@@ -72,19 +62,6 @@ const ROWS =
 
 let characters = [];
 window.pendingLocalMoves = {};
-let drawings = [];
-
-let currentIconBase64 = null;
-
-// ==========================================
-// VARIABILI DISEGNO FORME
-// ==========================================
-
-let isDrawingShape = false;
-let shapeStartX = 0;
-let shapeStartY = 0;
-let currentTempShape = null;
-
 let laserLines = [];
 let isLaserDrawing = false;
 
@@ -254,11 +231,6 @@ function toggleSection(headerEl) {
 let isMaster = false;
 let selectedCharacterId = null;
 
-let isDrawingMode = false;
-let isEraserMode = false;
-
-let isDrawing = false;
-
 let lastX = 0;
 let lastY = 0;
 
@@ -273,8 +245,144 @@ let combatState = {
     epicenter: {
         x: 0,
         y: 0
-    }
+    },
+
+    interrupts: []
 };
+
+// Aree minacciate visibili a questo client (quelle degli NPC solo al Master)
+let combatThreats = [];
+
+// Chi può agire ora: chi interrompe con Minacciare, altrimenti chi è di turno
+function getActingCombatantId() {
+    const interrupt = combatState.interrupts?.[0];
+    if (interrupt) return interrupt.threatener_id;
+
+    const actor = combatState.turn_order?.[combatState.current_index];
+    if (!actor) return null;
+    return actor.id !== undefined ? actor.id : actor.char_id;
+}
+
+socket.on('threats_update', (threats) => {
+    combatThreats = Array.isArray(threats) ? threats : [];
+    renderTurnOrderList();
+    requestRender();
+});
+
+// Effetti a tempo (bonus con turni) attivi su un personaggio
+function getTimedEffects(char) {
+    return (Array.isArray(char?.bonuses) ? char.bonuses : [])
+        .filter(effect => effect && typeof effect === 'object' && Number(effect.turns) > 0);
+}
+
+// ==========================================
+// ORDINE DI TURNO
+// Per ogni combattente: frame di movimento, frame degli arti,
+// effetti attivi e minacce. Visibile a tutti durante il combattimento.
+// ==========================================
+
+const TRACKER_LIMBS = [
+    ['bd', 'BD'],
+    ['bs', 'BS'],
+    ['gd', 'GD'],
+    ['gs', 'GS']
+];
+
+function renderTurnOrderList() {
+    const list = document.getElementById('turn-order-list');
+    if (!list || !combatState.is_active) return;
+
+    list.innerHTML = '';
+
+    const interrupt = combatState.interrupts?.[0];
+    if (interrupt) {
+        const banner = document.createElement('div');
+        banner.className = 'turn-interrupt-banner';
+        banner.innerHTML =
+            `⚡ <b>${escapeHtml(interrupt.threatener_name)}</b> interrompe ` +
+            `<b>${escapeHtml(interrupt.intruder_name)}</b>`;
+        list.appendChild(banner);
+    }
+
+    const actingId = getActingCombatantId();
+
+    (combatState.turn_order || []).forEach((actor, index) => {
+        const char = characters.find(c => c.id === actor.id);
+        const isCurrent = index === combatState.current_index;
+
+        const row = document.createElement('div');
+        row.className = 'turn-row';
+        row.classList.toggle('current', isCurrent);
+        row.classList.toggle('acting', actor.id === actingId && !isCurrent);
+
+        // Nome, distanza e indicatori
+        const header = document.createElement('div');
+        header.className = 'turn-row-header';
+
+        const name = document.createElement('span');
+        name.className = 'turn-row-name';
+        name.textContent = `${isCurrent ? '▶ ' : ''}${actor.name}`;
+        header.appendChild(name);
+
+        const meta = document.createElement('span');
+        meta.className = 'turn-row-meta';
+        const hasThreat = combatThreats.some(t => t.char_id === actor.id);
+        meta.textContent = `${hasThreat ? '⚠️ ' : ''}${actor.distance}m`;
+        header.appendChild(meta);
+
+        row.appendChild(header);
+
+        // Frame: movimento + quattro arti
+        const frames = document.createElement('div');
+        frames.className = 'turn-row-frames';
+
+        const moveFrames = combatState.players_pa?.[actor.id] ?? combatState.players_pa?.[String(actor.id)];
+        if (moveFrames !== undefined) {
+            const move = document.createElement('span');
+            move.className = 'turn-frame-move';
+            move.title = 'Frame di movimento';
+            move.textContent = `🦶 ${moveFrames}`;
+            frames.appendChild(move);
+        }
+
+        const limbs = combatState.players_limbs?.[actor.id] ?? combatState.players_limbs?.[String(actor.id)] ?? {};
+        TRACKER_LIMBS.forEach(([key, label]) => {
+            const value = limbs[key] ?? 60;
+            const limb = document.createElement('span');
+            limb.className = 'turn-frame-limb';
+            limb.title = `${label}: ${value}/60 frame`;
+
+            const bar = document.createElement('span');
+            bar.className = 'turn-frame-bar';
+            bar.style.width = `${Math.max(0, Math.min(100, value / 60 * 100))}%`;
+            bar.classList.toggle('low', value < 20);
+
+            limb.appendChild(bar);
+            limb.appendChild(document.createTextNode(`${label} ${value}`));
+            frames.appendChild(limb);
+        });
+
+        row.appendChild(frames);
+
+        // Effetti attivi
+        const effects = getTimedEffects(char);
+        if (effects.length) {
+            const effectsEl = document.createElement('div');
+            effectsEl.className = 'turn-row-effects';
+            effects.forEach(effect => {
+                const chip = document.createElement('span');
+                chip.className = 'turn-effect';
+                chip.classList.toggle('harmful', Number(effect.hpChange) < 0);
+                chip.title = effect.desc || '';
+                chip.textContent = `${effect.name} (${effect.turns})`;
+                effectsEl.appendChild(chip);
+            });
+            row.appendChild(effectsEl);
+        }
+
+        list.appendChild(row);
+    });
+}
 
 // ==========================================
 // ELEMENTI UI
@@ -687,39 +795,6 @@ socket.on(
     }
 );
 
-socket.on(
-    'init_drawings',
-    (serverDrawings) => {
-
-        drawings =
-            serverDrawings || [];
-
-        requestRender();
-    }
-);
-
-socket.on(
-    'draw_item',
-    (itemData) => {
-
-        drawings.push(
-            itemData
-        );
-
-        requestRender();
-    }
-);
-
-socket.on(
-    'clear_lines',
-    () => {
-
-        drawings = [];
-
-        requestRender();
-    }
-);
-
 // ==========================================
 // COMBAT UPDATE
 // ==========================================
@@ -888,68 +963,7 @@ socket.on(
                     "#7f8c8d";
             }
 
-            if (list) {
-
-                list.innerHTML = '';
-
-                combatState
-                    .turn_order
-                    .forEach(
-                        (
-                            actor,
-                            index
-                        ) => {
-
-                            const isCurrent =
-                                index ===
-                                combatState.current_index;
-
-                            const div =
-                                document.createElement(
-                                    'div'
-                                );
-
-                            div.style.padding =
-                                '8px 10px';
-
-                            div.style.borderRadius =
-                                '5px';
-
-                            div.style.fontWeight =
-                                isCurrent
-                                    ? 'bold'
-                                    : 'normal';
-
-                            div.style.background =
-                                isCurrent
-                                    ? '#f1c40f'
-                                    : '#ecf0f1';
-
-                            div.style.color =
-                                isCurrent
-                                    ? '#000'
-                                    : '#7f8c8d';
-
-                            div.style.border =
-                                isCurrent
-                                    ? '2px solid #e67e22'
-                                    : '1px solid #bdc3c7';
-
-                            div.style.whiteSpace =
-                                'nowrap';
-
-                            div.innerHTML =
-                                `${actor.name} ` +
-                                `<span style="font-size:12px;">` +
-                                `(Dist: ${actor.distance}m)` +
-                                `</span>`;
-
-                            list.appendChild(
-                                div
-                            );
-                        }
-                    );
-            }
+            renderTurnOrderList();
 
         } else {
 
@@ -1133,24 +1147,7 @@ socket.on(
 
             if (sameMoveId || sameAuthoritativePosition) {
 
-                // I costi di combattimento vengono inviati al server solo
-                // dopo che il movimento è stato accettato.
-                if (pendingMove.combat) {
-                    if (pendingMove.paAfter !== undefined) {
-                        socket.emit('sync_pa', {
-                            char_id: updatedChar.id,
-                            pa: pendingMove.paAfter
-                        });
-                    }
-
-                    if (pendingMove.combatName && pendingMove.combatMessage) {
-                        socket.emit('combat_msg', {
-                            name: pendingMove.combatName,
-                            message: pendingMove.combatMessage
-                        });
-                    }
-                }
-
+                // I frame spesi e il messaggio in chat li gestisce il server.
                 delete window.pendingLocalMoves[updatedChar.id];
 
             } else {
@@ -1385,10 +1382,12 @@ socket.on('move_rejected', (data) => {
 
     const reason = data?.reason;
     if (statusBar) {
-        statusBar.innerText =
-            reason === 'occupied'
-                ? "⛔ Movimento annullato: la casella è già occupata."
-                : "⛔ Movimento rifiutato dal server.";
+        const reasons = {
+            occupied: "⛔ Movimento annullato: la casella è già occupata.",
+            frames: "⛔ Movimento rifiutato: frame di movimento insufficienti.",
+            not_your_turn: "⛔ Movimento rifiutato: non è il tuo turno."
+        };
+        statusBar.innerText = reasons[reason] || "⛔ Movimento rifiutato dal server.";
     }
 
     requestRender();
@@ -2301,91 +2300,6 @@ document.getElementById(
 );
 
 // ==========================================
-// DISEGNO
-// ==========================================
-
-const toggleDrawBtn =
-    document.getElementById(
-        'toggle-draw-btn'
-    );
-
-const eraserBtn =
-    document.getElementById(
-        'eraser-btn'
-    );
-
-const clearDrawBtn =
-    document.getElementById(
-        'clear-draw-btn'
-    );
-
-toggleDrawBtn
-    ?.addEventListener(
-        'click',
-        () => {
-
-            isDrawingMode =
-                !isDrawingMode;
-
-            toggleDrawBtn.innerText =
-                isDrawingMode
-
-                    ? "Disegno ON"
-
-                    : "Disegno OFF";
-
-            toggleDrawBtn.style.background =
-                isDrawingMode
-
-                    ? "#d4efdf"
-
-                    : "#eee";
-        }
-    );
-
-eraserBtn
-    ?.addEventListener(
-        'click',
-        () => {
-
-            isEraserMode =
-                !isEraserMode;
-
-            eraserBtn.innerText =
-                isEraserMode
-
-                    ? "Gomma ON"
-
-                    : "Gomma OFF";
-
-            eraserBtn.style.background =
-                isEraserMode
-
-                    ? "#f39c12"
-
-                    : "#eee";
-        }
-    );
-
-clearDrawBtn
-    ?.addEventListener(
-        'click',
-        () => {
-
-            if (
-                confirm(
-                    "Cancellare tutto lo scenario?"
-                )
-            ) {
-
-                socket.emit(
-                    'clear_drawings'
-                );
-            }
-        }
-    );
-
-// ==========================================
 // SPAWN NPC
 // ==========================================
 
@@ -2529,61 +2443,6 @@ socket.on(
 
             requestRender();
         }
-    }
-);
-
-socket.on(
-    'drawing_updated',
-    (data) => {
-
-        const index =
-            drawings.findIndex(
-                d =>
-                    d.uid ===
-                    data.uid
-            );
-
-        if (
-            index !== -1
-        ) {
-
-            const previous =
-                drawings[index];
-
-            // Mantiene la cache Image locale dello sticker e aggiorna solo i dati sincronizzati.
-            drawings[index] = {
-                ...previous,
-                ...data,
-                imageObj: previous?.imageObj
-            };
-
-            requestRender();
-        }
-    }
-);
-
-socket.on(
-    'drawing_deleted',
-    (data) => {
-
-        drawings =
-            drawings.filter(
-                d =>
-                    d.uid !==
-                    data.uid
-            );
-
-        if (
-            window.selectedDrawing &&
-            window.selectedDrawing.uid ===
-            data.uid
-        ) {
-
-            window.selectedDrawing =
-                null;
-        }
-
-        requestRender();
     }
 );
 
@@ -2858,139 +2717,18 @@ socket.on(
         ] =
             data.pa;
 
+        // Valore autorevole del server per il personaggio di turno
+        const currentActor =
+            combatState.turn_order?.[combatState.current_index];
+
+        if (currentActor && Number(currentActor.id) === Number(data.char_id)) {
+            window.currentPaMov = data.pa;
+            const paEl = document.getElementById('ui-pa-mov');
+            if (paEl) paEl.innerText = data.pa;
+        }
+
+        renderTurnOrderList();
         requestRender();
-    }
-);
-
-// ==========================================
-// STRUMENTI FORME
-// ==========================================
-
-document.getElementById(
-    'draw-tool-select'
-)?.addEventListener(
-    'change',
-    function(e) {
-
-        const iconSection =
-            document.getElementById(
-                'icon-upload-section'
-            );
-
-        if (!iconSection) {
-            return;
-        }
-
-        iconSection.style.display =
-            e.target.value ===
-            'icon'
-
-                ? 'block'
-
-                : 'none';
-    }
-);
-
-document.getElementById(
-    'icon-file-input'
-)?.addEventListener(
-    'change',
-    function(e) {
-
-        const file =
-            e.target.files[0];
-
-        if (!file) return;
-
-        const reader =
-            new FileReader();
-
-        reader.onload =
-            function(evt) {
-
-                currentIconBase64 =
-                    evt.target.result;
-            };
-
-        reader.readAsDataURL(
-            file
-        );
-    }
-);
-
-
-// ==========================================
-// CANCELLA DISEGNO
-// ==========================================
-
-document.getElementById('delete-selected-draw-btn')?.addEventListener('click',() => {
-        if (window.selectedDrawing) {
-
-            socket.emit(
-                'delete_drawing',
-                {
-                    uid:
-                        window.selectedDrawing.uid
-                }
-            );
-
-            window.selectedDrawing =
-                null;
-
-            requestRender();
-
-        } else {
-
-            alert(
-                "Seleziona prima un disegno o uno sticker con lo strumento '🖐️ Seleziona e Sposta'!"
-            );
-        }
-    }
-);
-
-// ==========================================
-// DELETE / BACKSPACE
-// ==========================================
-
-document.addEventListener(
-    'keydown',
-    (e) => {
-
-        if (
-            e.target.tagName ===
-            'INPUT' ||
-            e.target.tagName ===
-            'TEXTAREA'
-        ) {
-            return;
-        }
-
-        if (
-            (
-                e.key === 'Delete' ||
-                e.key === 'Backspace'
-            )
-            &&
-            isMaster
-            &&
-            isDrawingMode
-            &&
-            window.selectedDrawing
-        ) {
-
-            socket.emit(
-                'delete_drawing',
-                {
-                    uid:
-                        window.selectedDrawing.uid
-                }
-            );
-
-            window.selectedDrawing =
-                null;
-
-            requestRender();
-        }
     }
 );
 
@@ -3342,3 +3080,104 @@ document.getElementById(
         );
     }
 );
+
+// Effetti e nomi cambiano con gli aggiornamenti dei personaggi: registrato
+// in fondo al file così gira dopo il listener che aggiorna "characters".
+socket.on('update_character', () => renderTurnOrderList());
+
+// ==========================================
+// SCENE (SOLO MASTER)
+// Mappa, disegni e nebbia salvati con un nome. Cambiando scena
+// il server salva prima quella aperta.
+// ==========================================
+
+let sceneState = { active_id: null, scenes: [] };
+
+function renderSceneList() {
+    const list = document.getElementById('scene-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    if (!sceneState.scenes.length) {
+        const empty = document.createElement('div');
+        empty.className = 'scene-empty';
+        empty.textContent = 'Nessuna scena salvata.';
+        list.appendChild(empty);
+        return;
+    }
+
+    sceneState.scenes.forEach(scene => {
+        const isActive = scene.id === sceneState.active_id;
+
+        const row = document.createElement('div');
+        row.className = 'scene-row';
+        row.classList.toggle('active', isActive);
+
+        const name = document.createElement('button');
+        name.type = 'button';
+        name.className = 'scene-name';
+        name.textContent = isActive ? `● ${scene.name}` : scene.name;
+        name.title = isActive ? 'Scena aperta' : 'Apri questa scena';
+        name.addEventListener('click', () => {
+            if (isActive) return;
+            if (confirm(`Aprire la scena "${scene.name}"?\nQuella attuale viene salvata in automatico.`)) {
+                socket.emit('scene_load', { id: scene.id });
+            }
+        });
+
+        const rename = document.createElement('button');
+        rename.type = 'button';
+        rename.className = 'scene-icon-btn';
+        rename.textContent = '✏️';
+        rename.title = 'Rinomina';
+        rename.addEventListener('click', () => {
+            const newName = prompt('Nuovo nome della scena:', scene.name);
+            if (newName && newName.trim()) socket.emit('scene_rename', { id: scene.id, name: newName.trim() });
+        });
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'scene-icon-btn';
+        remove.textContent = '🗑️';
+        remove.title = 'Elimina scena';
+        remove.addEventListener('click', () => {
+            if (confirm(`Eliminare la scena "${scene.name}"? La mappa attuale non cambia.`)) {
+                socket.emit('scene_delete', { id: scene.id });
+            }
+        });
+
+        row.append(name, rename, remove);
+        list.appendChild(row);
+    });
+}
+
+function createScene(empty) {
+    const input = document.getElementById('scene-name-input');
+    const name = input?.value.trim();
+
+    if (!name) {
+        alert('Scrivi prima un nome per la scena.');
+        input?.focus();
+        return;
+    }
+
+    if (sceneState.scenes.some(scene => scene.name.toLowerCase() === name.toLowerCase())) {
+        alert(`Esiste già una scena "${name}".`);
+        return;
+    }
+
+    socket.emit('scene_create', { name, empty });
+    input.value = '';
+}
+
+document.getElementById('scene-save-current-btn')?.addEventListener('click', () => createScene(false));
+document.getElementById('scene-new-empty-btn')?.addEventListener('click', () => createScene(true));
+
+socket.on('scene_list', (data) => {
+    sceneState = {
+        active_id: data?.active_id ?? null,
+        scenes: Array.isArray(data?.scenes) ? data.scenes : []
+    };
+    renderSceneList();
+});
