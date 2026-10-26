@@ -352,10 +352,141 @@ document.getElementById('rest-short-btn')?.addEventListener('click', () => {
     }
 });
 
-document.getElementById('rest-long-btn')?.addEventListener('click', () => {
-    if (confirm('Riposo lungo (accampamento) per tutto il gruppo?\nTutto torna al massimo, HP compresi, e gli effetti a tempo svaniscono.')) {
-        socket.emit('party_rest', { kind: 'long' });
+// Riposo lungo: per ogni giocatore cura = tasso di cura × ore di riposo
+const longRestModal = document.getElementById('long-rest-modal');
+const longRestRows = document.getElementById('long-rest-rows');
+
+// Fiale dei giocatori: { char_id: { vials, answer: 'pending' | 'yes' | 'no', vial } }
+let longRestPotions = {};
+
+function longRestPreview(row) {
+    const rate = Math.max(0, parseFloat(row.querySelector('.long-rest-rate').value) || 0);
+    const hours = Math.max(0, parseFloat(row.querySelector('.long-rest-hours').value) || 0);
+    const bonus = Math.max(0, parseFloat(row.querySelector('.long-rest-bonus')?.value) || 0);
+    const char = characters.find(c => c.id === Number(row.dataset.charId));
+    if (!char) return;
+
+    const healed = Math.min(Math.floor((rate + bonus) * hours), Math.max(0, char.hp_max - char.hp_current));
+    row.querySelector('.long-rest-result').textContent = `+${healed} → ${char.hp_current + healed}/${char.hp_max}`;
+}
+
+// Colonna "Fiala": in attesa, rifiutata, o fiala scelta con il bonus (modificabile)
+function renderLongRestPotionCell(row) {
+    const cell = row.querySelector('.long-rest-potion');
+    const state = longRestPotions[row.dataset.charId];
+    cell.innerHTML = '';
+
+    if (!state) {
+        cell.textContent = '—';
+    } else if (state.answer === 'pending') {
+        cell.textContent = `⏳ in attesa (${state.vials.length})`;
+        cell.title = state.vials.map(v => v.name).join(', ');
+    } else if (state.answer === 'no') {
+        cell.textContent = '✖ no';
+    } else {
+        const label = document.createElement('div');
+        label.className = 'long-rest-potion-name';
+        label.textContent = `🧪 ${state.vial.name}`;
+
+        const bonus = document.createElement('input');
+        bonus.className = 'long-rest-bonus';
+        bonus.type = 'number';
+        bonus.min = '0';
+        bonus.step = '0.5';
+        bonus.value = state.vial.bonus ?? '';
+        // Bonus non scritto nella descrizione: lo decide il Master
+        bonus.placeholder = '?';
+        bonus.title = state.vial.bonus == null ? 'Bonus non trovato nella descrizione: scrivilo tu' : 'Bonus al tasso di cura';
+        bonus.classList.toggle('missing', state.vial.bonus == null);
+        bonus.addEventListener('input', () => longRestPreview(row));
+
+        cell.append(label, document.createTextNode('+'), bonus);
     }
+
+    longRestPreview(row);
+}
+
+function openLongRest() {
+    if (!longRestModal || !longRestRows) return;
+
+    const hours = document.getElementById('long-rest-all-hours')?.value || '8';
+    longRestRows.innerHTML = '';
+
+    characters.filter(c => c.role === 'player').forEach(char => {
+        const row = document.createElement('tr');
+        row.dataset.charId = char.id;
+        row.innerHTML = `
+            <td>${escapeHtml(char.name)}</td>
+            <td>${char.hp_current}/${char.hp_max}</td>
+            <td><input class="long-rest-rate" type="number" min="0" step="0.5" value="${Number(char.heal_rate) || 0}"></td>
+            <td><input class="long-rest-hours" type="number" min="0" step="0.5" value="${hours}"></td>
+            <td class="long-rest-potion"></td>
+            <td class="long-rest-result"></td>`;
+        row.querySelectorAll('input').forEach(input => input.addEventListener('input', () => longRestPreview(row)));
+        longRestRows.appendChild(row);
+        renderLongRestPotionCell(row);
+    });
+
+    longRestModal.classList.add('open');
+
+    // Chi ha fiale riceve la proposta; le risposte arrivano qui sotto
+    longRestPotions = {};
+    socket.emit('long_rest_start');
+}
+
+function refreshLongRestPotions() {
+    longRestRows?.querySelectorAll('tr').forEach(renderLongRestPotionCell);
+}
+
+socket.on('long_rest_status', (status) => {
+    longRestPotions = status || {};
+    refreshLongRestPotions();
+});
+
+socket.on('long_rest_potion_choice', (data) => {
+    const state = longRestPotions[data.char_id];
+    if (!state) return;
+    state.answer = data.vial ? 'yes' : 'no';
+    state.vial = data.vial;
+    refreshLongRestPotions();
+});
+
+document.getElementById('rest-long-btn')?.addEventListener('click', openLongRest);
+document.getElementById('long-rest-cancel')?.addEventListener('click', () => {
+    longRestModal.classList.remove('open');
+    socket.emit('long_rest_cancel');
+});
+
+document.getElementById('long-rest-apply-hours')?.addEventListener('click', () => {
+    const hours = document.getElementById('long-rest-all-hours').value;
+    longRestRows.querySelectorAll('tr').forEach(row => {
+        row.querySelector('.long-rest-hours').value = hours;
+        longRestPreview(row);
+    });
+});
+
+document.getElementById('long-rest-confirm')?.addEventListener('click', () => {
+    const waiting = Object.entries(longRestPotions)
+        .filter(([, state]) => state.answer === 'pending')
+        .map(([charId]) => characters.find(c => c.id === Number(charId))?.name)
+        .filter(Boolean);
+
+    if (waiting.length && !confirm(`${waiting.join(', ')} non ha ancora risposto: niente fiala. Procedere?`)) {
+        return;
+    }
+
+    const heals = {};
+    longRestRows.querySelectorAll('tr').forEach(row => {
+        heals[row.dataset.charId] = {
+            rate: parseFloat(row.querySelector('.long-rest-rate').value) || 0,
+            hours: parseFloat(row.querySelector('.long-rest-hours').value) || 0
+        };
+        const bonus = row.querySelector('.long-rest-bonus');
+        if (bonus) heals[row.dataset.charId].potion_bonus = parseFloat(bonus.value) || 0;
+    });
+
+    socket.emit('party_rest', { kind: 'long', heals });
+    longRestModal.classList.remove('open');
 });
 
 // ==========================================
@@ -376,3 +507,49 @@ socket.on('terrain_update', (data) => {
     });
     requestRender();
 });
+
+// ==========================================
+// RIPOSO LUNGO: PROPOSTA DELLA FIALA (GIOCATORE)
+// ==========================================
+
+const potionOfferModal = document.getElementById('potion-offer-modal');
+
+socket.on('long_rest_potion_offer', (data) => {
+    const list = document.getElementById('potion-offer-list');
+    if (!potionOfferModal || !list) return;
+
+    list.innerHTML = '';
+    (data?.vials || []).forEach((vial, i) => {
+        const option = document.createElement('label');
+        option.className = 'potion-offer-option';
+
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'potion-offer';
+        radio.value = vial.index;
+        radio.checked = i === 0;
+
+        const text = document.createElement('span');
+        text.textContent = `${vial.name} ×${vial.qty}` +
+            (vial.bonus != null ? ` (+${vial.bonus} al tasso di cura)` : ' (bonus deciso dal Master)');
+
+        option.append(radio, text);
+        list.appendChild(option);
+    });
+
+    potionOfferModal.classList.add('open');
+});
+
+document.getElementById('potion-offer-accept')?.addEventListener('click', () => {
+    const chosen = document.querySelector('input[name="potion-offer"]:checked');
+    socket.emit('long_rest_potion_choice', { index: chosen ? Number(chosen.value) : null });
+    potionOfferModal.classList.remove('open');
+});
+
+document.getElementById('potion-offer-decline')?.addEventListener('click', () => {
+    socket.emit('long_rest_potion_choice', { index: null });
+    potionOfferModal.classList.remove('open');
+});
+
+// Riposo concluso o annullato dal Master
+socket.on('long_rest_closed', () => potionOfferModal?.classList.remove('open'));

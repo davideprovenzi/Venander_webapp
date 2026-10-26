@@ -484,7 +484,7 @@
             </h4>
             <div class="collapsible-content" style="display: none; padding-top: 10px;">
                 <button id="rest-short-btn" class="rest-btn" type="button">☕ Riposo breve<span>Stamina, concentrazione e PA al massimo</span></button>
-                <button id="rest-long-btn" class="rest-btn rest-btn-long" type="button">🏕️ Riposo lungo (accampamento)<span>Anche tutti gli HP; gli effetti a tempo svaniscono</span></button>
+                <button id="rest-long-btn" class="rest-btn rest-btn-long" type="button">🏕️ Riposo lungo (accampamento)<span>Cura = tasso di cura × ore di riposo; gli effetti a tempo svaniscono</span></button>
             </div>
         </div>
 
@@ -1266,6 +1266,42 @@
 
         <button id="btn-execute-reaction" style="width: 100%; padding: 12px; background: #f39c12; color: black; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">DICHIARA REAZIONE</button>
         <button class="action-speed-table-open" data-table-target="reaction" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Scegli difesa dalla tabella</button>
+    </div>
+
+    <!-- RIPOSO LUNGO: CURA PER OGNI GIOCATORE -->
+    <div id="long-rest-modal" class="long-rest-modal">
+        <div class="long-rest-window">
+            <div class="long-rest-title">🏕️ Riposo lungo</div>
+            <div class="long-rest-help">Cura ottenuta = <b>tasso di cura</b> × <b>ore di riposo</b> (fino agli HP massimi). Stamina, concentrazione e PA tornano al massimo e gli effetti a tempo svaniscono.</div>
+
+            <div class="long-rest-all">
+                <label>Ore per tutti <input id="long-rest-all-hours" type="number" min="0" step="0.5" value="8"></label>
+                <button id="long-rest-apply-hours" type="button">Applica a tutti</button>
+            </div>
+
+            <table class="long-rest-table">
+                <thead>
+                    <tr><th>Giocatore</th><th>HP</th><th>Tasso</th><th>Ore</th><th>Fiala</th><th>Cura</th></tr>
+                </thead>
+                <tbody id="long-rest-rows"></tbody>
+            </table>
+
+            <div class="long-rest-actions">
+                <button id="long-rest-cancel" type="button">Annulla</button>
+                <button id="long-rest-confirm" type="button">🏕️ Accampati</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIPOSO LUNGO: IL GIOCATORE SCEGLIE SE BERE UNA FIALA -->
+    <div id="potion-offer-modal" class="potion-offer-modal">
+        <div class="potion-offer-title">🏕️ Il gruppo si accampa</div>
+        <p>Vuoi bere una fiala di cura durante il riposo? Il suo bonus si somma al tuo tasso di cura.</p>
+        <div id="potion-offer-list" class="potion-offer-list"></div>
+        <div class="potion-offer-actions">
+            <button id="potion-offer-decline" type="button">No, grazie</button>
+            <button id="potion-offer-accept" type="button">🧪 Bevi</button>
+        </div>
     </div>
 
     <!-- SUPERFICI: DECISIONE DEL MASTER -->
