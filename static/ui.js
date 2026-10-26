@@ -7136,6 +7136,12 @@ socket.on(
             <b>${escapeHtml(data.reaction_label || data.reaction_type)}</b>
 
             ${
+                describeAttackTerrain(data.attacker_id, data.defender_id)
+                    .map(note => `<br>${note}`)
+                    .join('')
+            }
+
+            ${
                 data.distance !== null &&
                 data.distance !== undefined
 

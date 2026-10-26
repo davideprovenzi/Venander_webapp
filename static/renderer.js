@@ -359,6 +359,9 @@ function drawTokens() {
     }
 
     characters.forEach(char => {
+        // NPC che nessun personaggio giocante vede (muri, fumo): nascosti ai giocatori
+        if (!isNpcVisibleToPlayers(char)) return;
+
         // I giocatori non vedono NULLA né se in FoW né se Invisibili. Il Master procede.
         if ((char.is_hidden || char.is_invisible) && !isMaster) return;
 
@@ -1138,6 +1141,9 @@ function render() {
 
     // 2. Griglia (Sotto i disegni)
     drawGrid();
+
+    // Terreno e superfici (sotto disegni e nebbia: la nebbia li copre)
+    drawTerrain();
 
     // 3. Disegni e Forme geometriche (Sopra la griglia, sotto le pedine)
     drawLines();

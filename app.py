@@ -119,6 +119,8 @@ class WorldState(db.Model):
     fow_enabled = db.Column(db.Boolean, default=False)
     revealed_hexes = db.Column(db.JSON, default=list)
     active_scene_id = db.Column(db.Integer, nullable=True) # Scena aperta in questo momento
+    terrain = db.Column(db.JSON, default=dict)  # {"col,row": tipo di terreno}
+    surfaces = db.Column(db.JSON, default=dict) # {"col,row": tipo di superficie}
 
 class Scene(db.Model):
     """Mappa salvata con i suoi disegni e la nebbia di guerra."""
@@ -131,6 +133,8 @@ class Scene(db.Model):
     fow_enabled = db.Column(db.Boolean, default=False)
     revealed_hexes = db.Column(db.JSON, default=list)
     drawings = db.Column(db.JSON, default=list)
+    terrain = db.Column(db.JSON, default=dict)
+    surfaces = db.Column(db.JSON, default=dict)
 
 class SideQuest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -220,7 +224,9 @@ def get_world_state():
         "map_dx": ws.map_dx,
         "map_dy": ws.map_dy,
         "fow_enabled": ws.fow_enabled,
-        "revealed_hexes": ws.revealed_hexes
+        "revealed_hexes": ws.revealed_hexes,
+        "terrain": ws.terrain or {},
+        "surfaces": ws.surfaces or {}
     }
 
 with app.app_context():
@@ -278,6 +284,20 @@ with app.app_context():
             text("ALTER TABLE world_state ADD COLUMN active_scene_id INTEGER")
         )
         db.session.commit()
+
+    # Terreno e superfici: sulla mappa attuale e salvati in ogni scena
+    scene_columns = {
+        column["name"]
+        for column in inspector.get_columns("scene")
+    }
+
+    for table, columns in (("world_state", world_state_columns), ("scene", scene_columns)):
+        for column in ("terrain", "surfaces"):
+            if column not in columns:
+                db.session.execute(
+                    text(f"ALTER TABLE {table} ADD COLUMN {column} JSON DEFAULT '{{}}'")
+                )
+                db.session.commit()
 
     wiki_columns = {
         column["name"]
@@ -968,6 +988,8 @@ def handle_toggle_combat():
         combat_state["turn_order"] = turn_order
         combat_state["current_index"] = 0
 
+        prompt_turn_start_surface(turn_order[0]["id"])
+
         emit("dice_result", {"name": "SISTEMA", "message": "⚔️ <b>COMBATTIMENTO INIZIATO!</b> L'ordine di turno è calcolato in base alla vicinanza all'epicentro.", "is_master_roll": True}, broadcast=True)
     else:
         combat_state["turn_order"] = []
@@ -1084,6 +1106,9 @@ def handle_next_turn():
     # Le minacce di chi inizia il turno scadono
     clear_threats_of(current_combat_actor_id())
 
+    # Chi inizia il turno sopra una superficie ne subisce di nuovo l'effetto
+    prompt_turn_start_surface(current_combat_actor_id())
+
     emit("combat_update", combat_state, broadcast=True)
 # ==========================================
 # GESTIONE PEDINE E MAPPA
@@ -1139,6 +1164,15 @@ def handle_move(data):
             reject("occupied")
             return
 
+        # I muri non si attraversano (il Master può comunque riposizionare
+        # le pedine liberamente, senza andatura)
+        ws = WorldState.query.first()
+        if mode or not is_master_request():
+            full_path = hex_line(char.pos_x, char.pos_y, target_x, target_y)
+            if any(hex_key(hx, hy) in wall_hexes(ws) for hx, hy in full_path[1:]):
+                reject("wall")
+                return
+
         # Entrando in un'area minacciata da un nemico ci si ferma lì
         triggered_threats = []
         in_combat_now = combat_state.get("is_active") and combat_state.get("turn_order")
@@ -1172,7 +1206,9 @@ def handle_move(data):
 
             if mode in MOVE_FRAME_COSTS:
                 steps = hex_distance(char.pos_x, char.pos_y, target_x, target_y)
-                move_cost = steps * MOVE_FRAME_COSTS[mode]
+                move_cost = movement_frame_cost(
+                    ws, hex_line(char.pos_x, char.pos_y, target_x, target_y), MOVE_FRAME_COSTS[mode]
+                )
                 frames = int(combat_state["players_pa"].get(str(char.id), DEFAULT_MOVE_FRAMES))
 
                 if move_cost > frames:
@@ -1182,12 +1218,21 @@ def handle_move(data):
                 reject("frames")
                 return
 
+        walked_path = hex_line(char.pos_x, char.pos_y, target_x, target_y)
+
         char.pos_x = target_x
         char.pos_y = target_y
         db.session.commit()
 
         if move_cost is not None:
             combat_state["players_pa"][str(char.id)] = frames - move_cost
+
+        # Superfici attraversate: il Master decide se applicarne l'effetto
+        entered_surfaces = []
+        for hx, hy in walked_path[1:]:
+            surface = (ws.surfaces or {}).get(hex_key(hx, hy))
+            if surface in SURFACE_EFFECTS and SURFACE_EFFECTS[surface]["effect"] and surface not in entered_surfaces:
+                entered_surfaces.append(surface)
 
     # Il movimento può essere stato accorciato da una minaccia
     emit_character_update(char, {"_move_id": move_id, "_stopped_by_threat": bool(triggered_threats)})
@@ -1205,6 +1250,9 @@ def handle_move(data):
 
     if triggered_threats:
         start_threat_interrupts(char, triggered_threats)
+
+    for surface in entered_surfaces:
+        prompt_surface_effect(char, surface, "enter")
 
 @socketio.on("spawn_npc")
 def handle_spawn_npc(data):
@@ -2450,6 +2498,224 @@ def handle_delete_drawings(data):
     emit("drawing_deleted", {"uids": uids}, broadcast=True, include_self=False)
 
 # ==========================================
+# TERRENO E SUPERFICI
+# Il Master dipinge gli esagoni. Il terreno (altura, coperture) è
+# indicativo e lo applica il Master; muri e fumo bloccano la vista,
+# i muri anche il movimento; terreno difficile e ghiaccio costano doppio.
+# ==========================================
+TERRAIN_TYPES = {"altura", "copertura_parziale", "copertura_totale", "difficile", "muro"}
+
+SURFACE_EFFECTS = {
+    "fuoco": {
+        "label": "Fuoco",
+        "damage": 3,
+        "effect": {"name": "In fiamme", "desc": "Brucia: -2 HP a turno", "turns": 2, "hpChange": -2}
+    },
+    "veleno": {
+        "label": "Veleno",
+        "damage": 0,
+        "effect": {"name": "Avvelenato", "desc": "Veleno: -1 HP a turno", "turns": 3, "hpChange": -1}
+    },
+    "ghiaccio": {
+        "label": "Ghiaccio",
+        "damage": 0,
+        "effect": {"name": "A terra", "desc": "Scivolato sul ghiaccio: deve rialzarsi", "turns": 1, "hpChange": 0}
+    },
+    # Il fumo non ferisce: blocca solo la vista
+    "fumo": {"label": "Fumo", "damage": 0, "effect": None}
+}
+
+# Effetti delle superfici in attesa della decisione del Master
+pending_surface_prompts = {}
+
+def hex_key(col, row):
+    return f"{col},{row}"
+
+def wall_hexes(ws):
+    return {h for h, kind in (ws.terrain or {}).items() if kind == "muro"}
+
+def sight_blocking_hexes(ws):
+    blocked = wall_hexes(ws)
+    blocked |= {h for h, kind in (ws.surfaces or {}).items() if kind == "fumo"}
+    return blocked
+
+def has_line_of_sight(x1, y1, x2, y2, blocked):
+    """Gli esagoni in mezzo non devono bloccare la vista (gli estremi sì che si vedono)."""
+    return all(hex_key(hx, hy) not in blocked for hx, hy in hex_line(x1, y1, x2, y2)[1:-1])
+
+def movement_frame_cost(ws, path, frames_per_step):
+    cost = 0
+    for hx, hy in path[1:]:
+        key = hex_key(hx, hy)
+        difficult = (ws.terrain or {}).get(key) == "difficile" or (ws.surfaces or {}).get(key) == "ghiaccio"
+        cost += frames_per_step * (2 if difficult else 1)
+    return cost
+
+def prompt_surface_effect(char, surface, reason):
+    prompt_id = str(uuid.uuid4())
+    definition = SURFACE_EFFECTS[surface]
+    prompt = {
+        "id": prompt_id,
+        "char_id": char.id,
+        "char_name": char.name,
+        "surface": surface,
+        "label": definition["label"],
+        "damage": definition["damage"],
+        "effect": definition["effect"],
+        "reason": reason
+    }
+    pending_surface_prompts[prompt_id] = prompt
+    emit_to_masters("surface_prompt", prompt)
+
+def prompt_turn_start_surface(char_id):
+    char = db.session.get(Character, char_id) if char_id is not None else None
+    if not char:
+        return
+
+    surface = (WorldState.query.first().surfaces or {}).get(hex_key(char.pos_x, char.pos_y))
+    if surface in SURFACE_EFFECTS and SURFACE_EFFECTS[surface]["effect"]:
+        prompt_surface_effect(char, surface, "turn")
+
+@socketio.on("paint_terrain")
+def handle_paint_terrain(data):
+    if not is_master_request():
+        return
+
+    data = data or {}
+    layer = data.get("layer")
+    value = data.get("value") or None
+    allowed = TERRAIN_TYPES if layer == "terrain" else set(SURFACE_EFFECTS) if layer == "surface" else None
+
+    if allowed is None or (value is not None and value not in allowed):
+        return
+
+    hexes = [str(h) for h in data.get("hexes", []) if re.match(r"^-?\d+,-?\d+$", str(h))]
+    if not hexes:
+        return
+
+    ws = WorldState.query.first()
+    column = "terrain" if layer == "terrain" else "surfaces"
+    current = dict(getattr(ws, column) or {})
+
+    for key in hexes:
+        if value is None:
+            current.pop(key, None)
+        else:
+            current[key] = value
+
+    setattr(ws, column, current)
+    db.session.commit()
+
+    socketio.emit("terrain_update", {"layer": layer, "changes": {key: value for key in hexes}})
+
+@socketio.on("clear_terrain")
+def handle_clear_terrain(data):
+    if not is_master_request():
+        return
+
+    layer = (data or {}).get("layer")
+    if layer not in ("terrain", "surface"):
+        return
+
+    ws = WorldState.query.first()
+    setattr(ws, "terrain" if layer == "terrain" else "surfaces", {})
+    db.session.commit()
+    socketio.emit("map_update", get_world_state())
+
+@socketio.on("resolve_surface_prompt")
+def handle_resolve_surface_prompt(data):
+    if not is_master_request():
+        return
+
+    data = data or {}
+    prompt = pending_surface_prompts.pop(data.get("id"), None)
+    if not prompt:
+        return
+
+    # Anche gli altri Master chiudono il popup
+    emit_to_masters("surface_prompt_closed", {"id": prompt["id"]})
+
+    if not data.get("apply"):
+        return
+
+    char = db.session.get(Character, prompt["char_id"])
+    if not char:
+        return
+
+    damage = int(prompt["damage"] or 0)
+    if damage:
+        char.hp_current = max(0, char.hp_current - damage)
+
+    effect = prompt["effect"]
+    if effect:
+        # L'effetto non si accumula: se c'è già, riparte da capo
+        bonuses = [
+            b for b in (char.bonuses or [])
+            if not (isinstance(b, dict) and b.get("name") == effect["name"])
+        ]
+        bonuses.append(dict(effect))
+        char.bonuses = bonuses
+        flag_modified(char, "bonuses")
+
+    db.session.commit()
+    emit_character_update(char)
+
+    parts = []
+    if damage:
+        parts.append(f"<b>{damage} danni</b>")
+    if effect:
+        parts.append(f"<b>{html.escape(effect['name'])}</b> ({effect['turns']} turni)")
+
+    socketio.emit("dice_result", {
+        "name": char.name,
+        "message": f"subisce la superficie <b>{html.escape(prompt['label'])}</b>: {', '.join(parts)}.",
+        "is_master_roll": False
+    })
+
+# ==========================================
+# RIPOSO
+# Breve: stamina, concentrazione e PA. Lungo (accampamento): anche
+# tutti gli HP e fine degli effetti a tempo. Solo per i personaggi giocanti.
+# ==========================================
+@socketio.on("party_rest")
+def handle_party_rest(data):
+    if not is_master_request():
+        return
+
+    if combat_state.get("is_active"):
+        emit_combat_error("Non si può riposare durante un combattimento.")
+        return
+
+    long_rest = (data or {}).get("kind") == "long"
+
+    for char in Character.query.filter_by(role="player").all():
+        char.stamina_current = char.stamina_max
+        char.conc_current = char.conc_max
+        # PA vuoti = valori pieni calcolati dalle statistiche
+        char.pa_stats = {}
+
+        if long_rest:
+            char.hp_current = char.hp_max
+            char.bonuses = [
+                b for b in (char.bonuses or [])
+                if not (isinstance(b, dict) and int(b.get("turns", 0) or 0) > 0)
+            ]
+            flag_modified(char, "bonuses")
+
+    db.session.commit()
+
+    for char in Character.query.filter_by(role="player").all():
+        emit_character_update(char)
+
+    message = (
+        "🏕️ <b>RIPOSO LUNGO</b>: il gruppo si accampa per la notte. "
+        "HP, stamina, concentrazione e PA tornano al massimo; gli effetti a tempo svaniscono."
+        if long_rest else
+        "☕ <b>RIPOSO BREVE</b>: il gruppo riprende fiato. Stamina, concentrazione e PA tornano al massimo."
+    )
+    socketio.emit("dice_result", {"name": "SISTEMA", "message": message, "is_master_roll": True})
+
+# ==========================================
 # SCENE
 # Ogni scena conserva mappa, disegni e nebbia. Cambiando scena quella
 # aperta viene salvata in automatico, come delle schede.
@@ -2477,6 +2743,8 @@ def snapshot_world_into(scene):
     scene.fow_enabled = bool(ws.fow_enabled)
     scene.revealed_hexes = list(ws.revealed_hexes or [])
     scene.drawings = [item.to_dict() for item in DrawItem.query.all()]
+    scene.terrain = dict(ws.terrain or {})
+    scene.surfaces = dict(ws.surfaces or {})
 
 def save_active_scene():
     ws = WorldState.query.first()
@@ -2492,6 +2760,8 @@ def apply_scene(scene):
     ws.map_dy = scene.map_dy or 0
     ws.fow_enabled = bool(scene.fow_enabled)
     ws.revealed_hexes = list(scene.revealed_hexes or [])
+    ws.terrain = dict(scene.terrain or {})
+    ws.surfaces = dict(scene.surfaces or {})
     ws.active_scene_id = scene.id
 
     DrawItem.query.delete()
@@ -2536,6 +2806,8 @@ def handle_scene_create(data):
         # Scena vuota: si parte da una mappa pulita
         scene.drawings = []
         scene.revealed_hexes = []
+        scene.terrain = {}
+        scene.surfaces = {}
         db.session.flush()
         apply_scene(scene)
     else:
@@ -3028,8 +3300,12 @@ def handle_reveal_hexes(data):
                 col, row = (int(v) for v in hex_str.split(","))
             except ValueError:
                 return False
-            return hex_distance(char.pos_x, char.pos_y, col, row) <= VISION_RADIUS
+            return (
+                hex_distance(char.pos_x, char.pos_y, col, row) <= VISION_RADIUS
+                and has_line_of_sight(char.pos_x, char.pos_y, col, row, blocked)
+            )
 
+        blocked = sight_blocking_hexes(ws)
         new_hexes = [h for h in new_hexes if in_vision(h)]
 
     current_set = set(ws.revealed_hexes)

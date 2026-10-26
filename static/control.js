@@ -86,6 +86,9 @@ canvas.addEventListener('click', (event) => {
     if (justFinishedAction) return;
     if (event.shiftKey || isDrawingMode) return;
 
+    // Col pennello del terreno il clic dipinge (vedi terrain.js), non seleziona
+    if (window.terrainBrush) return;
+
     // Minacciare: il clic sceglie il centro dell'area
     if (window.threatPlacement) {
         const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
@@ -194,6 +197,12 @@ canvas.addEventListener('click', (event) => {
             if (Number(activeId) === Number(currentCharacterId)) isMyTurn = true;
         }
 
+        // I muri non si attraversano (il Master riposiziona liberamente fuori dal combattimento)
+        if ((combatState.is_active || !isMaster) && pathCrossesWall(myChar.x, myChar.y, gridX, gridY)) {
+            statusBar.innerText = "⛔ Un muro blocca il percorso: aggiralo.";
+            return;
+        }
+
         // Durante un'interruzione da Minacciare nessuno si muove
         if (combatState.is_active && combatState.interrupts?.length) {
             statusBar.innerText = "⚡ Interruzione in corso: aspetta che finisca.";
@@ -214,8 +223,8 @@ canvas.addEventListener('click', (event) => {
                 const framesPerStep = parseInt(btn.getAttribute('data-cost')) || 0;
                 const modeName = btn.getAttribute('data-name') || "Movimento";
 
-                // Calcolo Frame richiesti: Distanza (esagoni) x Costo del singolo passo
-                const requiredFrames = dist * framesPerStep;
+                // Frame richiesti: costo del passo per ogni esagono (doppio su terreno difficile e ghiaccio)
+                const requiredFrames = movementFrameCost(myChar.x, myChar.y, gridX, gridY, framesPerStep);
 
                 // Usiamo currentPaMov come contenitore per i 120 frame di movimento
                 let currentFrames = parseInt(window.currentPaMov) || 0;
@@ -480,7 +489,10 @@ canvas.addEventListener('pointerdown', (event) => {
         return;
     }
 
-    // 2. DISEGNO MASTER (vedi drawing.js)
+    // 2. PENNELLO TERRENO DEL MASTER (vedi terrain.js)
+    if (terrainPointerDown(pos)) return;
+
+    // 3. DISEGNO MASTER (vedi drawing.js)
     if (drawingPointerDown(event, pos)) return;
 
     // 3. SE NESSUNO DEI PRECEDENTI, INIZIA IL PANNING
@@ -589,7 +601,8 @@ canvas.addEventListener('pointermove', (event) => {
         return;
     }
 
-    // Disegno, gomma, forme e spostamento disegni (vedi drawing.js)
+    // Pennello del terreno, poi disegno, gomma, forme e spostamento disegni
+    if (terrainPointerMove(pos)) return;
     drawingPointerMove(event, pos);
 });
 
@@ -620,7 +633,7 @@ function endPointerAction() {
         canvas.style.cursor = isMaster ? "pointer" : "crosshair";
     }
 
-    if (drawingPointerUp()) {
+    if (terrainPointerUp() || drawingPointerUp()) {
         justFinishedAction = true; // Evita di selezionare una pedina per sbaglio
     }
 

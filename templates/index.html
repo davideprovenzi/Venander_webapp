@@ -192,6 +192,14 @@
                 <span class="master-tool-icon">🖌️</span><span class="master-tool-label">Disegno</span>
             </button>
 
+            <button class="master-tool-btn" type="button" data-master-section="master-section-terrain" title="Terreno, muri e superfici">
+                <span class="master-tool-icon">⛰️</span><span class="master-tool-label">Terreno</span>
+            </button>
+
+            <button class="master-tool-btn" type="button" data-master-section="master-section-rest" title="Riposo del gruppo">
+                <span class="master-tool-icon">🏕️</span><span class="master-tool-label">Riposo</span>
+            </button>
+
             <button class="master-tool-btn" type="button" data-master-section="selected-entity-panel" title="Entità selezionata">
                 <span class="master-tool-icon">🎯</span><span class="master-tool-label">Selezione</span>
             </button>
@@ -425,6 +433,46 @@
             <div class="collapsible-content" style="display: none; padding-top: 10px;">
                <button id="btn-toggle-fow" onclick="window.toggleFogOfWar()" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #8e44ad; color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer;">☁️ Attiva Fog of War</button>
                 <button id="btn-reset-fow" onclick="if(confirm('Vuoi davvero coprire nuovamente tutta la mappa?')) socket.emit('reset_fow')" style="width: 100%; padding: 8px; background: #34495e; color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer;">⬛ Ripristina Nebbia (Copri Tutto)</button>
+            </div>
+        </div>
+
+        <!-- TERRENO E SUPERFICI -->
+        <div id="master-section-terrain" class="master-tool-section" style="margin-top: 10px; border: 1px solid #a0522d; padding: 5px; border-radius: 5px; background: #fff;">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #a0522d; background: #f6ddcc;">
+                ⛰️ Terreno & Superfici <span style="font-size:12px;">▶</span>
+            </h4>
+            <div class="collapsible-content" style="display: none; padding-top: 10px;">
+                <div class="terrain-help">Scegli un pennello e clicca o trascina sulla mappa. Altura e coperture sono indicazioni per te; muri e fumo bloccano la vista, i muri anche il passaggio; terreno difficile e ghiaccio costano il doppio dei frame.</div>
+
+                <div class="terrain-group-title">Terreno</div>
+                <div id="terrain-palette" class="terrain-palette"></div>
+
+                <div class="terrain-group-title">Superfici</div>
+                <div id="surface-palette" class="terrain-palette"></div>
+
+                <select id="terrain-brush-size" class="terrain-size">
+                    <option value="0">Pennello: 1 esagono</option>
+                    <option value="1">Pennello: raggio 1</option>
+                    <option value="2">Pennello: raggio 2</option>
+                </select>
+
+                <div id="terrain-brush-status" class="terrain-status">Pennello spento.</div>
+
+                <div class="terrain-clear-row">
+                    <button id="terrain-clear-btn" type="button">🧹 Svuota terreno</button>
+                    <button id="surface-clear-btn" type="button">🧹 Svuota superfici</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIPOSO DEL GRUPPO -->
+        <div id="master-section-rest" class="master-tool-section" style="margin-top: 10px; border: 1px solid #16a085; padding: 5px; border-radius: 5px; background: #fff;">
+            <h4 class="collapsible-header" onclick="toggleSection(this)" style="margin: 0; font-size: 14px; color: #16a085; background: #d1f2eb;">
+                🏕️ Riposo del Gruppo <span style="font-size:12px;">▶</span>
+            </h4>
+            <div class="collapsible-content" style="display: none; padding-top: 10px;">
+                <button id="rest-short-btn" class="rest-btn" type="button">☕ Riposo breve<span>Stamina, concentrazione e PA al massimo</span></button>
+                <button id="rest-long-btn" class="rest-btn rest-btn-long" type="button">🏕️ Riposo lungo (accampamento)<span>Anche tutti gli HP; gli effetti a tempo svaniscono</span></button>
             </div>
         </div>
 
@@ -1194,6 +1242,16 @@
         <button class="action-speed-table-open" data-table-target="reaction" style="width:100%; margin-top:8px; padding:8px; background:#34495e; color:white; border:1px solid #7f8c8d; font-weight:bold; border-radius:5px; cursor:pointer;">📋 Scegli difesa dalla tabella</button>
     </div>
 
+    <!-- SUPERFICI: DECISIONE DEL MASTER -->
+    <div id="surface-prompt-modal" class="surface-prompt-modal">
+        <div class="surface-prompt-title">⚠️ Superficie</div>
+        <p id="surface-prompt-text"></p>
+        <div class="surface-prompt-actions">
+            <button id="surface-prompt-skip" type="button">Ignora</button>
+            <button id="surface-prompt-apply" type="button">Applica effetto</button>
+        </div>
+    </div>
+
     <!-- WIKI DEL MONDO -->
     <div id="wiki-modal" class="wiki-modal" role="dialog" aria-label="Wiki del mondo">
         <div class="wiki-window">
@@ -1444,6 +1502,7 @@
     <script src="/static/game.js"></script>
     <script src="/static/renderer.js"></script>
     <script src="/static/drawing.js"></script>
+    <script src="/static/terrain.js"></script>
     <script src="/static/ui.js"></script>
     <script src="/static/control.js"></script>
     <script src="/static/wiki.js"></script>

@@ -68,3 +68,25 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
+
+// Esagoni attraversati in linea retta, estremi inclusi.
+// Stessa formula (e stesse piccole spinte) di hex_line in app.py,
+// così client e server concordano su linea di vista e percorsi.
+function hexLine(x1, y1, x2, y2) {
+    const a = offsetToCube(x1, y1);
+    const b = offsetToCube(x2, y2);
+    const steps = hexDistance(x1, y1, x2, y2);
+
+    if (steps === 0) return [{ col: x1, row: y1 }];
+
+    const line = [];
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        line.push(cubeToOffset(cubeRound({
+            q: a.q + (b.q - a.q) * t + 1e-6,
+            r: a.r + (b.r - a.r) * t + 2e-6,
+            s: a.s + (b.s - a.s) * t - 3e-6
+        })));
+    }
+    return line;
+}

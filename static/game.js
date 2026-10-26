@@ -1094,11 +1094,13 @@ window.autoReveal = function(
             VISION_RADIUS
         );
 
+    // Muri e fumo bloccano la vista
     const newHexes =
         visibleHexes.filter(
-            h =>
-                !window.revealedHexes
-                    .has(h)
+            h => {
+                const [col, row] = h.split(',').map(Number);
+                return !window.revealedHexes.has(h) && hasLineOfSight(x, y, col, row);
+            }
         );
 
     if (
@@ -1385,7 +1387,8 @@ socket.on('move_rejected', (data) => {
         const reasons = {
             occupied: "⛔ Movimento annullato: la casella è già occupata.",
             frames: "⛔ Movimento rifiutato: frame di movimento insufficienti.",
-            not_your_turn: "⛔ Movimento rifiutato: non è il tuo turno."
+            not_your_turn: "⛔ Movimento rifiutato: non è il tuo turno.",
+            wall: "⛔ Movimento rifiutato: un muro blocca il percorso."
         };
         statusBar.innerText = reasons[reason] || "⛔ Movimento rifiutato dal server.";
     }
@@ -2797,12 +2800,16 @@ window.toggleFogOfWar =
                         !c.is_hidden
                     ) {
 
+                        // Solo ciò che la pedina vede davvero (muri e fumo bloccano)
                         initialHexes.push(
                             ...getHexesInRadius(
                                 c.x,
                                 c.y,
                                 VISION_RADIUS
-                            )
+                            ).filter(h => {
+                                const [col, row] = h.split(',').map(Number);
+                                return hasLineOfSight(c.x, c.y, col, row);
+                            })
                         );
                     }
                 }
