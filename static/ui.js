@@ -1700,7 +1700,14 @@ function renderSidequestCard(quest) {
 
     const cost = document.createElement('span');
     cost.style.cssText = 'white-space:nowrap;background:#6c3483;color:white;border-radius:12px;padding:3px 7px;font-size:11px;font-weight:bold;';
-    cost.textContent = `${Number(quest.cost || 0)} €`;
+    const paymentMode = quest.payment_mode || 'each';
+    cost.textContent = paymentMode === 'shared'
+        ? `${Number(quest.cost || 0)} € in comune`
+        : paymentMode === 'assigned'
+            ? `${Number(quest.cost || 0)} € in quote`
+            : quest.target_char_id == null
+                ? `${Number(quest.cost || 0)} € a testa`
+                : `${Number(quest.cost || 0)} €`;
     heading.appendChild(cost);
     card.appendChild(heading);
 
@@ -1745,13 +1752,18 @@ function renderSidequestCard(quest) {
 
     const paidBy = Array.isArray(quest.paid_by) ? quest.paid_by.map(Number) : [];
 
+    // Spesa comune e quote: stato visibile a tutti
+    renderSidequestPaymentStatus(card, quest);
+
     if (isMaster) {
-        const paymentInfo = document.createElement('div');
-        paymentInfo.style.cssText = 'font-size:11px;color:#566573;margin-top:5px;';
-        paymentInfo.textContent = paidBy.length
-            ? `✅ Pagato da: ${paidBy.map(sidequestPlayerName).join(', ')}`
-            : '⏳ Nessun pagamento ancora.';
-        card.appendChild(paymentInfo);
+        if (paymentMode === 'each') {
+            const paymentInfo = document.createElement('div');
+            paymentInfo.style.cssText = 'font-size:11px;color:#566573;margin-top:5px;';
+            paymentInfo.textContent = paidBy.length
+                ? `✅ Pagato da: ${paidBy.map(sidequestPlayerName).join(', ')}`
+                : '⏳ Nessun pagamento ancora.';
+            card.appendChild(paymentInfo);
+        }
 
         if (rewardWeapon) {
             const deliveryRow = document.createElement('div');
@@ -1820,7 +1832,14 @@ function renderSidequestCard(quest) {
         const myChar = (characters || []).find(char => Number(char.id) === Number(myId));
         const alreadyPaid = paidBy.includes(Number(myId));
 
-        if (alreadyPaid) {
+        if (paymentMode === 'shared') {
+            renderSharedPaymentControls(card, quest, myId, myChar);
+        } else if (paymentMode === 'assigned' && !(quest.shares || {})[myId] && !alreadyPaid) {
+            const noShare = document.createElement('div');
+            noShare.className = 'sidequest-note';
+            noShare.textContent = 'Il Master non ti ha assegnato una quota.';
+            card.appendChild(noShare);
+        } else if (alreadyPaid) {
             const paid = document.createElement('div');
             paid.style.cssText = 'margin-top:7px;padding:6px;text-align:center;background:#d5f5e3;color:#196f3d;border-radius:4px;font-weight:bold;font-size:12px;';
             paid.textContent = '✅ PAGATO';
@@ -1831,11 +1850,14 @@ function renderSidequestCard(quest) {
             payBtn.style.cssText = 'margin-top:7px;width:100%;padding:7px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:bold;';
 
             const balance = Number(myChar?.xp ?? 0);
-            const questCost = Number(quest.cost || 0);
+            // Con le quote si paga solo la propria parte
+            const questCost = paymentMode === 'assigned'
+                ? Number((quest.shares || {})[myId] || 0)
+                : Number(quest.cost || 0);
             const enoughFunds = balance >= questCost;
 
             payBtn.textContent = enoughFunds
-                ? `💰 Paga ${questCost} €`
+                ? `💰 Paga ${paymentMode === 'assigned' ? 'la tua quota: ' : ''}${questCost} €`
                 : `⛔ Servono ${questCost} € • Saldo ${balance} €`;
             payBtn.disabled = !enoughFunds;
             if (!enoughFunds) {
@@ -1858,6 +1880,112 @@ function renderSidequestCard(quest) {
             card.appendChild(delivered);
         }
     }
+}
+
+// Riepilogo dei pagamenti divisi: barra della spesa comune o elenco delle quote
+function renderSidequestPaymentStatus(card, quest) {
+    const mode = quest.payment_mode || 'each';
+    if (mode === 'each') return;
+
+    const box = document.createElement('div');
+    box.className = 'sidequest-payment-status';
+
+    if (mode === 'shared') {
+        const cost = Number(quest.cost || 0);
+        const collected = Number(quest.collected || 0);
+
+        const label = document.createElement('div');
+        label.className = 'sidequest-progress-label';
+        label.textContent = collected >= cost
+            ? `✅ Spesa coperta: ${collected} / ${cost} €`
+            : `🧺 Raccolti ${collected} / ${cost} € · mancano ${Number(quest.remaining || 0)} €`;
+        box.appendChild(label);
+
+        const bar = document.createElement('div');
+        bar.className = 'sidequest-progress';
+        const fill = document.createElement('div');
+        fill.className = 'sidequest-progress-fill';
+        fill.style.width = `${cost ? Math.min(100, collected / cost * 100) : 100}%`;
+        bar.appendChild(fill);
+        box.appendChild(bar);
+
+        const contributions = Object.entries(quest.contributions || {});
+        if (contributions.length) {
+            const list = document.createElement('div');
+            list.className = 'sidequest-contributors';
+            list.textContent = contributions
+                .map(([charId, amount]) => `${sidequestPlayerName(charId)} ${amount} €`)
+                .join(' · ');
+            box.appendChild(list);
+        }
+    } else {
+        const paid = (quest.paid_by || []).map(Number);
+        Object.entries(quest.shares || {}).forEach(([charId, amount]) => {
+            const row = document.createElement('div');
+            row.className = 'sidequest-share-status';
+            row.textContent = `${paid.includes(Number(charId)) ? '✅' : '⏳'} ${sidequestPlayerName(charId)}: ${amount} €`;
+            box.appendChild(row);
+        });
+    }
+
+    card.appendChild(box);
+}
+
+// Spesa comune: ognuno versa quanto vuole; si propone una parte uguale
+function renderSharedPaymentControls(card, quest, myId, myChar) {
+    const remaining = Number(quest.remaining || 0);
+    const myContribution = Number((quest.contributions || {})[myId] || 0);
+
+    if (myContribution) {
+        const mine = document.createElement('div');
+        mine.className = 'sidequest-note';
+        mine.textContent = `Hai versato ${myContribution} €.`;
+        card.appendChild(mine);
+    }
+
+    if (remaining <= 0) return;
+
+    const balance = Number(myChar?.xp ?? 0);
+    const players = (characters || []).filter(char => char.role === 'player');
+    const notYet = players.filter(p => !(quest.contributions || {})[p.id]).length || 1;
+    const suggestion = Math.max(1, Math.min(remaining, balance, Math.ceil(remaining / notYet)));
+
+    const row = document.createElement('div');
+    row.className = 'sidequest-shared-pay';
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.max = String(Math.min(remaining, balance));
+    input.value = String(suggestion);
+
+    const payBtn = document.createElement('button');
+    payBtn.type = 'button';
+    payBtn.textContent = '💰 Versa';
+    payBtn.disabled = balance < 1;
+
+    payBtn.addEventListener('click', () => {
+        const amount = parseInt(input.value) || 0;
+        if (amount < 1 || amount > remaining) {
+            alert(`Puoi versare da 1 a ${remaining} €.`);
+            return;
+        }
+        if (amount > balance) {
+            alert(`Fondi insufficienti: sul conto hai ${balance} €.`);
+            return;
+        }
+        if (!confirm(`Versare ${amount} € per "${quest.title}"?`)) return;
+        payBtn.disabled = true;
+        socket.emit('pay_sidequest', { quest_id: quest.id, amount });
+    });
+
+    row.append(input, payBtn);
+    card.appendChild(row);
+
+    const hint = document.createElement('div');
+    hint.className = 'sidequest-note';
+    hint.textContent = `Saldo ${balance} € · parte uguale suggerita: ${suggestion} €`;
+    card.appendChild(hint);
 }
 
 function refreshSidequestCards() {
@@ -1916,19 +2044,112 @@ sendSidequestBtn?.addEventListener('click', () => {
         return;
     }
 
+    const paymentMode = targetValue === 'all' ? (sidequestPaymentMode?.value || 'each') : 'each';
+    const shares = paymentMode === 'assigned' ? getSidequestShareInputs() : {};
+
+    if (paymentMode === 'assigned' && !Object.values(shares).some(amount => amount > 0)) {
+        alert('Assegna una quota ad almeno un giocatore.');
+        return;
+    }
+
     socket.emit('create_sidequest', {
         title,
         description,
         cost,
         target_char_id: targetValue === 'all' ? null : parseInt(targetValue),
+        payment_mode: paymentMode,
+        shares,
         reward_weapon: pendingSidequestWeapon
     });
 
     if (sidequestTitle) sidequestTitle.value = '';
     if (sidequestDescription) sidequestDescription.value = '';
     if (sidequestCost) sidequestCost.value = '0';
+    document.querySelectorAll('#sidequest-share-rows input').forEach(input => { input.value = ''; });
     clearSidequestForge();
 });
+
+// ==========================================
+// SIDEQUEST: COME SI DIVIDE IL COSTO
+// ==========================================
+
+const sidequestPaymentMode = document.getElementById('sidequest-payment-mode');
+
+function getSidequestShareInputs() {
+    const shares = {};
+    document.querySelectorAll('#sidequest-share-rows input').forEach(input => {
+        const amount = parseInt(input.value) || 0;
+        if (amount > 0) shares[input.dataset.charId] = amount;
+    });
+    return shares;
+}
+
+// Con le quote il costo totale è la loro somma
+function syncSidequestCostFromShares() {
+    if (!sidequestCost) return;
+    sidequestCost.value = Object.values(getSidequestShareInputs()).reduce((sum, amount) => sum + amount, 0);
+}
+
+function renderSidequestShareInputs() {
+    const rows = document.getElementById('sidequest-share-rows');
+    if (!rows) return;
+
+    const previous = getSidequestShareInputs();
+    rows.innerHTML = '';
+
+    (characters || []).filter(char => char.role === 'player').forEach(player => {
+        const row = document.createElement('label');
+        row.className = 'sidequest-share-row';
+
+        const name = document.createElement('span');
+        name.textContent = player.name;
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.step = '1';
+        input.placeholder = '0 €';
+        input.dataset.charId = player.id;
+        input.value = previous[player.id] || '';
+        input.addEventListener('input', syncSidequestCostFromShares);
+
+        row.append(name, input);
+        rows.appendChild(row);
+    });
+}
+
+function updateSidequestPaymentUI() {
+    const forAll = (sidequestTarget?.value || 'all') === 'all';
+    const assigned = forAll && sidequestPaymentMode?.value === 'assigned';
+
+    if (sidequestPaymentMode) sidequestPaymentMode.style.display = forAll ? 'block' : 'none';
+    document.getElementById('sidequest-shares')?.classList.toggle('open', assigned);
+
+    if (assigned) {
+        renderSidequestShareInputs();
+        if (Object.keys(getSidequestShareInputs()).length) syncSidequestCostFromShares();
+    }
+}
+
+// Divide il costo scritto nel campo in parti uguali (gli spiccioli ai primi)
+document.getElementById('btn-sidequest-split-even')?.addEventListener('click', () => {
+    const inputs = [...document.querySelectorAll('#sidequest-share-rows input')];
+    const total = parseInt(sidequestCost?.value) || 0;
+
+    if (!inputs.length || total <= 0) {
+        alert('Scrivi prima il costo totale da dividere.');
+        return;
+    }
+
+    const base = Math.floor(total / inputs.length);
+    const extra = total % inputs.length;
+    inputs.forEach((input, index) => { input.value = base + (index < extra ? 1 : 0); });
+    syncSidequestCostFromShares();
+});
+
+sidequestTarget?.addEventListener('change', updateSidequestPaymentUI);
+sidequestPaymentMode?.addEventListener('change', updateSidequestPaymentUI);
+updateSidequestPaymentUI();
 
 // --- 4. INVIO LANCIO DADI (BOTTONI E TASTIERA) ---
 document.querySelectorAll('.dice-btn').forEach(btn => {

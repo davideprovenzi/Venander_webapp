@@ -148,6 +148,12 @@ class SideQuest(db.Model):
     reward_weapon = db.Column(db.JSON, nullable=True)
     # Tiene traccia dei personaggi che hanno già ricevuto la ricompensa.
     reward_delivered_to = db.Column(db.JSON, default=list)
+    # Come pagano i giocatori una sidequest per tutti:
+    # "each" ognuno il costo intero, "shared" spesa comune divisa liberamente,
+    # "assigned" quote decise dal Master
+    payment_mode = db.Column(db.String(20), default="each")
+    shares = db.Column(db.JSON, default=dict)        # quote: {"char_id": euro}
+    contributions = db.Column(db.JSON, default=dict) # versato: {"char_id": euro}
     active = db.Column(db.Boolean, default=True)
 
 class WikiPage(db.Model):
@@ -267,6 +273,16 @@ with app.app_context():
             text("ALTER TABLE side_quest ADD COLUMN reward_delivered_to JSON DEFAULT '[]'")
         )
         db.session.commit()
+
+    # Pagamenti divisi: spesa comune o quote assegnate dal Master
+    for column, ddl in (
+        ("payment_mode", "VARCHAR(20) DEFAULT 'each'"),
+        ("shares", "JSON DEFAULT '{}'"),
+        ("contributions", "JSON DEFAULT '{}'")
+    ):
+        if column not in sidequest_columns:
+            db.session.execute(text(f"ALTER TABLE side_quest ADD COLUMN {column} {ddl}"))
+            db.session.commit()
 
     # Migrazione leggera: i tratti liberi salvano tutti i punti in un'unica riga.
     draw_item_columns = {
@@ -765,6 +781,20 @@ def emit_master_forge_library():
     for sid in list(master_sids):
         socketio.emit("master_forge_library", payload, to=sid)
 
+SIDEQUEST_PAYMENT_MODES = {"each", "shared", "assigned"}
+
+def sidequest_amounts(raw):
+    """{"char_id": euro} pulito, con chiavi stringa (come arrivano dal JSON)."""
+    amounts = {}
+    for raw_id, raw_amount in (raw or {}).items():
+        try:
+            char_id, amount = int(raw_id), int(raw_amount)
+        except (TypeError, ValueError):
+            continue
+        if amount > 0:
+            amounts[str(char_id)] = amount
+    return amounts
+
 def serialize_sidequest(quest):
     target_name = "Tutti i giocatori"
     if quest.target_char_id is not None:
@@ -778,11 +808,19 @@ def serialize_sidequest(quest):
         except (TypeError, ValueError):
             continue
 
+    contributions = sidequest_amounts(quest.contributions)
+    collected = sum(contributions.values())
+
     return {
         "id": quest.id,
         "title": quest.title,
         "description": quest.description or "",
         "cost": max(0, int(quest.cost or 0)),
+        "payment_mode": quest.payment_mode or "each",
+        "shares": sidequest_amounts(quest.shares),
+        "contributions": contributions,
+        "collected": collected,
+        "remaining": max(0, int(quest.cost or 0) - collected),
         "target_char_id": quest.target_char_id,
         "target_name": target_name,
         "paid_by": paid_by,
@@ -2443,11 +2481,37 @@ def handle_create_sidequest(data):
             )
             return
 
+    # Le modalità divise hanno senso solo per una sidequest di tutti
+    payment_mode = str(data.get("payment_mode") or "each")
+    if payment_mode not in SIDEQUEST_PAYMENT_MODES or target_char_id is not None:
+        payment_mode = "each"
+
+    shares = {}
+    if payment_mode == "assigned":
+        for raw_id, raw_amount in (data.get("shares") or {}).items():
+            player = db.session.get(Character, raw_id)
+            try:
+                amount = max(0, int(raw_amount))
+            except (TypeError, ValueError):
+                amount = 0
+            if player and player.role == "player" and amount:
+                shares[str(player.id)] = amount
+
+        if not shares:
+            emit("sidequest_error", {"message": "Assegna una quota ad almeno un giocatore."}, to=request.sid)
+            return
+
+        # Il totale è la somma delle quote
+        cost = sum(shares.values())
+
     quest = SideQuest(
         title=title,
         description=description,
         cost=cost,
         target_char_id=target_char_id,
+        payment_mode=payment_mode,
+        shares=shares,
+        contributions={},
         paid_by=[],
         reward_weapon=reward_weapon,
         reward_delivered_to=[],
@@ -2482,11 +2546,37 @@ def handle_pay_sidequest(data):
         except (TypeError, ValueError):
             continue
 
-    if char.id in paid_by:
-        emit("sidequest_error", {"message": "Hai già pagato questa sidequest."}, to=request.sid)
-        return
+    payment_mode = quest.payment_mode or "each"
+    contributions = sidequest_amounts(quest.contributions)
+    remaining_after = None
 
-    cost = max(0, int(quest.cost or 0))
+    if payment_mode == "shared":
+        # Spesa comune: si versa quanto si vuole, fino a coprire il totale
+        remaining = max(0, int(quest.cost or 0) - sum(contributions.values()))
+        if remaining == 0:
+            emit("sidequest_error", {"message": "La spesa è già stata coperta."}, to=request.sid)
+            return
+        try:
+            cost = int((data or {}).get("amount"))
+        except (TypeError, ValueError):
+            cost = 0
+        if cost < 1 or cost > remaining:
+            emit("sidequest_error", {"message": f"Puoi versare da 1 a {remaining} €."}, to=request.sid)
+            return
+        remaining_after = remaining - cost
+    else:
+        if char.id in paid_by:
+            emit("sidequest_error", {"message": "Hai già pagato questa sidequest."}, to=request.sid)
+            return
+
+        if payment_mode == "assigned":
+            cost = sidequest_amounts(quest.shares).get(str(char.id), 0)
+            if not cost:
+                emit("sidequest_error", {"message": "Il Master non ti ha assegnato una quota."}, to=request.sid)
+                return
+        else:
+            cost = max(0, int(quest.cost or 0))
+
     if int(char.xp or 0) < cost:
         emit(
             "sidequest_error",
@@ -2496,8 +2586,11 @@ def handle_pay_sidequest(data):
         return
 
     char.xp = int(char.xp or 0) - cost
-    paid_by.append(char.id)
+    if char.id not in paid_by:
+        paid_by.append(char.id)
     quest.paid_by = paid_by
+    contributions[str(char.id)] = contributions.get(str(char.id), 0) + cost
+    quest.contributions = contributions
     db.session.commit()
 
     emit_character_update(char)
@@ -2508,6 +2601,11 @@ def handle_pay_sidequest(data):
         "message": (
             f"<b>{html.escape(char.name)}</b> ha pagato <b>{cost} €</b> "
             f"per <b>{html.escape(quest.title)}</b>."
+            + (
+                f" Mancano <b>{remaining_after} €</b>." if remaining_after
+                else " ✅ Spesa coperta!" if remaining_after == 0
+                else ""
+            )
         ),
         "is_master": False,
         "is_system": True

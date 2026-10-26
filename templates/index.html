@@ -925,6 +925,19 @@
                 <select id="sidequest-target" style="width:100%; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;">
                     <option value="all">🌐 Tutti i giocatori</option>
                 </select>
+                <!-- Solo per "Tutti i giocatori": come si divide il costo -->
+                <select id="sidequest-payment-mode" class="sidequest-payment-mode">
+                    <option value="each">💰 Ognuno paga il costo intero</option>
+                    <option value="shared">🧺 Spesa comune (si divide liberamente)</option>
+                    <option value="assigned">⚖️ Quote assegnate dal Master</option>
+                </select>
+                <div id="sidequest-shares" class="sidequest-shares">
+                    <div class="sidequest-shares-head">
+                        <span>Quota di ogni giocatore</span>
+                        <button id="btn-sidequest-split-even" type="button" title="Divide il costo totale in parti uguali">⚖️ Dividi equamente</button>
+                    </div>
+                    <div id="sidequest-share-rows"></div>
+                </div>
                 <input id="sidequest-title" type="text" maxlength="160" placeholder="Titolo della sidequest" style="width:100%; box-sizing:border-box; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;">
                 <textarea id="sidequest-description" maxlength="3000" rows="3" placeholder="Cosa devono fare / cosa stanno pagando..." style="width:100%; box-sizing:border-box; resize:vertical; padding:6px; margin-bottom:6px; border:1px solid #c39bd3; border-radius:4px;"></textarea>
 
