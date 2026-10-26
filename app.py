@@ -8,6 +8,7 @@ import random
 import re
 import json
 import math
+import copy
 import uuid
 import html
 from uuid import uuid4
@@ -194,6 +195,16 @@ class WikiPage(db.Model):
             data["shared_with"] = []
             data["handout"] = bool(self.hidden)
         return data
+
+class CustomCompendiumItem(db.Model):
+    """Oggetto aggiunto dal Master, unito al compendio (che è generato da un foglio di calcolo)."""
+    id = db.Column(db.String(60), primary_key=True)  # stesso formato degli id del compendio
+    data = db.Column(db.JSON, nullable=False)
+
+class ItemPriceOverride(db.Model):
+    """Prezzo deciso dal Master durante il gioco; vince su quello del compendio."""
+    compendium_id = db.Column(db.String(60), primary_key=True)
+    cost_eur = db.Column(db.Integer, nullable=True)  # None = prezzo da definire
 
 class NpcTemplate(db.Model):
     """Modello di NPC del Master: statistiche, equipaggiamento e armi pronti da spawnare."""
@@ -1793,8 +1804,138 @@ def load_compendio():
     path = os.path.join(app.root_path, "compendio.json")
     if not os.path.exists(path): return {}
     try:
-        with open(path, "r", encoding="utf-8") as f: return json.load(f)
+        with open(path, "r", encoding="utf-8") as f: compendio = json.load(f)
     except (json.JSONDecodeError, OSError): return {}
+
+    # Aggiunte del Master salvate nel database: non si perdono se il
+    # compendio viene rigenerato dal foglio di calcolo
+    items = compendio.setdefault("items", [])
+    items.extend(custom.data for custom in CustomCompendiumItem.query.all())
+
+    overrides = {o.compendium_id: o.cost_eur for o in ItemPriceOverride.query.all()}
+    for item in items:
+        if item.get("id") in overrides:
+            item.setdefault("equipment", {})["cost_eur"] = overrides[item["id"]]
+
+    return compendio
+
+# Oggetti creati dal Master nel Listino
+CUSTOM_ITEM_CLASSES = {"Gadget", "Armatura", "Arma", "Kit", "Munizione / consumabile", "Licenza"}
+EQUIPMENT_SLOTS = [
+    "elmo", "schiena", "spalla_dx", "spalla_sx", "petto", "avambr_dx", "avambr_sx",
+    "cintura", "guanto_dx", "guanto_sx", "gambe", "stivale_dx", "stivale_sx"
+]
+
+def build_custom_item(item_id, data, previous=None):
+    """Voce di compendio con la stessa forma di quelle generate dal foglio di calcolo."""
+    item = copy.deepcopy(previous) if previous else {
+        "id": item_id,
+        "text": {},
+        "equipment": {"slot": {}, "weight": 0, "harmonization": 0, "hp": None},
+        "requirements": {"raw": None, "items": [], "limitations": None},
+        "activation": {"mode": None, "speed": {}, "cost": {}, "condition": None},
+        "combat": {"damage": {}, "range": {}, "area": {}},
+        "resource": {},
+        "effects": {},
+        "source": {"origin": "master"}
+    }
+
+    item["name"] = str(data.get("name", "")).strip()[:120]
+    item["brand"] = str(data.get("brand", "")).strip()[:60] or None
+    item["class"] = data.get("class") if data.get("class") in CUSTOM_ITEM_CLASSES else "Gadget"
+    item["type"] = item.get("type") or item["class"]
+    item["text"] = {
+        "description": str(data.get("description", "")).strip()[:3000] or None,
+        "original_rules": None,
+        "effect_summary": None
+    }
+
+    try:
+        cost = None if data.get("cost") in (None, "") else max(0, int(data.get("cost")))
+    except (TypeError, ValueError):
+        cost = None
+    item["equipment"]["cost_eur"] = cost
+
+    # "any" = qualsiasi slot (come i foderi), altrimenti uno slot preciso o nessuno
+    slot = data.get("slot") or ""
+    allowed = EQUIPMENT_SLOTS if slot == "any" else [slot] if slot in EQUIPMENT_SLOTS else []
+    item["equipment"]["slot"] = {
+        "raw": slot or None, "family": None, "position": None,
+        "count": 1, "allowed_slots": allowed, "occupancy": "one"
+    }
+    return item
+
+@socketio.on("save_custom_item")
+def handle_save_custom_item(data):
+    if not is_master_request():
+        return
+
+    data = data or {}
+    if not str(data.get("name", "")).strip():
+        return
+
+    custom = db.session.get(CustomCompendiumItem, data.get("id")) if data.get("id") else None
+
+    if custom is None:
+        # Nuovo id progressivo che non si scontra con quelli del compendio
+        existing = {c.id for c in CustomCompendiumItem.query.all()}
+        number = 1
+        while f"MASTER-{number:03d}" in existing:
+            number += 1
+        custom = CustomCompendiumItem(id=f"MASTER-{number:03d}")
+        db.session.add(custom)
+
+    custom.data = build_custom_item(custom.id, data, custom.data)
+    flag_modified(custom, "data")
+
+    # Il prezzo scritto nel modulo vale più di una vecchia modifica al volo
+    override = db.session.get(ItemPriceOverride, custom.id)
+    if override:
+        db.session.delete(override)
+
+    db.session.commit()
+    socketio.emit("compendio_data", load_compendio())
+
+@socketio.on("delete_custom_item")
+def handle_delete_custom_item(data):
+    if not is_master_request():
+        return
+
+    custom = db.session.get(CustomCompendiumItem, (data or {}).get("id"))
+    if not custom:
+        return
+
+    override = db.session.get(ItemPriceOverride, custom.id)
+    if override:
+        db.session.delete(override)
+    db.session.delete(custom)
+    db.session.commit()
+    socketio.emit("compendio_data", load_compendio())
+
+@socketio.on("set_item_price")
+def handle_set_item_price(data):
+    """Il Master cambia il prezzo di un oggetto del mercato al volo."""
+    if not is_master_request():
+        return
+
+    data = data or {}
+    compendium_id = str(data.get("compendium_id") or "")
+    if not get_compendium_item(compendium_id=compendium_id):
+        return
+
+    raw_price = data.get("price")
+    try:
+        price = None if raw_price in (None, "") else max(0, int(raw_price))
+    except (TypeError, ValueError):
+        return
+
+    override = db.session.get(ItemPriceOverride, compendium_id) or ItemPriceOverride(compendium_id=compendium_id)
+    override.cost_eur = price
+    db.session.merge(override)
+    db.session.commit()
+
+    # Tutti vedono subito il nuovo prezzo nel mercato
+    socketio.emit("compendio_data", load_compendio())
 
 @socketio.on("get_compendio")
 def handle_get_compendio():

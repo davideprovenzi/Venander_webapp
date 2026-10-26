@@ -1,6 +1,46 @@
 // ==========================================
 // POPOLAMENTO SCHEDA GIOCATORE E SHOP
 // ==========================================
+// Mette un oggetto del mercato nella scheda: le armi tra le Armi, il resto nello zaino.
+// Usata sia per l'acquisto sia per i regali del Master.
+function grantShopItem(myChar, item, shopGroup, itemDesc) {
+    if (shopGroup === 'Armi') {
+        const weapons = [...(myChar.weapons || [])];
+        const maxHp = item.equipment?.hp ?? null;
+
+        weapons.push({
+            compendium_id: item.id,
+            name: item.name,
+            brand: item.brand || null,
+            desc: itemDesc,
+            durability_max: maxHp,
+            durability_current: maxHp,
+            img: item.img || ''
+        });
+
+        socket.emit('update_character_sheet', { char_id: myChar.id, weapons: weapons });
+    } else {
+        const backpack = [...(myChar.backpack || [])];
+        const existingIndex = backpack.findIndex(entry => {
+            if (typeof entry === 'string') return entry === item.name;
+            return entry.compendium_id === item.id || (!entry.compendium_id && entry.name === item.name);
+        });
+
+        if (existingIndex !== -1) {
+            const existing = backpack[existingIndex];
+            if (typeof existing === 'string') {
+                backpack[existingIndex] = { compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 2, img: item.img || '' };
+            } else {
+                backpack[existingIndex] = { ...existing, qty: (existing.qty || 1) + 1 };
+            }
+        } else {
+            backpack.push({ compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 1, img: item.img || '' });
+        }
+
+        socket.emit('update_character_sheet', { char_id: myChar.id, backpack: backpack });
+    }
+}
+
 function populatePlayerSheetUI(myChar) {
     if (!myChar) return;
     document.getElementById('ui-name').innerText = myChar.name;
@@ -690,11 +730,33 @@ function populatePlayerSheetUI(myChar) {
             li.innerHTML = `<div>
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                     <div><strong style="font-size:15px; color:#2c3e50; line-height:1.2;">${item.name}</strong><br>${brandHtml}</div>
-                    <span style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${priceText}</span>
+                    <span class="shop-price" style="font-size:13px; font-weight:bold; color:#8e44ad; background:#f4ebf8; padding:3px 6px; border-radius:4px; white-space:nowrap; margin-left:10px;">${priceText}</span>
                 </div>
                 <p style="font-size:13px; color:#555; margin:0 0 8px 0; line-height:1.4;">${itemDesc}</p>
                 ${armorStatsHtml}${weaponStatsHtml}${licenseHtml}${ownedText}
             </div>`;
+
+            // Il Master cambia il prezzo al volo cliccando sul cartellino
+            if (isMaster) {
+                const priceEl = li.querySelector('.shop-price');
+                priceEl.textContent = `${priceText} ✏️`;
+                priceEl.title = 'Clicca per cambiare il prezzo';
+                priceEl.style.cursor = 'pointer';
+                priceEl.addEventListener('click', () => {
+                    const answer = prompt(
+                        `Prezzo di "${item.name}" in € (lascia vuoto per "da definire"):`,
+                        itemCost ?? ''
+                    );
+                    if (answer === null) return;
+
+                    const trimmed = answer.trim();
+                    if (trimmed !== '' && !/^\d+$/.test(trimmed)) {
+                        alert('Scrivi un numero intero di euro.');
+                        return;
+                    }
+                    socket.emit('set_item_price', { compendium_id: item.id, price: trimmed === '' ? null : Number(trimmed) });
+                });
+            }
 
             const btn = document.createElement('button');
             btn.style.padding = '8px';
@@ -705,11 +767,19 @@ function populatePlayerSheetUI(myChar) {
             btn.style.marginTop = '10px';
 
             if (isMaster) {
-                btn.innerText = 'Solo Visualizzazione';
-                btn.style.background = '#bdc3c7';
+                // Il Master può regalare l'oggetto: arriva come se fosse comprato, ma gratis
+                btn.innerText = `🎁 Regala a ${myChar.name}`;
+                btn.style.background = '#16a085';
                 btn.style.color = '#fff';
-                btn.style.cursor = 'not-allowed';
-                btn.disabled = true;
+                btn.style.cursor = 'pointer';
+                btn.onclick = () => {
+                    if (!confirm(`Regalare "${item.name}" a ${myChar.name}? Non costa nulla.`)) return;
+                    grantShopItem(myChar, item, shopGroup, itemDesc);
+                    socket.emit('combat_msg', {
+                        name: '🎁 MASTER',
+                        message: `regala <b>${escapeHtml(item.name)}</b> a <b>${escapeHtml(myChar.name)}</b>.`
+                    });
+                };
             } else if (itemCost === null) {
                 btn.innerText = 'Prezzo da definire';
                 btn.style.background = '#bdc3c7';
@@ -737,42 +807,7 @@ function populatePlayerSheetUI(myChar) {
                         if (!confirm(`Vuoi spendere ${itemCost} € per acquistare "${item.name}"?`)) return;
 
                         socket.emit('update_xp', { char_id: myChar.id, amount: -itemCost });
-
-                        if (shopGroup === 'Armi') {
-                            const weapons = [...(myChar.weapons || [])];
-                            const maxHp = item.equipment?.hp ?? null;
-
-                            weapons.push({
-                                compendium_id: item.id,
-                                name: item.name,
-                                brand: item.brand || null,
-                                desc: itemDesc,
-                                durability_max: maxHp,
-                                durability_current: maxHp,
-                                img: item.img || ''
-                            });
-
-                            socket.emit('update_character_sheet', { char_id: myChar.id, weapons: weapons });
-                        } else {
-                            const backpack = [...(myChar.backpack || [])];
-                            const existingIndex = backpack.findIndex(entry => {
-                                if (typeof entry === 'string') return entry === item.name;
-                                return entry.compendium_id === item.id || (!entry.compendium_id && entry.name === item.name);
-                            });
-
-                            if (existingIndex !== -1) {
-                                const existing = backpack[existingIndex];
-                                if (typeof existing === 'string') {
-                                    backpack[existingIndex] = { compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 2, img: item.img || '' };
-                                } else {
-                                    backpack[existingIndex] = { ...existing, qty: (existing.qty || 1) + 1 };
-                                }
-                            } else {
-                                backpack.push({ compendium_id: item.id, name: item.name, brand: item.brand || null, desc: itemDesc, qty: 1, img: item.img || '' });
-                            }
-
-                            socket.emit('update_character_sheet', { char_id: myChar.id, backpack: backpack });
-                        }
+                        grantShopItem(myChar, item, shopGroup, itemDesc);
                     };
                 }
             }
@@ -3565,269 +3600,209 @@ socket.on('compendio_data', (data) => {
     }
 });
 // Aggiunta manuale dallo Shop Master allo Zaino del Giocatore
-document.getElementById('compendio-category')?.addEventListener(
-    'change',
-    (event) => {
+// ==========================================
+// LISTINO DEL MASTER
+// Prezzi di tutto il compendio modificabili al volo, oggetti da dare
+// gratis al personaggio selezionato e oggetti nuovi (Forgia).
+// ==========================================
 
-        const category = event.target.value;
+const CATALOG_UNPRICED = '__unpriced__';
+const CATALOG_CUSTOM = '__custom__';
+let catalogEditingId = null;
 
-        const listContainer =
-            document.getElementById('compendio-list');
+function isCustomCatalogItem(item) {
+    return item?.source?.origin === 'master';
+}
 
-        if (!listContainer) return;
+function renderCatalogClassOptions() {
+    const select = document.getElementById('catalog-class');
+    if (!select) return;
 
-        listContainer.innerHTML = '';
+    const previous = select.value;
+    const classes = [...new Set(getCompendioItems().map(item => item.class).filter(Boolean))].sort();
 
-        if (!category) {
-            listContainer.innerHTML = `
-                <em style="
-                    color:#777;
-                    font-size:13px;
-                    text-align:center;
-                    padding:10px;
-                ">
-                    Seleziona una categoria valida.
-                </em>
-            `;
-            return;
-        }
+    select.innerHTML = '';
+    select.add(new Option('Tutte le categorie', ''));
+    select.add(new Option('⏳ Prezzi da definire', CATALOG_UNPRICED));
+    select.add(new Option('✨ Creati dal Master', CATALOG_CUSTOM));
+    classes.forEach(cls => select.add(new Option(cls, cls)));
 
-        // ==========================================
-        // FILTRA DAL NUOVO COMPENDIO
-        // ==========================================
+    if ([...select.options].some(option => option.value === previous)) select.value = previous;
+}
 
-        const items = getCompendioItems()
-            .filter(item => item.class === category);
-
-        if (items.length === 0) {
-            listContainer.innerHTML = `
-                <em style="color:#777;">
-                    Nessun oggetto in questa categoria.
-                </em>
-            `;
-            return;
-        }
-
-        // ==========================================
-        // CREA LE RIGHE
-        // ==========================================
-
-        items.forEach(item => {
-
-            const row =
-                document.createElement('div');
-
-            row.style.display = 'flex';
-            row.style.justifyContent = 'space-between';
-            row.style.alignItems = 'center';
-            row.style.padding = '7px';
-            row.style.borderBottom =
-                '1px solid #eee';
-            row.style.fontSize = '13px';
-            row.style.gap = '10px';
-
-            const cost =
-                getCompendioCost(item);
-
-            const costLabel =
-                cost === null
-                    ? 'Prezzo da definire'
-                    : `${cost} €`;
-
-            const description =
-                getCompendioDescription(item);
-
-            const shopGroup =
-                getShopGroup(item);
-
-            row.innerHTML = `
-                <div style="flex:1;">
-                    <strong>
-                        ${item.name}
-                    </strong>
-
-                    ${item.brand ? `<span style="color:#8e44ad; font-size:10px; font-weight:bold; margin-left:5px;">${item.brand}</span>` : ''}
-
-                    <span style="
-                        color:#8e44ad;
-                        font-weight:bold;
-                    ">
-                        (${costLabel})
-                    </span>
-
-                    <br>
-
-                    <span style="
-                        color:#666;
-                        font-size:11px;
-                    ">
-                        ${description}
-                    </span>
-                </div>
-            `;
-
-            // ==========================================
-            // BOTTONE MASTER
-            // ==========================================
-
-            const addBtn =
-                document.createElement('button');
-
-            addBtn.innerText =
-                shopGroup === 'Armi'
-                    ? '+ Metti nelle Armi'
-                    : '+ Metti in Zaino';
-
-            addBtn.style.background =
-                '#27ae60';
-
-            addBtn.style.color =
-                'white';
-
-            addBtn.style.border =
-                'none';
-
-            addBtn.style.padding =
-                '4px 8px';
-
-            addBtn.style.borderRadius =
-                '3px';
-
-            addBtn.style.cursor =
-                'pointer';
-
-            addBtn.style.fontWeight =
-                'bold';
-
-            addBtn.onclick = () => {
-
-                if (!selectedCharacterId) {
-                    alert(
-                        "Seleziona prima un personaggio sulla mappa."
-                    );
-                    return;
-                }
-
-                const char = characters.find(
-                    c => c.id === selectedCharacterId
-                );
-
-                if (!char) return;
-
-                if (shopGroup === 'Armi') {
-                    const weapons = [
-                        ...(char.weapons || [])
-                    ];
-
-                    const maxHp =
-                        item.equipment?.hp ?? null;
-
-                    weapons.push({
-                        compendium_id: item.id,
-                        name: item.name,
-                        brand: item.brand || null,
-                        desc: description,
-                        durability_max: maxHp,
-                        durability_current: maxHp
-                    });
-
-                    socket.emit(
-                        'update_character_sheet',
-                        {
-                            char_id: selectedCharacterId,
-                            weapons: weapons
-                        }
-                    );
-
-                    addBtn.innerText =
-                        'Aggiunto ✓';
-
-                    addBtn.style.background =
-                        '#7f8c8d';
-
-                    addBtn.disabled = true;
-                    return;
-                }
-
-                const backpack =
-                    char.backpack || [];
-
-                const existingIndex =
-                    backpack.findIndex(b => {
-
-                        if (typeof b === 'string') {
-                            return b === item.name;
-                        }
-
-                        return (
-                            b.compendium_id === item.id ||
-                            (
-                                !b.compendium_id &&
-                                b.name === item.name
-                            )
-                        );
-                    });
-
-                if (existingIndex !== -1) {
-
-                    if (
-                        typeof backpack[existingIndex]
-                        === 'string'
-                    ) {
-
-                        backpack[existingIndex] = {
-                            compendium_id: item.id,
-                            name: item.name,
-                            brand: item.brand || null,
-                            desc: description,
-                            qty: 2
-                        };
-
-                    } else {
-
-                        backpack[existingIndex].qty =
-                            (
-                                backpack[existingIndex].qty ||
-                                1
-                            ) + 1;
-                    }
-
-                } else {
-
-                    backpack.push({
-                        compendium_id: item.id,
-                        name: item.name,
-                        brand: item.brand || null,
-                        desc: description,
-                        qty: 1
-                    });
-                }
-
-                socket.emit(
-                    'update_character_sheet',
-                    {
-                        char_id:
-                            selectedCharacterId,
-
-                        backpack:
-                            backpack
-                    }
-                );
-
-                addBtn.innerText =
-                    'Aggiunto ✓';
-
-                addBtn.style.background =
-                    '#7f8c8d';
-
-                addBtn.disabled = true;
-            };
-
-            row.appendChild(addBtn);
-            listContainer.appendChild(row);
-        });
+function giveCatalogItem(item) {
+    const char = characters.find(c => c.id === selectedCharacterId);
+    if (!char) {
+        alert('Seleziona prima un personaggio sulla mappa.');
+        return;
     }
-);
+    if (!confirm(`Dare gratis "${item.name}" a ${char.name}?`)) return;
+
+    grantShopItem(char, item, getShopGroup(item), getCompendioDescription(item));
+    socket.emit('combat_msg', {
+        name: '🎁 MASTER',
+        message: `regala <b>${escapeHtml(item.name)}</b> a <b>${escapeHtml(char.name)}</b>.`
+    });
+}
+
+function renderMasterCatalog() {
+    const list = document.getElementById('catalog-list');
+    if (!list) return;
+
+    const search = (document.getElementById('catalog-search')?.value || '').trim().toLowerCase();
+    const filter = document.getElementById('catalog-class')?.value || '';
+
+    const items = getCompendioItems().filter(item => {
+        if (filter === CATALOG_UNPRICED && getCompendioCost(item) !== null) return false;
+        if (filter === CATALOG_CUSTOM && !isCustomCatalogItem(item)) return false;
+        if (filter && filter !== CATALOG_UNPRICED && filter !== CATALOG_CUSTOM && item.class !== filter) return false;
+        return !search || `${item.name} ${item.brand || ''}`.toLowerCase().includes(search);
+    });
+
+    list.innerHTML = '';
+
+    if (!items.length) {
+        list.innerHTML = '<div class="catalog-empty">Nessun oggetto.</div>';
+        return;
+    }
+
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'catalog-row';
+
+        const info = document.createElement('div');
+        info.className = 'catalog-row-info';
+        const name = document.createElement('strong');
+        name.textContent = item.name;
+        const meta = document.createElement('span');
+        meta.className = 'catalog-row-meta';
+        meta.textContent = [item.class, item.brand, isCustomCatalogItem(item) ? '✨ del Master' : null].filter(Boolean).join(' · ');
+        info.append(name, meta);
+
+        // Prezzo: Invio o 💾 per salvare, vuoto = da definire
+        const cost = getCompendioCost(item);
+        const price = document.createElement('input');
+        price.type = 'number';
+        price.min = '0';
+        price.className = 'catalog-price';
+        price.value = cost ?? '';
+        price.placeholder = 'da definire';
+        price.classList.toggle('unpriced', cost === null);
+
+        const savePrice = () => {
+            const value = price.value.trim();
+            const next = value === '' ? null : Math.max(0, parseInt(value) || 0);
+            if (next === cost) return;
+            socket.emit('set_item_price', { compendium_id: item.id, price: next });
+        };
+        price.addEventListener('keydown', (e) => { if (e.key === 'Enter') savePrice(); });
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.textContent = '💾';
+        saveBtn.title = 'Salva il prezzo';
+        saveBtn.addEventListener('click', savePrice);
+
+        const giveBtn = document.createElement('button');
+        giveBtn.type = 'button';
+        giveBtn.className = 'catalog-give';
+        giveBtn.textContent = getShopGroup(item) === 'Armi' ? '+ Metti nelle Armi' : '+ Metti in Zaino';
+        giveBtn.addEventListener('click', () => giveCatalogItem(item));
+
+        row.append(info, price, saveBtn, giveBtn);
+
+        if (isCustomCatalogItem(item)) {
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.textContent = '✏️';
+            editBtn.title = 'Modifica oggetto';
+            editBtn.addEventListener('click', () => startCatalogEdit(item));
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.title = 'Elimina oggetto';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm(`Eliminare "${item.name}" dal compendio? Chi lo possiede già lo tiene.`)) {
+                    socket.emit('delete_custom_item', { id: item.id });
+                }
+            });
+
+            row.append(editBtn, deleteBtn);
+        }
+
+        list.appendChild(row);
+    });
+}
+
+function startCatalogEdit(item) {
+    catalogEditingId = item.id;
+    document.getElementById('forge-class').value = item.class || 'Gadget';
+    document.getElementById('forge-name').value = item.name || '';
+    document.getElementById('forge-brand').value = item.brand || '';
+    document.getElementById('forge-cost').value = getCompendioCost(item) ?? '';
+    document.getElementById('forge-desc').value = item.text?.description || '';
+
+    const allowed = item.equipment?.slot?.allowed_slots || [];
+    document.getElementById('forge-slot').value = allowed.length > 1 ? 'any' : (allowed[0] || '');
+
+    document.getElementById('catalog-forge-title').textContent = `✏️ Modifica: ${item.name}`;
+    document.getElementById('forge-submit').textContent = '💾 Salva modifiche';
+    document.getElementById('forge-cancel-edit').style.display = 'inline-block';
+    document.getElementById('forge-name').focus();
+}
+
+function resetCatalogForge() {
+    catalogEditingId = null;
+    document.getElementById('catalog-forge')?.reset();
+    document.getElementById('catalog-forge-title').textContent = '✨ Forgia nuovo oggetto';
+    document.getElementById('forge-submit').textContent = '✨ Aggiungi al compendio';
+    document.getElementById('forge-cancel-edit').style.display = 'none';
+}
+
+document.getElementById('catalog-forge')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const name = document.getElementById('forge-name').value.trim();
+    if (!name) return;
+
+    socket.emit('save_custom_item', {
+        id: catalogEditingId,
+        class: document.getElementById('forge-class').value,
+        name,
+        brand: document.getElementById('forge-brand').value.trim(),
+        cost: document.getElementById('forge-cost').value,
+        slot: document.getElementById('forge-slot').value,
+        description: document.getElementById('forge-desc').value.trim()
+    });
+
+    resetCatalogForge();
+});
+
+document.getElementById('forge-cancel-edit')?.addEventListener('click', resetCatalogForge);
+document.getElementById('catalog-search')?.addEventListener('input', renderMasterCatalog);
+document.getElementById('catalog-class')?.addEventListener('change', renderMasterCatalog);
+
+document.querySelectorAll('.open-master-catalog-btn').forEach(btn => btn.addEventListener('click', () => {
+    if (!isMaster) return;
+    socket.emit('get_compendio');
+    renderCatalogClassOptions();
+    renderMasterCatalog();
+    document.getElementById('master-catalog-modal')?.classList.add('open');
+}));
+
+document.getElementById('master-catalog-close')?.addEventListener('click', () => {
+    document.getElementById('master-catalog-modal')?.classList.remove('open');
+});
+
+// Prezzi e oggetti aggiornati (anche da un altro Master): il Listino si ridisegna
+socket.on('compendio_data', () => {
+    if (!document.getElementById('master-catalog-modal')?.classList.contains('open')) return;
+    renderCatalogClassOptions();
+    renderMasterCatalog();
+});
+
+resetCatalogForge();
 
 updateChatStatus();
 updateSheetButton();

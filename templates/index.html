@@ -212,6 +212,10 @@
                 <span class="master-tool-icon">⚒️</span><span class="master-tool-label">Fucina</span>
             </button>
 
+            <button class="master-tool-btn open-master-catalog-btn" type="button" title="Listino: prezzi e oggetti">
+                <span class="master-tool-icon">📚</span><span class="master-tool-label">Listino</span>
+            </button>
+
             <button class="master-tool-btn wiki-open-btn" type="button" title="Wiki del mondo">
                 <span class="master-tool-icon">📖</span><span class="master-tool-label">Wiki</span>
             </button>
@@ -870,29 +874,10 @@
                     <textarea id="edit-backpack" style="width: 100%; height: 100px; box-sizing: border-box; resize: vertical; padding: 5px;"></textarea>
                 </div>
 
-                <!-- COMPENDIO MASTER -->
+                <!-- LISTINO: ora è una finestra a parte (pulsante 📚 Listino nella dock) -->
                 <div class="sheet-section" style="grid-column: span 2; background: #fdfae3; border: 1px solid #c0392b;">
-                    <h3 style="color: #c0392b; margin-top: 0;">📚 Gestione Negozio da Compendio</h3>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <select id="compendio-category" style="padding: 5px; flex: 1;">
-                            <option value="">-- Seleziona Scuola/Attributo --</option>
-                        </select>
-                    </div>
-                    <div id="compendio-list" style="max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; gap: 5px;">
-                        <em style="color: #777; font-size: 13px; text-align: center; padding: 10px;">Seleziona una categoria sopra per vedere le abilità disponibili.</em>
-                    </div>
-
-                    <!-- FORGIA NUOVO OGGETTO -->
-                    <div style="background: rgba(255,255,255,0.8); padding: 8px; margin-top: 10px; border-radius: 4px; border: 1px dashed #e67e22;">
-                        <h4 style="margin: 0 0 5px 0; color: #d35400;">✨ Forgia Nuovo Oggetto</h4>
-                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-                            <input type="text" id="new-comp-category" placeholder="Categoria (es. Armature)" style="flex: 1; padding: 4px; border: 1px solid #ccc;">
-                            <input type="text" id="new-comp-name" placeholder="Nome Oggetto" style="flex: 1; padding: 4px; border: 1px solid #ccc;">
-                            <input type="number" id="new-comp-cost" placeholder="Costo €" style="width: 70px; padding: 4px; border: 1px solid #ccc;">
-                        </div>
-                        <textarea id="new-comp-desc" placeholder="Descrizione (Slot, Effetti...)" style="width: 100%; height: 40px; padding: 4px; border: 1px solid #ccc; resize: vertical; box-sizing: border-box;"></textarea>
-                        <button id="btn-create-comp-item" style="width: 100%; margin-top: 5px; padding: 6px; background: #e67e22; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 3px;">Aggiungi al Compendio Globale</button>
-                    </div>
+                    <h3 style="color: #c0392b; margin-top: 0;">📚 Compendio e prezzi</h3>
+                    <button type="button" class="open-master-catalog-btn catalog-open-inline">📚 Apri il Listino: prezzi, oggetti da regalare, nuovi oggetti</button>
                 </div>
             </div>
 
@@ -1326,6 +1311,66 @@
         <div class="surface-prompt-actions">
             <button id="surface-prompt-skip" type="button">Ignora</button>
             <button id="surface-prompt-apply" type="button">Applica effetto</button>
+        </div>
+    </div>
+
+    <!-- LISTINO DEL MASTER: prezzi di tutto, oggetti da dare, oggetti nuovi -->
+    <div id="master-catalog-modal" class="catalog-modal">
+        <div class="catalog-window">
+            <div class="catalog-header">
+                <div class="catalog-title">📚 Listino</div>
+                <button id="master-catalog-close" class="catalog-close" type="button">✕</button>
+            </div>
+
+            <div class="catalog-filters">
+                <input id="catalog-search" type="text" placeholder="Cerca per nome o marca...">
+                <select id="catalog-class"></select>
+            </div>
+            <div class="catalog-hint">Scrivi il prezzo e premi Invio (vuoto = da definire). "+ Metti" consegna gratis l'oggetto al personaggio selezionato sulla mappa.</div>
+
+            <div id="catalog-list" class="catalog-list"></div>
+
+            <!-- FORGIA: oggetti nuovi (modificabili e cancellabili in seguito) -->
+            <form id="catalog-forge" class="catalog-forge">
+                <div class="catalog-forge-title" id="catalog-forge-title">✨ Forgia nuovo oggetto</div>
+                <div class="catalog-forge-row">
+                    <select id="forge-class">
+                        <option value="Gadget">Gadget</option>
+                        <option value="Armatura">Armatura</option>
+                        <option value="Arma">Arma</option>
+                        <option value="Kit">Kit</option>
+                        <option value="Munizione / consumabile">Munizione / consumabile</option>
+                        <option value="Licenza">Licenza</option>
+                    </select>
+                    <input id="forge-name" type="text" maxlength="120" placeholder="Nome *" required>
+                    <input id="forge-brand" type="text" maxlength="60" placeholder="Marca">
+                    <input id="forge-cost" type="number" min="0" placeholder="Prezzo €">
+                </div>
+                <div class="catalog-forge-row">
+                    <select id="forge-slot">
+                        <option value="">Nessuno slot (zaino)</option>
+                        <option value="any">Qualsiasi slot (come i foderi)</option>
+                        <option value="elmo">Elmo</option>
+                        <option value="schiena">Schiena</option>
+                        <option value="spalla_dx">Spalla Dx</option>
+                        <option value="spalla_sx">Spalla Sx</option>
+                        <option value="petto">Petto</option>
+                        <option value="avambr_dx">Avambraccio Dx</option>
+                        <option value="avambr_sx">Avambraccio Sx</option>
+                        <option value="cintura">Cintura</option>
+                        <option value="guanto_dx">Guanto Dx</option>
+                        <option value="guanto_sx">Guanto Sx</option>
+                        <option value="gambe">Gambe</option>
+                        <option value="stivale_dx">Stivale Dx</option>
+                        <option value="stivale_sx">Stivale Sx</option>
+                    </select>
+                </div>
+                <textarea id="forge-desc" maxlength="3000" placeholder="Descrizione, effetti, regole..."></textarea>
+                <div class="catalog-forge-actions">
+                    <button id="forge-cancel-edit" type="button">Annulla modifica</button>
+                    <button type="submit" id="forge-submit">✨ Aggiungi al compendio</button>
+                </div>
+            </form>
         </div>
     </div>
 
