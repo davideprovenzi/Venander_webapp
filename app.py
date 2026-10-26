@@ -185,6 +185,12 @@ class WikiPage(db.Model):
             data["handout"] = bool(self.hidden)
         return data
 
+class NpcTemplate(db.Model):
+    """Modello di NPC del Master: statistiche, equipaggiamento e armi pronti da spawnare."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    data = db.Column(db.JSON, nullable=False)
+
 class MasterForgeWeapon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -913,11 +919,12 @@ def handle_register_session_role(data):
     if previous_role != role or previous_char_id != char_id:
         emit_wiki_list_to_sid(request.sid, role)
 
-    # Il Master riceve anche le minacce degli NPC e le scene.
+    # Il Master riceve anche le minacce degli NPC, le scene e i modelli NPC.
     if previous_role != role:
         socketio.emit("threats_update", threats_visible_to(role), to=request.sid)
         if role == "master":
             socketio.emit("scene_list", get_scene_list(), to=request.sid)
+            socketio.emit("npc_template_list", get_npc_template_list(), to=request.sid)
 
 @socketio.on("disconnect")
 def handle_disconnect():
@@ -1292,9 +1299,125 @@ def handle_spawn_npc(data):
             token_url=data.get("token_url", ""),
             lore=str(data.get("lore", "")).strip()
         )
+
+        # Da un modello: tutto il resto della scheda arriva dal modello.
+        # Nome, HP, colore, descrizione e pedina restano quelli del modulo di spawn.
+        template = db.session.get(NpcTemplate, data.get("template_id")) if data.get("template_id") else None
+        if template:
+            apply_npc_template(new_npc, template.data or {})
+            new_npc.name = unique_character_name(new_npc.name)
+
         db.session.add(new_npc)
         db.session.commit()
     emit_character_update(new_npc)
+
+# ==========================================
+# MODELLI NPC
+# ==========================================
+NPC_TEMPLATE_FIELDS = (
+    "color", "hp_max", "stamina_max", "conc_max", "stats", "weapons", "skills",
+    "backpack", "bonuses", "lore", "photo_url", "token_url", "status"
+)
+
+def fresh_equipment(value):
+    """Copia profonda dell'equipaggiamento con la durabilità di nuovo al massimo."""
+    if isinstance(value, dict):
+        return {
+            key: fresh_equipment(item)
+            for key, item in value.items()
+            if key != "durability_current"
+        }
+    if isinstance(value, list):
+        return [fresh_equipment(item) for item in value]
+    return value
+
+def snapshot_npc_template(char):
+    return {field: fresh_equipment(getattr(char, field)) for field in NPC_TEMPLATE_FIELDS}
+
+def apply_npc_template(char, data):
+    for field in NPC_TEMPLATE_FIELDS:
+        # Nome, HP, colore, descrizione e pedina li ha già decisi il modulo di spawn
+        if field in ("color", "lore", "token_url", "hp_max") and getattr(char, field):
+            continue
+        if field in data and data[field] is not None:
+            setattr(char, field, fresh_equipment(data[field]))
+
+    char.hp_current = char.hp_max
+    char.stamina_current = char.stamina_max
+    char.conc_current = char.conc_max
+
+def unique_character_name(name):
+    """Più copie dello stesso modello: "Bandito", "Bandito 2", "Bandito 3"..."""
+    existing = {c.name for c in Character.query.with_entities(Character.name).all()}
+    if name not in existing:
+        return name
+
+    number = 2
+    while f"{name} {number}" in existing:
+        number += 1
+    return f"{name} {number}"
+
+def get_npc_template_list():
+    templates = NpcTemplate.query.order_by(NpcTemplate.name).all()
+    result = []
+
+    for template in templates:
+        data = template.data or {}
+        equipped = (data.get("stats") or {}).get("equipped") or {}
+        result.append({
+            "id": template.id,
+            "name": template.name,
+            "hp_max": data.get("hp_max"),
+            "color": data.get("color"),
+            "lore": data.get("lore") or "",
+            "token_url": data.get("token_url") or "",
+            "weapons": len(data.get("weapons") or []),
+            "equipped": len([item for item in equipped.values() if item])
+        })
+
+    return result
+
+@socketio.on("save_npc_template")
+def handle_save_npc_template(data):
+    if not is_master_request():
+        return
+
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+    name = clean_character_name(data.get("name")) or (char.name if char else "")
+
+    if not char or char.role == "master" or not name:
+        return
+
+    # Stesso nome: il modello viene aggiornato
+    template = NpcTemplate.query.filter_by(name=name).first()
+    if template is None:
+        template = NpcTemplate(name=name)
+        db.session.add(template)
+
+    template.data = snapshot_npc_template(char)
+    flag_modified(template, "data")
+    db.session.commit()
+
+    emit_to_masters("npc_template_list", get_npc_template_list())
+    emit("dice_result", {
+        "name": "SISTEMA",
+        "message": f"📋 Modello NPC <b>{html.escape(name)}</b> salvato.",
+        "is_master_roll": True
+    }, to=request.sid)
+
+@socketio.on("delete_npc_template")
+def handle_delete_npc_template(data):
+    if not is_master_request():
+        return
+
+    template = db.session.get(NpcTemplate, (data or {}).get("id"))
+    if not template:
+        return
+
+    db.session.delete(template)
+    db.session.commit()
+    emit_to_masters("npc_template_list", get_npc_template_list())
 
 @socketio.on("update_vitals")
 def handle_update_vitals(data):

@@ -134,7 +134,9 @@ canvas.addEventListener('click', (event) => {
             x: gridX,
             y: gridY,
             is_hidden: isHidden,
-            token_url: window.currentNpcTokenBase64 || ""
+            token_url: window.currentNpcTokenBase64 || "",
+            // Statistiche, equipaggiamento e armi dal modello (vedi game.js)
+            template_id: parseInt(document.getElementById('npc-template-select')?.value) || null
         });
         window.isSpawningNpc = false;
         canvas.style.cursor = "pointer";

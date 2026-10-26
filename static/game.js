@@ -3188,3 +3188,99 @@ socket.on('scene_list', (data) => {
     };
     renderSceneList();
 });
+
+// ==========================================
+// MODELLI NPC (SOLO MASTER)
+// Un NPC salvato come modello conserva statistiche, equipaggiamento,
+// armi, abilità ed effetti. Scegliendolo nello spawn si compilano
+// nome, HP, colore, descrizione e pedina (modificabili).
+// ==========================================
+
+let npcTemplates = [];
+
+function renderNpcTemplateSelect() {
+    const select = document.getElementById('npc-template-select');
+    if (!select) return;
+
+    const previous = select.value;
+    select.innerHTML = '<option value="">-- Nessun modello --</option>';
+
+    npcTemplates.forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.id;
+        option.textContent = template.name;
+        select.appendChild(option);
+    });
+
+    if (npcTemplates.some(t => String(t.id) === previous)) select.value = previous;
+    updateNpcTemplateInfo();
+}
+
+function updateNpcTemplateInfo() {
+    const info = document.getElementById('npc-template-info');
+    const template = npcTemplates.find(t => String(t.id) === document.getElementById('npc-template-select')?.value);
+    if (!info) return;
+
+    info.textContent = template
+        ? `❤️ ${template.hp_max ?? '?'} HP · 🛡️ ${template.equipped} oggetti equipaggiati · ⚔️ ${template.weapons} armi. Clicca sulla mappa per piazzarlo.`
+        : 'Salva un NPC come modello dal pannello "Selezione" per riusarne statistiche, equipaggiamento e armi.';
+}
+
+document.getElementById('npc-template-select')?.addEventListener('change', (e) => {
+    const template = npcTemplates.find(t => String(t.id) === e.target.value);
+    updateNpcTemplateInfo();
+    if (!template) return;
+
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el && value !== undefined && value !== null) el.value = value;
+    };
+
+    setValue('npc-name', template.name);
+    setValue('npc-hp', template.hp_max);
+    setValue('npc-color', template.color);
+    setValue('npc-description', template.lore);
+
+    // Pedina del modello (si può sempre sceglierne un'altra)
+    window.currentNpcTokenBase64 = template.token_url || '';
+    const preview = document.getElementById('npc-token-preview');
+    if (preview) {
+        preview.src = template.token_url || '';
+        preview.style.display = template.token_url ? 'inline-block' : 'none';
+    }
+
+    // Pronto a piazzarlo: basta cliccare sulla mappa
+    document.getElementById('spawn-npc-btn')?.click();
+});
+
+document.getElementById('npc-template-delete-btn')?.addEventListener('click', () => {
+    const select = document.getElementById('npc-template-select');
+    const template = npcTemplates.find(t => String(t.id) === select?.value);
+
+    if (!template) {
+        alert('Scegli prima un modello da eliminare.');
+        return;
+    }
+
+    if (confirm(`Eliminare il modello "${template.name}"? Gli NPC già in mappa non cambiano.`)) {
+        socket.emit('delete_npc_template', { id: template.id });
+    }
+});
+
+document.getElementById('btn-save-npc-template')?.addEventListener('click', () => {
+    const char = characters.find(c => c.id === selectedCharacterId);
+    if (!char) return;
+
+    const name = prompt('Nome del modello:', char.name.replace(/\s+\d+$/, ''));
+    if (!name || !name.trim()) return;
+
+    const existing = npcTemplates.find(t => t.name.toLowerCase() === name.trim().toLowerCase());
+    if (existing && !confirm(`Esiste già il modello "${existing.name}". Sovrascriverlo?`)) return;
+
+    socket.emit('save_npc_template', { char_id: char.id, name: name.trim() });
+});
+
+socket.on('npc_template_list', (templates) => {
+    npcTemplates = Array.isArray(templates) ? templates : [];
+    renderNpcTemplateSelect();
+});

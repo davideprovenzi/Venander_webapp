@@ -239,6 +239,18 @@
             <div class="collapsible-content"
                 style="display: none; padding-top: 10px;">
 
+                <!-- MODELLO NPC: scheda completa salvata dal Master -->
+                <div class="npc-template-box">
+                    <label class="npc-template-label">📋 Modello NPC</label>
+                    <div class="npc-template-row">
+                        <select id="npc-template-select">
+                            <option value="">-- Nessun modello --</option>
+                        </select>
+                        <button id="npc-template-delete-btn" type="button" title="Elimina il modello scelto">🗑️</button>
+                    </div>
+                    <div id="npc-template-info" class="npc-template-info">Salva un NPC come modello dal pannello "Selezione" per riusarne statistiche, equipaggiamento e armi.</div>
+                </div>
+
                 <!-- PEDINA NPC -->
                 <div style="
                     border-bottom: 1px solid #ddd;
@@ -577,6 +589,7 @@
                     <button id="btn-toggle-invisible" style="flex: 1; min-width: 45%; padding: 8px; background: #8e44ad; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">👻 Invisibile</button>
                     <button id="btn-view-sheet" style="flex: 1; min-width: 45%; padding: 8px; background: #3498db; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">📋 Scheda</button>
                     <button id="btn-edit-sheet" style="flex: 1; min-width: 45%; padding: 8px; background: #e67e22; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">✏️ Modifica</button>
+                    <button id="btn-save-npc-template" style="flex: 1; min-width: 100%; padding: 8px; background: #16a085; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;" title="Salva statistiche, equipaggiamento e armi per spawnare copie di questo NPC">📋 Salva come modello</button>
                     <button id="btn-delete-entity" style="flex: 1; min-width: 100%; padding: 8px; background: #333; color: white; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; font-size: 12px;">🗑️ Elimina</button>
                 </div>
             </div>

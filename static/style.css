@@ -1814,3 +1814,44 @@ body.player-mode #btn-toggle-notes {
 .rest-btn-long {
     background: #16a085;
 }
+
+/* Modelli NPC */
+.npc-template-box {
+    margin-bottom: 10px;
+    padding: 6px;
+    border: 1px solid #a2d9ce;
+    border-radius: 4px;
+    background: #e8f8f5;
+}
+
+.npc-template-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #117a65;
+}
+
+.npc-template-row {
+    display: flex;
+    gap: 4px;
+    margin: 5px 0;
+}
+
+.npc-template-row select {
+    flex: 1;
+    min-width: 0;
+    padding: 5px;
+}
+
+.npc-template-row button {
+    padding: 2px 8px;
+    border: 1px solid #a2d9ce;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.npc-template-info {
+    font-size: 11px;
+    color: #566573;
+    line-height: 1.35;
+}
