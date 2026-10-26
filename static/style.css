@@ -2191,3 +2191,169 @@ body.player-mode #btn-toggle-notes {
 .potion-offer-actions #potion-offer-accept {
     background: #7d3c98;
 }
+
+/* ==========================================
+   ABILITÀ DEI GADGET E CONOSCENZE
+   ========================================== */
+
+.gadget-abilities-title {
+    margin: 10px 0 6px 0;
+    font-size: 13px;
+    font-weight: bold;
+    color: #8e44ad;
+}
+
+.gadget-ability {
+    margin-bottom: 6px;
+    padding: 7px 8px;
+    border: 1px solid #d2b4de;
+    border-left: 4px solid #8e44ad;
+    border-radius: 4px;
+    background: #fbf8fd;
+    font-size: 12px;
+}
+
+.gadget-ability.inactive {
+    opacity: 0.6;
+    border-left-color: #bdc3c7;
+}
+
+.gadget-ability-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.gadget-ability-mode {
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #ebdef0;
+    color: #6c3483;
+    font-size: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.gadget-ability-effect {
+    margin-top: 3px;
+    color: #2c3e50;
+    white-space: pre-wrap;
+}
+
+.gadget-ability-cost {
+    margin-top: 3px;
+    color: #8e44ad;
+    font-weight: bold;
+}
+
+.gadget-ability-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    color: #566573;
+}
+
+.gadget-ability-footer select,
+.gadget-ability-footer input {
+    padding: 3px;
+    border: 1px solid #d2b4de;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.gadget-ability-footer input {
+    width: 50px;
+}
+
+.gadget-ability-footer button {
+    margin-left: auto;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 3px;
+    background: #8e44ad;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.knowledge-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.knowledge-entry {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid #d6eaf8;
+    border-left: 4px solid #2980b9;
+    border-radius: 4px;
+    background: #f8fbfd;
+}
+
+.knowledge-desc {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #566573;
+    white-space: pre-wrap;
+}
+
+.knowledge-actions {
+    display: flex;
+    gap: 3px;
+    align-items: flex-start;
+}
+
+.knowledge-actions button {
+    padding: 1px 5px;
+    border: 1px solid #d6eaf8;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.knowledge-empty {
+    color: #7f8c8d;
+}
+
+.knowledge-form {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #ccc;
+}
+
+.knowledge-form input,
+.knowledge-form textarea {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.knowledge-form textarea {
+    height: 45px;
+    resize: vertical;
+}
+
+.knowledge-form button {
+    padding: 6px;
+    border: none;
+    border-radius: 3px;
+    background: #2980b9;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}

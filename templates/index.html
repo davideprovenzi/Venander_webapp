@@ -79,7 +79,7 @@
     <!-- ==========================================
          2. PANNELLO EQUIPAGGIAMENTO (PAPER DOLL)
          ========================================== -->
-    <div id="equipped-panel" style="display: block; position: absolute; bottom: 40px; left: 100px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
+    <div id="equipped-panel" class="player-dock-hidden" style="display: none; position: absolute; bottom: 40px; left: 100px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #3498db; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(52, 152, 219, 0.2);">
 
         <div id="equip-header" style="background: #1a252f; color: #3498db; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #3498db; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -125,7 +125,7 @@
     <!-- ==========================================
          3. PANNELLO GADGET (PAPER DOLL SEPARATA)
          ========================================== -->
-    <div id="gadget-panel" style="display: block; position: absolute; bottom: 40px; left: 400px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #9b59b6; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(155, 89, 182, 0.2);">
+    <div id="gadget-panel" class="player-dock-hidden" style="display: none; position: absolute; bottom: 40px; left: 400px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #9b59b6; border-radius: 8px; padding: 15px; color: #ecf0f1; width: 270px; box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(155, 89, 182, 0.2);">
 
         <div id="gadget-header" style="background: #1a252f; color: #bb8fce; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; cursor: grab; user-select: none; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; border-bottom: 2px solid #9b59b6; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -778,7 +778,22 @@
 
                 <div class="sheet-section">
                     <h3 class="collapsible-header" onclick="toggleSection(this)">Abilità <span style="font-size:12px;">▶</span></h3>
-                    <div class="collapsible-content" style="display: none;"><ul id="ui-skills" style="padding-left: 20px; margin: 0; font-size: 14px;"></ul></div>
+                    <div class="collapsible-content" style="display: none;">
+                        <ul id="ui-skills" style="padding-left: 20px; margin: 0; font-size: 14px;"></ul>
+                        <!-- Abilità date dai gadget posseduti -->
+                        <div id="ui-gadget-abilities" class="gadget-abilities"></div>
+                    </div>
+                </div>
+                <div class="sheet-section">
+                    <h3 class="collapsible-header" onclick="toggleSection(this)">📚 Conoscenze <span style="font-size:12px;">▶</span></h3>
+                    <div class="collapsible-content" style="display: none;">
+                        <ul id="ui-knowledge" class="knowledge-list"></ul>
+                        <form id="knowledge-form" class="knowledge-form">
+                            <input id="knowledge-name" type="text" maxlength="80" placeholder="Conoscenza (es. Storia di Porto Nero)">
+                            <textarea id="knowledge-desc" maxlength="500" placeholder="Dettagli (facoltativo)"></textarea>
+                            <button type="submit">＋ Aggiungi conoscenza</button>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="sheet-section">

@@ -119,6 +119,8 @@ function populatePlayerSheetUI(myChar) {
     };
 
     populateList('ui-skills', myChar.skills);
+    renderGadgetAbilities(myChar);
+    renderKnowledgeSection(myChar);
 
     // ======================================
     // ARMI
@@ -2178,6 +2180,261 @@ document.getElementById('custom-dice')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         document.getElementById('btn-custom-dice').click();
     }
+});
+
+// ==========================================
+// ABILITÀ DEI GADGET
+// Ogni gadget posseduto mostra la sua abilità; si usa quando è
+// equipaggiato (o subito, se non ha uno slot). Il server spende i PA.
+// ==========================================
+
+// Codici di costo del compendio -> statistica ("PA" la sceglie il giocatore)
+const GADGET_PA_STATS = { PAA: 'Arguzia', PAV: 'Volontà', PAP: 'Percezione' };
+
+function getCompendiumItemById(id) {
+    return (globalCompendio?.items || []).find(item => item.id === id) || null;
+}
+
+function getGadgetAbilities(char) {
+    const stats = char.stats || {};
+    const equipped = [
+        ...Object.values(stats.equipped || {}),
+        ...Object.values(stats.equipped_gadgets || {})
+    ].filter(Boolean);
+    const owned = [...(char.backpack || []), ...equipped].filter(entry => entry && entry.compendium_id);
+
+    const seen = new Set();
+    const abilities = [];
+
+    owned.forEach(entry => {
+        if (seen.has(entry.compendium_id)) return;
+        seen.add(entry.compendium_id);
+
+        const item = getCompendiumItemById(entry.compendium_id);
+        if (!item || getShopGroup(item) !== 'Gadget') return;
+
+        const activation = item.activation || {};
+        const effect = (item.text?.effect_summary || '').trim() ||
+            Object.values(item.effects || {}).filter(Boolean).join('; ');
+        const costs = Object.entries(activation.cost || {})
+            .filter(([code, value]) => code !== 'maintenance' && value !== null && value !== '');
+
+        // Contenitori, caricatori... senza nulla da attivare o da descrivere
+        if (!activation.mode && !effect && !costs.length) return;
+
+        const mode = activation.mode || '';
+        abilities.push({
+            item,
+            effect,
+            costs,
+            mode,
+            passive: mode.startsWith('Passivo') && !mode.includes('attiva'),
+            equipped: equipped.some(e => e.compendium_id === item.id),
+            needsSlot: (item.equipment?.slot?.allowed_slots || []).length > 0,
+            maintenance: activation.cost?.maintenance || null
+        });
+    });
+
+    return abilities;
+}
+
+function renderGadgetAbilities(char) {
+    const container = document.getElementById('ui-gadget-abilities');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const abilities = getGadgetAbilities(char);
+    if (!abilities.length) return;
+
+    const title = document.createElement('div');
+    title.className = 'gadget-abilities-title';
+    title.textContent = '🧩 Da gadget';
+    container.appendChild(title);
+
+    const canUse = isMaster || parseInt(userSelect?.value) === char.id;
+    const statNames = Object.keys(char.stats || {}).filter(key => typeof char.stats[key] !== 'object');
+
+    abilities.forEach(ability => {
+        const card = document.createElement('div');
+        card.className = 'gadget-ability';
+        const usable = !ability.needsSlot || ability.equipped;
+        card.classList.toggle('inactive', !usable);
+
+        const head = document.createElement('div');
+        head.className = 'gadget-ability-head';
+        const name = document.createElement('strong');
+        name.textContent = ability.item.name;
+        const mode = document.createElement('span');
+        mode.className = 'gadget-ability-mode';
+        mode.textContent = ability.mode || 'Abilità';
+        head.append(name, mode);
+        card.appendChild(head);
+
+        if (ability.effect) {
+            const effect = document.createElement('div');
+            effect.className = 'gadget-ability-effect';
+            effect.textContent = ability.effect;
+            card.appendChild(effect);
+        }
+
+        const costText = [
+            ...ability.costs.map(([code, value]) => `${value} ${code}${GADGET_PA_STATS[code] ? ` (${GADGET_PA_STATS[code]})` : ''}`),
+            ability.maintenance ? `mantenimento: ${ability.maintenance}` : null
+        ].filter(Boolean).join(' · ');
+
+        if (costText) {
+            const cost = document.createElement('div');
+            cost.className = 'gadget-ability-cost';
+            cost.textContent = `Costo: ${costText}`;
+            card.appendChild(cost);
+        }
+
+        const footer = document.createElement('div');
+        footer.className = 'gadget-ability-footer';
+
+        if (!usable) {
+            footer.textContent = '⏸ Non equipaggiato: equipaggia il gadget per usarla.';
+        } else if (ability.passive) {
+            footer.textContent = '✅ Passiva: sempre attiva.';
+        } else if (canUse) {
+            const controls = {};
+
+            // "PA" generico: il giocatore sceglie la statistica
+            if (ability.costs.some(([code]) => code === 'PA')) {
+                const select = document.createElement('select');
+                statNames.forEach(stat => select.add(new Option(`PA ${stat}`, stat)));
+                controls.paStat = select;
+                footer.appendChild(select);
+            }
+
+            // Costi descritti a parole (es. "2 per metro"): quanti PA spendere
+            controls.amounts = {};
+            ability.costs
+                .filter(([, value]) => typeof value !== 'number' && !/^\d+$/.test(String(value).trim()))
+                .forEach(([code, value]) => {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = '0';
+                    input.value = parseInt(value) || 0;
+                    input.title = `${code}: ${value}`;
+                    controls.amounts[code] = input;
+                    footer.appendChild(input);
+                });
+
+            const useBtn = document.createElement('button');
+            useBtn.type = 'button';
+            useBtn.textContent = '⚡ Usa';
+            useBtn.addEventListener('click', () => {
+                const amounts = {};
+                Object.entries(controls.amounts).forEach(([code, input]) => { amounts[code] = parseInt(input.value) || 0; });
+
+                socket.emit('use_gadget_ability', {
+                    char_id: char.id,
+                    compendium_id: ability.item.id,
+                    pa_stat: controls.paStat?.value || null,
+                    amounts
+                });
+            });
+            footer.appendChild(useBtn);
+        }
+
+        card.appendChild(footer);
+        container.appendChild(card);
+    });
+}
+
+// ==========================================
+// CONOSCENZE
+// Modificabili dal giocatore (la propria scheda) e dal Master.
+// ==========================================
+
+let knowledgeChar = null;
+
+function saveKnowledge(char, knowledge) {
+    socket.emit('update_character_sheet', { char_id: char.id, knowledge });
+}
+
+function renderKnowledgeSection(char) {
+    const list = document.getElementById('ui-knowledge');
+    const form = document.getElementById('knowledge-form');
+    if (!list) return;
+
+    knowledgeChar = char;
+    const canEdit = isMaster || parseInt(userSelect?.value) === char.id;
+    const knowledge = Array.isArray(char.knowledge) ? char.knowledge : [];
+
+    if (form) form.style.display = canEdit ? 'flex' : 'none';
+    list.innerHTML = '';
+
+    if (!knowledge.length) {
+        list.innerHTML = '<li class="knowledge-empty"><em>Nessuna conoscenza.</em></li>';
+        return;
+    }
+
+    knowledge.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.className = 'knowledge-entry';
+
+        const text = document.createElement('div');
+        const name = document.createElement('strong');
+        name.textContent = entry.name;
+        text.appendChild(name);
+        if (entry.desc) {
+            const desc = document.createElement('div');
+            desc.className = 'knowledge-desc';
+            desc.textContent = entry.desc;
+            text.appendChild(desc);
+        }
+        li.appendChild(text);
+
+        if (canEdit) {
+            const actions = document.createElement('div');
+            actions.className = 'knowledge-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.textContent = '✏️';
+            editBtn.title = 'Modifica';
+            editBtn.addEventListener('click', () => {
+                const newName = prompt('Conoscenza:', entry.name);
+                if (newName === null || !newName.trim()) return;
+                const newDesc = prompt('Dettagli:', entry.desc || '');
+                const updated = knowledge.map((k, i) => (i === index ? { name: newName.trim(), desc: (newDesc ?? k.desc ?? '').trim() } : k));
+                saveKnowledge(char, updated);
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '🗑️';
+            removeBtn.title = 'Elimina';
+            removeBtn.addEventListener('click', () => {
+                if (confirm(`Eliminare la conoscenza "${entry.name}"?`)) {
+                    saveKnowledge(char, knowledge.filter((_, i) => i !== index));
+                }
+            });
+
+            actions.append(editBtn, removeBtn);
+            li.appendChild(actions);
+        }
+
+        list.appendChild(li);
+    });
+}
+
+document.getElementById('knowledge-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!knowledgeChar) return;
+
+    const nameInput = document.getElementById('knowledge-name');
+    const descInput = document.getElementById('knowledge-desc');
+    const name = nameInput.value.trim();
+    if (!name) return;
+
+    const knowledge = Array.isArray(knowledgeChar.knowledge) ? knowledgeChar.knowledge : [];
+    saveKnowledge(knowledgeChar, [...knowledge, { name, desc: descInput.value.trim() }]);
+
+    nameInput.value = '';
+    descInput.value = '';
 });
 
 // ==========================================
@@ -7740,6 +7997,8 @@ socket.on(
         });
     }
 
+    let wasPlayerMode = null;
+
     function updatePlayerMode() {
         const playerMode = isPlayerSession();
         document.body.classList.toggle('player-mode', playerMode);
@@ -7748,8 +8007,13 @@ socket.on(
         if (!playerMode) {
             equipPanelEl?.classList.remove('player-dock-hidden');
             gadgetPanelEl?.classList.remove('player-dock-hidden');
+        } else if (wasPlayerMode !== true) {
+            // Il giocatore parte con armi e gadget chiusi: si aprono dalla dock
+            equipPanelEl?.classList.add('player-dock-hidden');
+            gadgetPanelEl?.classList.add('player-dock-hidden');
         }
 
+        wasPlayerMode = playerMode;
         syncPlayerDock();
     }
 

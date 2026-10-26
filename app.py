@@ -70,6 +70,8 @@ class Character(db.Model):
     notes = db.Column(db.Text, default="")
     # HP recuperati per ogni ora di riposo lungo (deciso dal Master)
     heal_rate = db.Column(db.Float, default=0)
+    # Conoscenze del personaggio: [{"name": ..., "desc": ...}]
+    knowledge = db.Column(db.JSON, default=list)
 
 class NpcTokenPreset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -258,6 +260,12 @@ with app.app_context():
         )
         db.session.commit()
 
+    if "knowledge" not in character_columns:
+        db.session.execute(
+            text("ALTER TABLE character ADD COLUMN knowledge JSON DEFAULT '[]'")
+        )
+        db.session.commit()
+
     if "heal_rate" not in character_columns:
         db.session.execute(
             text("ALTER TABLE character ADD COLUMN heal_rate FLOAT DEFAULT 0")
@@ -382,7 +390,8 @@ def get_char_data(char):
         "status": char.status, "stats": char.stats, "weapons": char.weapons,
         "skills": char.skills, "backpack": char.backpack, "bonuses": char.bonuses, "is_hidden": char.is_hidden,
         "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop, "notes": char.notes,
-        "heal_rate": char.heal_rate or 0
+        "heal_rate": char.heal_rate or 0,
+        "knowledge": char.knowledge or []
     }
 
 
@@ -1612,8 +1621,137 @@ def handle_update_character_sheet(data):
     if "bonuses" in data: char.bonuses = data["bonuses"]
     if "shop" in data: char.shop = data["shop"]
     if "notes" in data: char.notes = data["notes"]
+    if "knowledge" in data: char.knowledge = clean_knowledge(data["knowledge"])
     db.session.commit()
     emit_character_update(char)
+
+def clean_knowledge(raw):
+    """Conoscenze: solo nome e descrizione, testo semplice."""
+    entries = []
+    for entry in raw if isinstance(raw, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name", "")).strip()[:80]
+        if name:
+            entries.append({"name": name, "desc": str(entry.get("desc", "")).strip()[:500]})
+    return entries[:100]
+
+# ==========================================
+# ABILITÀ DEI GADGET
+# Un gadget comprato mostra la sua abilità nella scheda; si usa quando
+# è equipaggiato (o subito, se non ha uno slot). Usarla la annuncia in
+# chat e spende i PA scritti nel compendio.
+# ==========================================
+GADGET_EXCLUDED_CLASSES = {"Arma", "Licenza", "Kit", "Munizione / consumabile", "Armatura"}
+# Codici di costo del compendio -> statistica di cui si spendono i PA ("PA" la sceglie il giocatore)
+GADGET_PA_STATS = {"PAA": "Arguzia", "PAV": "Volontà", "PAP": "Percezione"}
+
+def stat_pa_current(char, stat):
+    pa_stats = char.pa_stats or {}
+    if stat in pa_stats:
+        return int(pa_stats[stat])
+    try:
+        stat_val = int((char.stats or {}).get(stat, 1))
+    except (TypeError, ValueError):
+        stat_val = 1
+    return 6 + (stat_val - 1) * 3
+
+def char_owned_items(char):
+    """Oggetti posseduti: zaino, equipaggiamento e gadget equipaggiati."""
+    stats = char.stats or {}
+    equipped = [v for v in (stats.get("equipped") or {}).values() if isinstance(v, dict)]
+    gadgets = [v for v in (stats.get("equipped_gadgets") or {}).values() if isinstance(v, dict)]
+    backpack = [v for v in (char.backpack or []) if isinstance(v, dict)]
+    return backpack, equipped + gadgets
+
+def gadget_effect_text(item):
+    text = ((item.get("text") or {}).get("effect_summary") or "").strip()
+    if text:
+        return text
+    effects = item.get("effects") or {}
+    return "; ".join(str(v) for v in effects.values() if v)
+
+@socketio.on("use_gadget_ability")
+def handle_use_gadget_ability(data):
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+    if not controls_character(char):
+        return
+
+    def refuse(message):
+        emit("dice_result", {"name": "SISTEMA", "message": f"⚠️ {html.escape(message)}", "is_master_roll": False}, to=request.sid)
+
+    item = get_compendium_item(compendium_id=data.get("compendium_id"))
+    if not item or item.get("class") in GADGET_EXCLUDED_CLASSES:
+        refuse("Gadget non trovato.")
+        return
+
+    backpack, equipped = char_owned_items(char)
+    is_equipped = any(entry.get("compendium_id") == item["id"] for entry in equipped)
+    owned = is_equipped or any(entry.get("compendium_id") == item["id"] for entry in backpack)
+    needs_slot = bool(((item.get("equipment") or {}).get("slot") or {}).get("allowed_slots"))
+
+    if not owned:
+        refuse("Non possiedi questo gadget.")
+        return
+    if needs_slot and not is_equipped:
+        refuse(f"Equipaggia {item['name']} per usarne l'abilità.")
+        return
+
+    activation = item.get("activation") or {}
+    mode = str(activation.get("mode") or "")
+    if mode.startswith("Passivo") and "attiva" not in mode:
+        refuse("È un'abilità passiva: è sempre attiva quando il gadget è equipaggiato.")
+        return
+
+    # Costi: numeri fissi dal compendio; per quelli descritti a parole
+    # (es. "2 per metro") il giocatore dice quanto spende
+    spend = {}
+    for code, raw in (activation.get("cost") or {}).items():
+        if code == "maintenance" or raw in (None, ""):
+            continue
+
+        stat = GADGET_PA_STATS.get(code) or (data.get("pa_stat") if code == "PA" else None)
+        if not stat or stat not in (char.stats or {}):
+            refuse("Scegli la statistica da cui spendere i PA.")
+            return
+
+        if isinstance(raw, (int, float)) or str(raw).strip().isdigit():
+            amount = int(float(raw))
+        else:
+            try:
+                amount = max(0, int((data.get("amounts") or {}).get(code)))
+            except (TypeError, ValueError):
+                refuse(f"Indica quanti PA spendere ({raw}).")
+                return
+
+        spend[stat] = spend.get(stat, 0) + amount
+
+    for stat, amount in spend.items():
+        if stat_pa_current(char, stat) < amount:
+            refuse(f"PA insufficienti in {stat}: servono {amount}, ne hai {stat_pa_current(char, stat)}.")
+            return
+
+    if spend:
+        pa_stats = dict(char.pa_stats or {})
+        for stat, amount in spend.items():
+            pa_stats[stat] = stat_pa_current(char, stat) - amount
+        char.pa_stats = pa_stats
+        db.session.commit()
+        emit_character_update(char)
+
+    cost_text = ", ".join(f"{amount} PA {stat}" for stat, amount in spend.items() if amount)
+    effect = gadget_effect_text(item)
+
+    emit("dice_result", {
+        "name": char.name,
+        "message": (
+            f"usa <b>{html.escape(item['name'])}</b>"
+            + (f": {html.escape(effect)}" if effect else "")
+            + (f" <i>(spende {html.escape(cost_text)})</i>" if cost_text else "")
+        ).replace("\n", "<br>"),
+        "is_master_roll": False
+    }, broadcast=True)
 
 @socketio.on("buy_skill")
 def handle_buy_skill(data):
