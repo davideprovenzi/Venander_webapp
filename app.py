@@ -9,6 +9,7 @@ import re
 import json
 import math
 import copy
+import functools
 import uuid
 import html
 from uuid import uuid4
@@ -566,6 +567,80 @@ def find_threat_stop(mover, path):
 def emit_combat_error(message):
     emit("dice_result", {"name": "SISTEMA", "message": f"⚠️ {html.escape(message)}", "is_master_roll": False}, to=request.sid)
 
+# ==========================================
+# ANNULLA ULTIMA AZIONE (MASTER) E NUMERI FLUTTUANTI
+# Prima di ogni azione di gioco si fotografano combattimento e personaggi;
+# se l'azione cambia qualcosa la foto finisce in una pila. "Annulla"
+# ripristina l'ultima. Dal confronto prima/dopo escono anche i numeri
+# fluttuanti sugli HP che cambiano.
+# ==========================================
+UNDO_LIMIT = 15
+UNDO_CHAR_FIELDS = (
+    "pos_x", "pos_y", "hp_current", "stamina_current", "conc_current",
+    "pa_stats", "bonuses", "stats", "weapons", "backpack", "heal_rate"
+)
+undo_stack = []
+
+def take_game_snapshot():
+    return {
+        "combat_state": copy.deepcopy(combat_state),
+        "threats": copy.deepcopy(combat_threats),
+        "pending_attacks": copy.deepcopy(pending_attacks),
+        "pending_results": copy.deepcopy(pending_combat_results),
+        "surface_prompts": copy.deepcopy(pending_surface_prompts),
+        "characters": {
+            c.id: {field: copy.deepcopy(getattr(c, field)) for field in UNDO_CHAR_FIELDS}
+            for c in Character.query.all()
+        }
+    }
+
+def emit_undo_status():
+    emit_to_masters("undo_status", {
+        "count": len(undo_stack),
+        "label": undo_stack[-1]["label"] if undo_stack else None
+    })
+
+def float_text(char, text, kind):
+    """Scritta che sale sopra la pedina: kind = damage | heal | info."""
+    payload = {"char_id": char.id, "text": text, "kind": kind}
+    # Un NPC nascosto non deve tradire la sua posizione ai giocatori
+    if char.role == "npc" and (char.is_hidden or char.is_invisible):
+        emit_to_masters("floating_text", payload)
+    else:
+        socketio.emit("floating_text", payload)
+
+def float_hp_changes(before, after):
+    for char_id, old in before["characters"].items():
+        new = after["characters"].get(char_id)
+        if not new or old["hp_current"] == new["hp_current"]:
+            continue
+        char = db.session.get(Character, char_id)
+        diff = (new["hp_current"] or 0) - (old["hp_current"] or 0)
+        float_text(char, f"{diff:+d}", "heal" if diff > 0 else "damage")
+
+def undoable(label):
+    """Rende annullabile un evento: la foto entra nella pila solo se cambia qualcosa."""
+    def decorator(handler):
+        @functools.wraps(handler)
+        def wrapper(*args):
+            before = take_game_snapshot()
+            result = handler(*args)
+            after = take_game_snapshot()
+
+            if before != after:
+                data = args[0] if args and isinstance(args[0], dict) else {}
+                actor = db.session.get(Character, data.get("char_id") or data.get("attacker_id")) \
+                    if (data.get("char_id") or data.get("attacker_id")) else None
+                before["label"] = f"{label} di {actor.name}" if actor else label
+                undo_stack.append(before)
+                del undo_stack[:-UNDO_LIMIT]
+                emit_undo_status()
+                float_hp_changes(before, after)
+
+            return result
+        return wrapper
+    return decorator
+
 def clean_character_name(value):
     """I nomi finiscono in molti messaggi HTML: niente caratteri di markup."""
     return re.sub(r"[<>&\"'`]", "", str(value or "")).strip()[:60]
@@ -995,6 +1070,10 @@ def handle_register_session_role(data):
         socketio.emit("threats_update", threats_visible_to(role), to=request.sid)
         if role == "master":
             socketio.emit("scene_list", get_scene_list(), to=request.sid)
+            socketio.emit("undo_status", {
+                "count": len(undo_stack),
+                "label": undo_stack[-1]["label"] if undo_stack else None
+            }, to=request.sid)
             socketio.emit("npc_template_list", get_npc_template_list(), to=request.sid)
 
 @socketio.on("disconnect")
@@ -1017,6 +1096,7 @@ def handle_connect():
 # GESTIONE COMBATTIMENTO
 # ==========================================
 @socketio.on("toggle_combat")
+@undoable("Avvio/fine combattimento")
 def handle_toggle_combat():
     if not is_master_request():
         return
@@ -1076,6 +1156,7 @@ def handle_toggle_combat():
     emit("combat_update", combat_state, broadcast=True)
 
 @socketio.on("next_turn")
+@undoable("Fine turno")
 def handle_next_turn():
     global combat_state
     if not combat_state["is_active"] or not combat_state["turn_order"]:
@@ -1207,6 +1288,7 @@ def handle_register_player(data):
     emit_character_update(char)
 
 @socketio.on("declare_move")
+@undoable("Movimento")
 def handle_move(data):
     try:
         char_id = int(data.get("char_id"))
@@ -1491,6 +1573,7 @@ def handle_delete_npc_template(data):
     emit_to_masters("npc_template_list", get_npc_template_list())
 
 @socketio.on("update_vitals")
+@undoable("Modifica dei vitali")
 def handle_update_vitals(data):
     # I vitali dal pannello Entità sono controlli amministrativi del Master.
     if request.sid not in master_sids:
@@ -1518,6 +1601,7 @@ def handle_update_vitals(data):
     emit_character_update(char)
 
 @socketio.on("spend_pa")
+@undoable("Spesa di PA")
 def handle_spend_pa(data):
     char_id = data.get("char_id")
     stat_key = data.get("stat")
@@ -1541,6 +1625,7 @@ def handle_spend_pa(data):
         emit("dice_result", {"name": char.name, "message": f"ha speso {actual_spent} PA di <b>{stat_key}</b>.", "is_master_roll": False}, broadcast=True)
 
 @socketio.on("reset_pa")
+@undoable("Ricarica PA")
 def handle_reset_pa(data):
     char_id = data.get("char_id")
     stat_key = data.get("stat")
@@ -1687,6 +1772,7 @@ def gadget_effect_text(item):
     return "; ".join(str(v) for v in effects.values() if v)
 
 @socketio.on("use_gadget_ability")
+@undoable("Uso del gadget")
 def handle_use_gadget_ability(data):
     data = data or {}
     char = db.session.get(Character, data.get("char_id"))
@@ -3136,6 +3222,7 @@ def handle_clear_terrain(data):
     socketio.emit("map_update", get_world_state())
 
 @socketio.on("resolve_surface_prompt")
+@undoable("Effetto della superficie")
 def handle_resolve_surface_prompt(data):
     if not is_master_request():
         return
@@ -3306,6 +3393,7 @@ def handle_long_rest_cancel():
 def format_number(value):
     return f"{value:g}"
 @socketio.on("party_rest")
+@undoable("Riposo")
 def handle_party_rest(data):
     if not is_master_request():
         return
@@ -3752,6 +3840,7 @@ def handle_combat_msg(data):
     emit("dice_result", {"name": data["name"], "message": data["message"], "is_master_roll": False}, broadcast=True)
 
 @socketio.on("sync_pa")
+@undoable("Correzione frame movimento")
 def handle_sync_pa(data):
     if not is_master_request():
         return
@@ -3814,6 +3903,7 @@ def start_threat_interrupts(intruder, threats):
     socketio.emit("combat_update", combat_state)
 
 @socketio.on("declare_threat")
+@undoable("Minaccia")
 def handle_declare_threat(data):
     data = data or {}
     char = db.session.get(Character, data.get("char_id"))
@@ -3869,6 +3959,7 @@ def handle_declare_threat(data):
         emit("dice_result", message, broadcast=True)
 
 @socketio.on("end_interrupt")
+@undoable("Fine interruzione")
 def handle_end_interrupt():
     if not combat_state.get("interrupts"):
         return
@@ -3885,7 +3976,76 @@ def handle_end_interrupt():
     })
     socketio.emit("combat_update", combat_state)
 
+@socketio.on("undo_last_action")
+def handle_undo_last_action():
+    global combat_threats
+
+    if not is_master_request():
+        return
+    if not undo_stack:
+        emit_combat_error("Non c'è niente da annullare.")
+        return
+
+    snapshot = undo_stack.pop()
+    current_attacks = set(pending_attacks)
+    current_results = set(pending_combat_results)
+    current_prompts = set(pending_surface_prompts)
+
+    # Stato in memoria: si svuotano e riempiono gli stessi dizionari
+    for live, saved in (
+        (combat_state, snapshot["combat_state"]),
+        (pending_attacks, snapshot["pending_attacks"]),
+        (pending_combat_results, snapshot["pending_results"]),
+        (pending_surface_prompts, snapshot["surface_prompts"]),
+    ):
+        live.clear()
+        live.update(copy.deepcopy(saved))
+    combat_threats = copy.deepcopy(snapshot["threats"])
+
+    changed_chars = []
+    for char_id, fields in snapshot["characters"].items():
+        char = db.session.get(Character, char_id)
+        if not char:
+            continue
+        if any(getattr(char, field) != value for field, value in fields.items()):
+            for field, value in fields.items():
+                setattr(char, field, copy.deepcopy(value))
+                if field in ("pa_stats", "bonuses", "stats", "weapons", "backpack"):
+                    flag_modified(char, field)
+            changed_chars.append(char)
+    db.session.commit()
+
+    for char in changed_chars:
+        emit_character_update(char)
+
+    socketio.emit("combat_update", combat_state)
+    emit_threats()
+
+    # Popup legati all'azione annullata: chiusi o riaperti
+    for attack_id in current_attacks - set(pending_attacks):
+        socketio.emit("incoming_attack_cancelled", {"attack_id": attack_id})
+    for sid, role in list(client_roles.items()):
+        emit_pending_attacks_to_sid(sid, role, client_character_ids.get(sid))
+
+    for result_id in current_results - set(pending_combat_results):
+        emit_to_masters("master_combat_result_cancelled", {"result_id": result_id})
+    for result_id in set(pending_combat_results) - current_results:
+        emit_to_masters("master_pending_combat_result", pending_combat_results[result_id])
+
+    for prompt_id in current_prompts - set(pending_surface_prompts):
+        emit_to_masters("surface_prompt_closed", {"id": prompt_id})
+    for prompt_id in set(pending_surface_prompts) - current_prompts:
+        emit_to_masters("surface_prompt", pending_surface_prompts[prompt_id])
+
+    socketio.emit("dice_result", {
+        "name": "SISTEMA",
+        "message": f"↩️ Il Master ha annullato: <b>{html.escape(snapshot['label'])}</b>",
+        "is_master_roll": True
+    })
+    emit_undo_status()
+
 @socketio.on("perform_table_action")
+@undoable("Azione")
 def handle_perform_table_action(data):
     data = data or {}
     char = db.session.get(Character, data.get("char_id"))
@@ -4015,6 +4175,7 @@ def handle_sync_fow(hex_list):
 
 # Gestione attacco limbs
 @socketio.on("sync_limbs")
+@undoable("Correzione frame arti")
 def handle_sync_limbs(data):
     if not is_master_request():
         return
@@ -4053,6 +4214,7 @@ def emit_pending_attacks_to_sid(sid, role, char_id):
             socketio.emit("incoming_attack", incoming_attack_payload(attack), to=sid)
 
 @socketio.on("declare_attack")
+@undoable("Attacco")
 def handle_declare_attack(data):
     data = data or {}
 
@@ -4249,6 +4411,7 @@ def handle_declare_attack(data):
     emit("incoming_attack", incoming_attack_payload(attack), broadcast=True)
 
 @socketio.on("resolve_reaction")
+@undoable("Reazione")
 def handle_resolve_reaction(data):
     data = data or {}
     attack_id = data.get("attack_id")
@@ -4398,6 +4561,7 @@ def handle_resolve_reaction(data):
     emit_to_masters("master_pending_combat_result", result)
 
 @socketio.on("master_publish_combat_result")
+@undoable("Risultato dello scontro")
 def handle_master_publish_combat_result(data):
     data = data or {}
 
@@ -4446,6 +4610,7 @@ def handle_master_publish_combat_result(data):
 
     if reaction == "Schivata":
         if def_roll >= att_roll:
+            float_text(defender, "Schivato!", "info")
             resolution_lines.append(
                 f"💨 <b>{html.escape(defender.name)}</b> schiva perfettamente l'attacco!"
             )
@@ -4464,6 +4629,7 @@ def handle_master_publish_combat_result(data):
 
     elif reaction == "Parata":
         if def_roll >= att_roll:
+            float_text(defender, "Parato!", "info")
             resolution_lines.append(
                 f"🛡️ <b>{html.escape(defender.name)}</b> para perfettamente! "
                 "L'attacco è respinto senza danni."
@@ -4478,6 +4644,7 @@ def handle_master_publish_combat_result(data):
             if defense_item and armor_hp > 0:
                 new_armor_hp = armor_hp - damage_to_armor
                 set_equipment_current_hp(defender, defense_slot, new_armor_hp)
+                float_text(defender, f"🛡️ -{damage_to_armor}", "info")
                 resolution_lines.append(
                     f"🛡️ <b>{html.escape(str(defense_item.get('name', 'Equipaggiamento')))}</b> "
                     f"assorbe <b>{damage_to_armor}</b> danni "
@@ -4547,6 +4714,7 @@ def handle_master_publish_combat_result(data):
     pending_combat_results.pop(result_id, None)
 
 @socketio.on("master_discard_combat_result")
+@undoable("Scarto del risultato")
 def handle_master_discard_combat_result(data):
     data = data or {}
 

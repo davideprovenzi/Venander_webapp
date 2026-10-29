@@ -7378,6 +7378,13 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
 // ==========================================
 let pendingIncomingAttack = null;
 
+// Attacco annullato dal Master: il popup di reazione si chiude
+socket.on('incoming_attack_cancelled', (data) => {
+    if (pendingIncomingAttack?.attack_id !== data.attack_id) return;
+    pendingIncomingAttack = null;
+    document.getElementById('defense-modal').style.display = 'none';
+});
+
 socket.on('incoming_attack', (data) => {
 
     const myCharId =
@@ -7671,6 +7678,13 @@ document.getElementById('save-notes-btn')?.addEventListener('click', () => {
 });
 
 let pendingMasterCombatResult = null;
+
+// Risultato tolto da un "Annulla" del Master: si chiude la revisione
+socket.on('master_combat_result_cancelled', (data) => {
+    if (pendingMasterCombatResult?.result_id !== data.result_id) return;
+    pendingMasterCombatResult = null;
+    document.getElementById('master-combat-review').style.display = 'none';
+});
 
 socket.on(
     'master_pending_combat_result',

@@ -3284,3 +3284,45 @@ socket.on('npc_template_list', (templates) => {
     npcTemplates = Array.isArray(templates) ? templates : [];
     renderNpcTemplateSelect();
 });
+
+// ==========================================
+// ANNULLA ULTIMA AZIONE (SOLO MASTER)
+// ==========================================
+
+const undoBtn = document.getElementById('btn-master-undo');
+let undoLabel = null;
+
+socket.on('undo_status', (data) => {
+    undoLabel = data?.count ? data.label : null;
+    if (!undoBtn) return;
+    undoBtn.disabled = !undoLabel;
+    undoBtn.title = undoLabel ? `Annulla: ${undoLabel} (Ctrl+Z)` : 'Niente da annullare';
+});
+
+function undoLastAction() {
+    if (!isMaster || !undoLabel) return;
+    if (confirm(`Annullare l'ultima azione?\n${undoLabel}`)) socket.emit('undo_last_action');
+}
+
+undoBtn?.addEventListener('click', undoLastAction);
+
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undoLastAction();
+    }
+});
+
+// ==========================================
+// NUMERI FLUTTUANTI SULLE PEDINE
+// Danni (rosso), cure (verde), "Schivato!" e simili (giallo).
+// ==========================================
+
+const FLOATING_TEXT_MS = 1800;
+window.floatingTexts = [];
+
+socket.on('floating_text', (data) => {
+    window.floatingTexts.push({ ...data, start: performance.now() });
+    requestRender();
+});

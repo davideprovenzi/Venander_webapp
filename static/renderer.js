@@ -111,6 +111,46 @@ function drawLines() {
 }
 
 // ==========================================
+// NUMERI FLUTTUANTI
+// Salgono sopra la pedina e svaniscono; finché ce n'è uno si ridisegna.
+// ==========================================
+const FLOATING_TEXT_COLORS = { damage: '#e74c3c', heal: '#2ecc71', info: '#f1c40f' };
+
+function drawFloatingTexts() {
+    const now = performance.now();
+    window.floatingTexts = window.floatingTexts.filter(t => now - t.start < FLOATING_TEXT_MS);
+    if (!window.floatingTexts.length) return;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 20px Arial';
+    ctx.lineWidth = 4;
+
+    // Più scritte sulla stessa pedina si impilano
+    const stackByChar = {};
+
+    window.floatingTexts.forEach(t => {
+        const char = characters.find(c => c.id === t.char_id);
+        if (!char || (!isMaster && (char.is_hidden || char.is_invisible))) return;
+
+        const progress = (now - t.start) / FLOATING_TEXT_MS;
+        const stack = stackByChar[t.char_id] = (stackByChar[t.char_id] ?? -1) + 1;
+        const center = hexToPixel(char.x, char.y);
+        const y = center.y - HEX_SIZE - 10 - progress * 35 - stack * 22;
+
+        ctx.globalAlpha = 1 - progress * progress;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.strokeText(t.text, center.x, y);
+        ctx.fillStyle = FLOATING_TEXT_COLORS[t.kind] || '#fff';
+        ctx.fillText(t.text, center.x, y);
+    });
+
+    ctx.restore();
+    requestRender();
+}
+
+// ==========================================
 // AREE MINACCIATE (Minacciare)
 // ==========================================
 
@@ -1155,6 +1195,7 @@ function render() {
 
     // 4. Personaggi
     drawTokens();
+    drawFloatingTexts();
 
     // 5. Puntatori Laser Temporanei (Sempre in primissimo piano)
     drawLaserLines();

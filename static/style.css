@@ -2700,3 +2700,9 @@ body.player-mode #btn-toggle-notes {
     background: #95a5a6;
     cursor: not-allowed;
 }
+
+/* Annulla ultima azione: spento quando non c'è niente da annullare */
+.master-tool-btn.master-tool-undo:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
