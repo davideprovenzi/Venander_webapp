@@ -426,7 +426,9 @@ def get_public_char_data(char):
         "token_url": char.token_url,
         "lore": char.lore,
         "is_hidden": char.is_hidden,
-        "is_invisible": char.is_invisible
+        "is_invisible": char.is_invisible,
+        # Gli HP restano segreti: ai giocatori basta sapere se è a terra
+        "is_defeated": (char.hp_current or 0) <= 0
     }
 
 
@@ -985,6 +987,8 @@ def handle_register_session_role(data):
     # Gli handout del wiki dipendono dal personaggio scelto.
     if previous_role != role or previous_char_id != char_id:
         emit_wiki_list_to_sid(request.sid, role)
+        # Attacchi ancora in attesa di reazione per questo personaggio
+        emit_pending_attacks_to_sid(request.sid, role, char_id)
 
     # Il Master riceve anche le minacce degli NPC, le scene e i modelli NPC.
     if previous_role != role:
@@ -3987,6 +3991,36 @@ def handle_sync_limbs(data):
     combat_state["players_limbs"][str(data["char_id"])] = data["limbs"]
     emit("sync_limbs", data, broadcast=True)
 
+# Arto con cui si attacca, deciso dallo slot dell'arma (uguale a getSlotCombatLimb in ui.js).
+# Cintura, petto, schiena ecc. non sono legati a un arto: lì sceglie il giocatore.
+SLOT_COMBAT_LIMBS = {
+    "mano_dx": "bd", "guanto_dx": "bd", "avambr_dx": "bd", "spalla_dx": "bd",
+    "mano_sx": "bs", "guanto_sx": "bs", "avambr_sx": "bs", "spalla_sx": "bs",
+    "stivale_dx": "gd", "stivale_sx": "gs"
+}
+UNARMED_LIMBS = {"pugno dx": "bd", "pugno sx": "bs"}
+
+# Al difensore mandiamo solo i dati necessari alla reazione, non il danno già calcolato.
+INCOMING_ATTACK_FIELDS = (
+    "attack_id", "attacker_id", "attacker_name", "defender_id", "defender_name",
+    "weapon", "speed", "compendium_id", "source_slot", "damage_formula", "damage_type",
+    "range", "distance", "activation_mode", "area_shape"
+)
+
+def incoming_attack_payload(attack):
+    return {field: attack.get(field) for field in INCOMING_ATTACK_FIELDS}
+
+def emit_pending_attacks_to_sid(sid, role, char_id):
+    """Chi si collega (o sceglie il personaggio) dopo l'attacco può comunque reagire."""
+    for attack in list(pending_attacks.values()):
+        defender = db.session.get(Character, attack["defender_id"])
+        if not defender:
+            continue
+        is_defender = role == "player" and char_id == defender.id
+        is_npc_for_master = role == "master" and defender.role == "npc"
+        if is_defender or is_npc_for_master:
+            socketio.emit("incoming_attack", incoming_attack_payload(attack), to=sid)
+
 @socketio.on("declare_attack")
 def handle_declare_attack(data):
     data = data or {}
@@ -3998,6 +4032,10 @@ def handle_declare_attack(data):
         return
 
     if not controls_character(attacker) or not is_players_turn(attacker):
+        return
+
+    # Un giocatore non può colpire ciò che non vede (nascosto o invisibile)
+    if not is_master_request() and defender.role == "npc" and (defender.is_hidden or defender.is_invisible):
         return
 
     attack_limb = str(data.get("limb", "bd"))
@@ -4016,6 +4054,11 @@ def handle_declare_attack(data):
         compendium_id=compendium_id,
         weapon_name=requested_name
     )
+
+    # Un'arma su una mano, un guanto, un avambraccio... si usa con quell'arto
+    weapon_limb = UNARMED_LIMBS.get(requested_name.casefold()) or SLOT_COMBAT_LIMBS.get(equipped_slot or source_slot)
+    if weapon_limb:
+        attack_limb = weapon_limb
 
     # Se il client dichiara uno slot/id del compendio, l'oggetto deve essere davvero equipaggiato.
     if not is_unarmed and (source_slot or compendium_id) and not equipped_item:
@@ -4172,26 +4215,7 @@ def handle_declare_attack(data):
         broadcast=True
     )
 
-    # Al difensore mandiamo solo i dati necessari alla reazione, non il danno già calcolato.
-    incoming_attack = {
-        "attack_id": attack_id,
-        "attacker_id": attacker.id,
-        "attacker_name": attacker.name,
-        "defender_id": defender.id,
-        "defender_name": defender.name,
-        "weapon": weapon_name,
-        "speed": server_speed,
-        "compendium_id": compendium_id,
-        "source_slot": equipped_slot or source_slot,
-        "damage_formula": damage_data.get("formula"),
-        "damage_type": damage_data.get("type"),
-        "range": attack_range,
-        "distance": distance,
-        "activation_mode": activation.get("mode"),
-        "area_shape": area.get("shape")
-    }
-
-    emit("incoming_attack", incoming_attack, broadcast=True)
+    emit("incoming_attack", incoming_attack_payload(attack), broadcast=True)
 
 @socketio.on("resolve_reaction")
 def handle_resolve_reaction(data):
@@ -4548,5 +4572,9 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=5000,
         debug=True,
-        use_reloader=False
+        use_reloader=False,
+        # Il debugger interattivo stampa un traceback ogni volta che un
+        # browser chiude la connessione (ricarica, scheda chiusa...): rumore.
+        # Gli errori veri vengono comunque stampati.
+        use_debugger=False
     )

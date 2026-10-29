@@ -5909,7 +5909,26 @@ function getCombatDistance(
     );
 }
 
+// Un'arma legata a un arto (mano, guanto, avambraccio, spalla, stivale)
+// si usa solo con i frame di quell'arto: il selettore viene bloccato.
+// Cintura, petto, schiena ecc. lasciano scegliere liberamente.
+function syncAttackLimb() {
+    const limbSelect = document.getElementById('attack-limb');
+    const option = document.getElementById('attack-weapon')?.selectedOptions[0];
+    if (!limbSelect) return;
+
+    const weaponLimb = option?.dataset.limb || '';
+    if (weaponLimb) limbSelect.value = weaponLimb;
+
+    limbSelect.disabled = !!weaponLimb;
+    limbSelect.title = weaponLimb
+        ? "L'arma si usa con l'arto su cui è equipaggiata"
+        : '';
+}
+
 function updateAttackWeaponInfo() {
+
+    syncAttackLimb();
 
     const actionSelect =
         document.getElementById(
@@ -6654,10 +6673,19 @@ window.updateCombatActionPanel = function() {
 
         characters.forEach(char => {
 
+            // Ai giocatori non arrivano gli HP degli NPC, solo se sono a terra
+            const isDown = char.hp_current !== undefined
+                ? char.hp_current <= 0
+                : !!char.is_defeated;
+
+            // Un giocatore non può bersagliare NPC invisibili o fuori vista (muri, fumo)
+            const visibleToMe = isMaster || (!char.is_invisible && isNpcVisibleToPlayers(char));
+
             if (
                 char.id !== activeCharId &&
-                char.hp_current > 0 &&
-                !char.is_hidden
+                !isDown &&
+                !char.is_hidden &&
+                visibleToMe
             ) {
 
                 const option =
@@ -7007,35 +7035,6 @@ window.updateCombatActionPanel = function() {
     }
 
     // ==========================================
-    // ARTO AUTOMATICO
-    // ==========================================
-
-    const selectedOption =
-        weaponSelect.selectedOptions[0];
-
-    if (selectedOption) {
-
-        const autoLimb =
-            selectedOption.dataset.limb;
-
-        // Solo se il gadget è chiaramente
-        // associato a un singolo arto.
-        if (autoLimb) {
-
-            const limbSelect =
-                document.getElementById(
-                    'attack-limb'
-                );
-
-            if (limbSelect) {
-
-                limbSelect.value =
-                    autoLimb;
-            }
-        }
-    }
-
-    // ==========================================
     // AGGIORNA VELOCITÀ / RANGE /
     // DISTANZA / DANNO
     // ==========================================
@@ -7073,31 +7072,8 @@ document.getElementById('attack-speed')?.addEventListener('input', (e) => {
 });
 
 // Seleziona automaticamente l'arto (bd/bs) in base all'arma scelta
-document.getElementById('attack-weapon')?.addEventListener('change',(e) => {
-
-        const option =
-            e.target.selectedOptions[0];
-
-        if (!option) return;
-
-        const limb =
-            option.dataset.limb;
-
-        // Solo gli oggetti legati chiaramente
-        // a un arto lo selezionano automaticamente.
-        //
-        // Cintura, petto, schiena ecc.
-        // lasciano scegliere manualmente.
-        if (limb) {
-
-            document.getElementById(
-                'attack-limb'
-            ).value = limb;
-        }
-
-        updateAttackWeaponInfo();
-    }
-);
+// L'arto dell'arma lo imposta (e blocca) syncAttackLimb
+document.getElementById('attack-weapon')?.addEventListener('change', updateAttackWeaponInfo);
 
 document.getElementById(
     'attack-target'
