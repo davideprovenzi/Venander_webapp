@@ -1134,19 +1134,6 @@
         </div>
     </div>
 
-    <!-- POP-UP SCELTA MOVIMENTO -->
-    <div id="move-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border:3px solid #2980b9; border-radius:8px; z-index:2000; text-align:center; box-shadow: 0 0 20px rgba(0,0,0,0.6);">
-        <h3 style="margin-top:0; color:#2c3e50;">Spostamento Tattico</h3>
-        <p id="move-modal-text" style="font-size:15px; font-weight:bold; margin-bottom:15px;"></p>
-
-        <div style="display:flex; flex-direction:column; gap:8px;">
-            <button class="move-btn" data-cost="20" data-name="Camminata" style="padding:10px; background:#2980b9; color:white; border:none; border-radius:5px; cursor:pointer;">Camminata (20 Frame / passo)</button>
-            <button class="move-btn" data-cost="15" data-name="Corsa" style="padding:10px; background:#27ae60; color:white; border:none; border-radius:5px; cursor:pointer;">Corsa (15 Frame / passo)</button>
-            <button class="move-btn" data-cost="25" data-name="Furtivo" style="padding:10px; background:#8e44ad; color:white; border:none; border-radius:5px; cursor:pointer;">Passo Furtivo (25 Frame / passo)</button>
-        </div>
-
-        <button onclick="document.getElementById('move-modal').style.display='none'; window.pendingMove = null; render();" style="margin-top:15px; background:#7f8c8d; color:white; border:none; padding:8px 15px; border-radius:3px; cursor:pointer;">Annulla Azione</button>
-    </div>
     <!-- PANNELLO AZIONE COMBATTIMENTO -->
     <div id="combat-action-panel" style="display: none; position: absolute; bottom: 40px; right: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #e74c3c; border-radius: 8px; padding: 15px; color: white; width: 280px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
 
@@ -1158,6 +1145,20 @@
 
         <div id="action-content" style="display: block;">
             <button id="btn-end-interrupt" style="display: none; width: 100%; margin-bottom: 10px; padding: 9px; background: #8e44ad; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;"></button>
+
+            <!-- MOVIMENTO: solo dopo aver premuto "Muovi" (o M) il clic sulla mappa sposta la pedina -->
+            <div id="combat-move-section" class="combat-move">
+                <div class="combat-move-head">
+                    <span>🦶 Movimento</span>
+                    <span id="combat-move-frames">120 frame</span>
+                </div>
+                <div class="combat-move-paces">
+                    <button type="button" class="move-pace" data-pace="Camminata">🚶 Camminata<small>20 / passo</small></button>
+                    <button type="button" class="move-pace" data-pace="Corsa">🏃 Corsa<small>15 / passo</small></button>
+                    <button type="button" class="move-pace" data-pace="Furtivo">🥷 Furtivo<small>25 / passo</small></button>
+                </div>
+                <button id="btn-move-mode" type="button" class="combat-move-btn">🦶 Muovi (M)</button>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; font-size: 11px; text-align: center;">
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Dx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bd">60</strong>/60</div>
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Sx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bs">60</strong>/60</div>
@@ -1225,10 +1226,14 @@
 
                 <div id="table-action-limbs" class="limb-picker"></div>
 
-                <select id="table-action-radius" style="display: none; width: 100%; padding: 5px; margin-bottom: 8px; border-radius: 3px; border: 1px solid #7f8c8d; background: #34495e; color: white;">
-                    <option value="1">🎯 Raggio 1 esagono</option>
-                    <option value="2">🎯 Raggio 2 esagoni</option>
-                </select>
+                <!-- Minacciare: scelta degli esagoni sulla mappa -->
+                <div id="threat-placement-bar" class="threat-placement-bar">
+                    <div id="threat-placement-text"></div>
+                    <div class="threat-placement-actions">
+                        <button id="threat-placement-cancel" type="button">Annulla</button>
+                        <button id="threat-placement-confirm" type="button">✅ Conferma minaccia</button>
+                    </div>
+                </div>
 
                 <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
                     ⚡ Velocità: <strong id="table-action-speed" style="color: #f1c40f; font-size: 14px;">-</strong>

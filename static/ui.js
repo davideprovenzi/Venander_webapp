@@ -3061,10 +3061,6 @@ function updateTableActionInfo() {
     document.getElementById('table-action-speed').innerText = entry ? entry.speed : '-';
     document.getElementById('table-action-frames').innerText = entry ? entry.frames : '-';
 
-    // Solo Minacciare chiede il raggio dell'area
-    const radiusSelect = document.getElementById('table-action-radius');
-    if (radiusSelect) radiusSelect.style.display = entry?.special === 'threat' ? 'block' : 'none';
-
     // Proposta di arti: il movimento parte dalle gambe, il resto dalle braccia
     tableActionLimbPicker.update({
         cost: entry ? Number(entry.frames) || 0 : 0,
@@ -3094,6 +3090,155 @@ document.getElementById('table-action-select')?.addEventListener('change', updat
 
 document.getElementById('btn-end-interrupt')?.addEventListener('click', () => socket.emit('end_interrupt'));
 
+// ==========================================
+// MINACCIARE: SCELTA DEGLI ESAGONI
+// Si cliccano gli esagoni uno a uno (di nuovo per toglierli), solo entro
+// la portata dell'arma. I frame si pagano alla conferma.
+// ==========================================
+
+let pendingThreatShares = null;
+
+function updateThreatPlacementBar() {
+    const bar = document.getElementById('threat-placement-bar');
+    const placement = window.threatPlacement;
+    if (!bar) return;
+
+    bar.classList.toggle('open', !!placement);
+    if (!placement) return;
+
+    document.getElementById('threat-placement-text').textContent =
+        `⚠️ Esagoni scelti: ${placement.hexes.size} · portata ${placement.reach} m`;
+    document.getElementById('threat-placement-confirm').disabled = placement.hexes.size === 0;
+}
+
+function toggleThreatHex(col, row) {
+    const placement = window.threatPlacement;
+    if (!placement) return;
+
+    if (hexDistance(placement.origin.x, placement.origin.y, col, row) > placement.reach) {
+        statusBar.innerText = `⛔ Fuori portata: la tua arma arriva a ${placement.reach} m.`;
+        return;
+    }
+
+    const key = `${col},${row}`;
+    if (placement.hexes.has(key)) placement.hexes.delete(key);
+    else placement.hexes.add(key);
+
+    updateThreatPlacementBar();
+    requestRender();
+}
+
+function cancelThreatPlacement() {
+    window.threatPlacement = null;
+    pendingThreatShares = null;
+    statusBar.innerText = 'Minaccia annullata.';
+    updateThreatPlacementBar();
+    requestRender();
+}
+
+function confirmThreatPlacement() {
+    const placement = window.threatPlacement;
+    if (!placement || !placement.hexes.size) return;
+
+    socket.emit('declare_threat', {
+        char_id: placement.char_id,
+        limb_shares: placement.limb_shares,
+        hexes: [...placement.hexes]
+    });
+
+    window.threatPlacement = null;
+    statusBar.innerText = '';
+    updateThreatPlacementBar();
+    requestRender();
+}
+
+socket.on('threat_reach', (data) => {
+    if (!pendingThreatShares || pendingThreatShares.char_id !== data.char_id) return;
+
+    window.threatPlacement = {
+        ...pendingThreatShares,
+        reach: Math.floor(data.reach),
+        origin: { x: data.x, y: data.y },
+        hexes: new Set()
+    };
+    pendingThreatShares = null;
+
+    setMoveMode(false);
+    statusBar.innerText = "🎯 Clicca gli esagoni da minacciare (di nuovo per toglierli). Invio conferma, Esc annulla.";
+    updateThreatPlacementBar();
+    requestRender();
+});
+
+document.getElementById('threat-placement-confirm')?.addEventListener('click', confirmThreatPlacement);
+document.getElementById('threat-placement-cancel')?.addEventListener('click', cancelThreatPlacement);
+
+// ==========================================
+// MOVIMENTO IN COMBATTIMENTO
+// L'andatura si sceglie qui; "Muovi" (o M) attiva un solo spostamento.
+// ==========================================
+
+// Frame per passo: devono coincidere con MOVE_FRAME_COSTS in app.py
+const MOVE_PACES = { Camminata: 20, Corsa: 15, Furtivo: 25 };
+window.moveMode = false;
+window.movePace = 'Camminata';
+
+// Chi si muove: il giocatore nel suo turno, il Master con il combattente di turno
+function getMovingCombatant() {
+    if (!combatState.is_active || combatState.interrupts?.length) return null;
+
+    const actingId = getActingCombatantId();
+    const myId = parseInt(userSelect?.value);
+    if (!isMaster && actingId !== myId) return null;
+
+    return characters.find(c => c.id === actingId) || null;
+}
+
+function setMoveMode(enabled) {
+    window.moveMode = !!enabled && !!getMovingCombatant();
+    document.getElementById('btn-move-mode')?.classList.toggle('active', window.moveMode);
+    if (window.moveMode) {
+        statusBar.innerText = `🦶 ${window.movePace}: clicca la destinazione (Esc per annullare).`;
+    }
+    requestRender();
+}
+
+function updateMoveSection() {
+    const section = document.getElementById('combat-move-section');
+    const mover = getMovingCombatant();
+    if (!section) return;
+
+    section.style.display = mover ? 'block' : 'none';
+    if (!mover) {
+        window.moveMode = false;
+        return;
+    }
+
+    const frames = Number(combatState.players_pa?.[mover.id] ?? 120);
+    document.getElementById('combat-move-frames').textContent = `${frames} frame`;
+    document.querySelectorAll('.move-pace').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.pace === window.movePace);
+    });
+    document.getElementById('btn-move-mode')?.classList.toggle('active', window.moveMode);
+}
+
+document.querySelectorAll('.move-pace').forEach(btn => btn.addEventListener('click', () => {
+    window.movePace = btn.dataset.pace;
+    updateMoveSection();
+    if (window.moveMode) setMoveMode(true);
+}));
+
+document.getElementById('btn-move-mode')?.addEventListener('click', () => setMoveMode(!window.moveMode));
+
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+    if ((e.key === 'm' || e.key === 'M') && getMovingCombatant()) {
+        setMoveMode(!window.moveMode);
+    } else if (e.key === 'Enter' && window.threatPlacement) {
+        confirmThreatPlacement();
+    }
+});
+
 document.getElementById('btn-execute-table-action')?.addEventListener('click', () => {
     const entry = getSelectedTableAction();
 
@@ -3119,14 +3264,10 @@ document.getElementById('btn-execute-table-action')?.addEventListener('click', (
         return;
     }
 
-    // Minacciare: prima si sceglie il centro dell'area sulla mappa (vedi control.js)
+    // Minacciare: prima si scelgono gli esagoni sulla mappa (la portata la decide il server)
     if (entry.special === 'threat') {
-        window.threatPlacement = {
-            char_id: actorId,
-            radius: parseInt(document.getElementById('table-action-radius')?.value) || 1,
-            limb_shares: shares
-        };
-        statusBar.innerText = "🎯 Clicca il centro dell'area da minacciare (Esc per annullare).";
+        pendingThreatShares = { char_id: actorId, limb_shares: shares };
+        socket.emit('request_threat_reach', { char_id: actorId });
         return;
     }
 
@@ -6620,6 +6761,7 @@ window.updateCombatActionPanel = function() {
     // Categorie e azioni della tabella (una volta sola, a compendio caricato)
     populateTableActionSection();
     refreshTableActionLimbs();
+    updateMoveSection();
 
     // ==========================================
     // FRAME ARTI

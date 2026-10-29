@@ -122,21 +122,21 @@ function traceHex(centerX, centerY) {
     ctx.closePath();
 }
 
-// Path di tutti gli esagoni entro il raggio dal centro
-function traceHexArea(col, row, radius) {
+// Path di un insieme di esagoni ("col,row")
+function traceHexKeys(keys) {
     ctx.beginPath();
-    for (let r = row - radius; r <= row + radius; r++) {
-        for (let c = col - radius - 1; c <= col + radius + 1; c++) {
-            if (hexDistance(col, row, c, r) > radius) continue;
-            const center = hexToPixel(c, r);
-            traceHex(center.x, center.y);
-        }
-    }
+    keys.forEach(key => {
+        const [col, row] = key.split(',').map(Number);
+        const center = hexToPixel(col, row);
+        traceHex(center.x, center.y);
+    });
 }
 
-function drawThreatArea(threat, fill, stroke, label, dashed) {
+function drawHexGroup(keys, fill, stroke, label, dashed) {
+    if (!keys.length) return;
+
     ctx.save();
-    traceHexArea(threat.x, threat.y, threat.radius);
+    traceHexKeys(keys);
     ctx.fillStyle = fill;
     ctx.fill();
     ctx.strokeStyle = stroke;
@@ -145,16 +145,20 @@ function drawThreatArea(threat, fill, stroke, label, dashed) {
     ctx.stroke();
 
     if (label) {
-        const center = hexToPixel(threat.x, threat.y);
+        // Etichetta sopra l'esagono più in alto del gruppo
+        const top = keys
+            .map(key => key.split(',').map(Number))
+            .map(([col, row]) => hexToPixel(col, row))
+            .sort((a, b) => a.y - b.y)[0];
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.lineWidth = 3;
         ctx.setLineDash([]);
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.strokeText(label, center.x, center.y - HEX_SIZE * 0.9);
+        ctx.strokeText(label, top.x, top.y - HEX_SIZE * 0.9);
         ctx.fillStyle = '#fff';
-        ctx.fillText(label, center.x, center.y - HEX_SIZE * 0.9);
+        ctx.fillText(label, top.x, top.y - HEX_SIZE * 0.9);
     }
     ctx.restore();
 }
@@ -165,8 +169,8 @@ function drawThreats() {
     combatThreats.forEach(threat => {
         // Arancione per i giocatori, viola per gli NPC (che vede solo il Master)
         const isNpc = threat.owner_role === 'npc';
-        drawThreatArea(
-            threat,
+        drawHexGroup(
+            threat.hexes || [],
             isNpc ? 'rgba(142, 68, 173, 0.22)' : 'rgba(230, 126, 34, 0.22)',
             isNpc ? '#8e44ad' : '#e67e22',
             `⚠️ ${threat.char_name}`,
@@ -174,15 +178,12 @@ function drawThreats() {
         );
     });
 
-    // Anteprima mentre si sceglie il centro dell'area
-    if (window.threatPlacement && window.hoveredHex) {
-        drawThreatArea(
-            { x: window.hoveredHex.col, y: window.hoveredHex.row, radius: window.threatPlacement.radius },
-            'rgba(241, 196, 15, 0.18)',
-            '#f1c40f',
-            '',
-            true
-        );
+    // Scelta in corso: portata dell'arma in chiaro, esagoni scelti in giallo
+    const placement = window.threatPlacement;
+    if (placement) {
+        const reachable = getHexesInRadius(placement.origin.x, placement.origin.y, placement.reach);
+        drawHexGroup(reachable, 'rgba(255, 255, 255, 0.08)', 'rgba(241, 196, 15, 0.35)', '', true);
+        drawHexGroup([...placement.hexes], 'rgba(241, 196, 15, 0.35)', '#f1c40f', '', false);
     }
 }
 
@@ -602,63 +603,58 @@ function drawLaserLines() {
     ctx.restore();
 }
 
+// Anteprima del movimento: solo in modalità "Muovi". Segue il percorso
+// esagono per esagono e mostra il costo; rossa se non si può fare.
 function drawMovementPath() {
-    if (!combatState.is_active) return;
-    const myCharId = parseInt(userSelect?.value);
-    const myChar = characters.find(c => c.id === myCharId);
+    if (!window.moveMode || !window.hoveredHex) return;
 
-    let isMyTurn = false;
-    if (combatState.turn_order && combatState.turn_order.length > 0) {
-        const currentActor = combatState.turn_order[combatState.current_index];
-        if (currentActor && currentActor.id === myCharId) isMyTurn = true;
-    }
+    const mover = getMovingCombatant();
+    if (!mover) return;
 
-    // --- NOVITÀ: Sceglie il bersaglio fisso se c'è un popup aperto, altrimenti segue il mouse ---
-    const targetHex = window.pendingMove ? { col: window.pendingMove.x, row: window.pendingMove.y } : window.hoveredHex;
+    const target = window.hoveredHex;
+    const dist = hexDistance(mover.x, mover.y, target.col, target.row);
+    if (dist === 0) return;
 
-    // --- NUOVO: Nascondi la linea se punta nella nebbia ---
-    if (!isMaster && window.fowEnabled && targetHex) {
-        const targetHexStr = `${targetHex.col},${targetHex.row}`;
-        if (!window.revealedHexes.has(targetHexStr)) return;
-    }
+    // Nella nebbia il giocatore non vede dove andrebbe
+    if (!isMaster && window.fowEnabled && !window.revealedHexes.has(`${target.col},${target.row}`)) return;
 
-    if (isMyTurn && myChar && targetHex) {
-        const dist = hexDistance(myChar.x, myChar.y, targetHex.col, targetHex.row);
-        if (dist > 0) {
-            const startPixel = hexToPixel(myChar.x, myChar.y);
-            const endPixel = hexToPixel(targetHex.col, targetHex.row);
+    const frames = Number(combatState.players_pa?.[mover.id] ?? 120);
+    const cost = movementFrameCost(mover.x, mover.y, target.col, target.row, MOVE_PACES[window.movePace]);
+    const blocked = cost > frames ||
+        pathCrossesWall(mover.x, mover.y, target.col, target.row) ||
+        isHexOccupied(target.col, target.row, mover.id);
+    const color = blocked ? '231, 76, 60' : '52, 152, 219';
 
-            // Disegna la linea tratteggiata blu
-            ctx.beginPath();
-            ctx.moveTo(startPixel.x, startPixel.y);
-            ctx.lineTo(endPixel.x, endPixel.y);
-            // Se la mossa è in sospeso (congelata), rendi la linea più marcata (opacità 1)
-            ctx.strokeStyle = window.pendingMove ? 'rgba(52, 152, 219, 1)' : 'rgba(52, 152, 219, 0.7)';
-            ctx.lineWidth = 4;
-            ctx.setLineDash([8, 8]);
-            ctx.stroke();
-            ctx.setLineDash([]);
+    const points = hexLine(mover.x, mover.y, target.col, target.row).map(h => hexToPixel(h.col, h.row));
 
-            // Evidenzia l'esagono di arrivo
-            ctx.beginPath();
-            ctx.arc(endPixel.x, endPixel.y, HEX_SIZE * 0.7, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(52, 152, 219, 0.4)';
-            ctx.fill();
-            ctx.strokeStyle = '#2980b9';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+    ctx.save();
+    ctx.beginPath();
+    points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+    ctx.strokeStyle = `rgba(${color}, 0.8)`;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([8, 8]);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-            // Scrivi i metri sulla linea
-            const midX = (startPixel.x + endPixel.x) / 2;
-            const midY = (startPixel.y + endPixel.y) / 2;
-            ctx.font = 'bold 16px Arial';
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#000000';
-            ctx.strokeText(`${dist}m`, midX, midY - 15);
-            ctx.fillStyle = '#3498db';
-            ctx.fillText(`${dist}m`, midX, midY - 15);
-        }
-    }
+    // Esagono di arrivo
+    const end = points[points.length - 1];
+    ctx.beginPath();
+    ctx.arc(end.x, end.y, HEX_SIZE * 0.7, 0, 2 * Math.PI);
+    ctx.fillStyle = `rgba(${color}, 0.35)`;
+    ctx.fill();
+    ctx.strokeStyle = `rgb(${color})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const label = `${dist} passi · ${cost} frame${blocked && cost > frames ? ` (hai ${frames})` : ''}`;
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#000';
+    ctx.strokeText(label, end.x, end.y - HEX_SIZE - 6);
+    ctx.fillStyle = `rgb(${color})`;
+    ctx.fillText(label, end.x, end.y - HEX_SIZE - 6);
+    ctx.restore();
 }
 
 // ==========================================

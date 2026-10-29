@@ -546,7 +546,7 @@ def find_threat_stop(mover, path):
     Restituisce (indice nel percorso, minacce scattate) oppure (None, []).
     """
     def inside(threat, hex_pos):
-        return hex_distance(hex_pos[0], hex_pos[1], threat["x"], threat["y"]) <= threat["radius"]
+        return f"{hex_pos[0]},{hex_pos[1]}" in threat["hexes"]
 
     enemy_threats = [
         t for t in combat_threats
@@ -3761,7 +3761,31 @@ def handle_sync_pa(data):
     emit("sync_pa", data, broadcast=True)
 
 THREAT_ACTION = "Minacciare un'area"
-THREAT_MAX_RADIUS = 2
+
+def threat_reach(char):
+    """Portata per Minacciare: la gittata più lunga tra le armi equipaggiate (almeno 1)."""
+    best = 1.0
+    stats = char.stats or {}
+    equipped = list((stats.get("equipped") or {}).values()) + list((stats.get("equipped_gadgets") or {}).values())
+
+    for item in equipped:
+        if not isinstance(item, dict):
+            continue
+        comp = item.get("custom_definition") if isinstance(item.get("custom_definition"), dict) else get_compendium_item(
+            compendium_id=item.get("compendium_id"), name=item.get("name")
+        )
+        attack_range = compendium_attack_range(comp)
+        if attack_range is not None:
+            best = max(best, attack_range)
+
+    return best
+
+@socketio.on("request_threat_reach")
+def handle_request_threat_reach(data):
+    char = db.session.get(Character, (data or {}).get("char_id"))
+    if not controls_character(char):
+        return
+    emit("threat_reach", {"char_id": char.id, "reach": threat_reach(char), "x": char.pos_x, "y": char.pos_y})
 
 def start_threat_interrupts(intruder, threats):
     for threat in threats:
@@ -3797,11 +3821,20 @@ def handle_declare_threat(data):
     if not combat_state.get("is_active") or not controls_character(char) or not is_players_turn(char):
         return
 
-    try:
-        center_x = int(data.get("x"))
-        center_y = int(data.get("y"))
-        radius = max(1, min(THREAT_MAX_RADIUS, int(data.get("radius", 1))))
-    except (TypeError, ValueError):
+    # Esagoni scelti uno a uno, solo entro la portata dell'arma
+    reach = threat_reach(char)
+    hexes = []
+    for raw in data.get("hexes") or []:
+        match = re.match(r"^(-?\d+),(-?\d+)$", str(raw))
+        if not match:
+            continue
+        col, row = int(match.group(1)), int(match.group(2))
+        key = f"{col},{row}"
+        if key not in hexes and hex_distance(char.pos_x, char.pos_y, col, row) <= reach:
+            hexes.append(key)
+
+    if not hexes:
+        emit_combat_error(f"Scegli almeno un esagono entro la portata della tua arma ({format_number(reach)} m).")
         return
 
     rule = get_action_speed_rule(THREAT_ACTION)
@@ -3820,16 +3853,14 @@ def handle_declare_threat(data):
         "char_id": char.id,
         "char_name": char.name,
         "owner_role": char.role,
-        "x": center_x,
-        "y": center_y,
-        "radius": radius
+        "hexes": hexes
     })
     emit_threats()
 
     # Le minacce degli NPC non si annunciano ai giocatori
     message = {
         "name": char.name,
-        "message": f"minaccia un'area (raggio {radius}) spendendo <b>{cost} Frame</b>.",
+        "message": f"minaccia {len(hexes)} esagoni spendendo <b>{cost} Frame</b>.",
         "is_master_roll": False
     }
     if char.role == "npc":

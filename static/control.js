@@ -24,8 +24,12 @@ window.addEventListener('keydown', e => {
         }
 
         if (window.threatPlacement) {
-            window.threatPlacement = null;
-            if (typeof statusBar !== 'undefined') statusBar.innerText = 'Minaccia annullata.';
+            cancelThreatPlacement();
+            changed = true;
+        }
+
+        if (window.moveMode) {
+            setMoveMode(false);
             changed = true;
         }
 
@@ -89,13 +93,17 @@ canvas.addEventListener('click', (event) => {
     // Col pennello del terreno il clic dipinge (vedi terrain.js), non seleziona
     if (window.terrainBrush) return;
 
-    // Minacciare: il clic sceglie il centro dell'area
+    // Minacciare: ogni clic aggiunge o toglie un esagono (vedi ui.js)
     if (window.threatPlacement) {
         const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
-        socket.emit('declare_threat', { ...window.threatPlacement, x: threatHex.col, y: threatHex.row });
-        window.threatPlacement = null;
-        statusBar.innerText = '';
-        requestRender();
+        toggleThreatHex(threatHex.col, threatHex.row);
+        return;
+    }
+
+    // Modalità movimento del combattimento ("Muovi" o tasto M)
+    if (window.moveMode) {
+        const moveHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        performCombatMove(moveHex.col, moveHex.row);
         return;
     }
 
@@ -211,117 +219,13 @@ canvas.addEventListener('click', (event) => {
             return;
         }
 
-        // SE SIAMO IN COMBATTIMENTO E TOCCA A ME
-        if (combatState.is_active && isMyTurn && myChar) {
-            const dist = hexDistance(myChar.x, myChar.y, gridX, gridY);
-            if (dist === 0) return; // Ha cliccato dove si trova già
-
-            // Salviamo le coordinate bersaglio e prepariamo il popup
-            window.pendingMove = { x: gridX, y: gridY, dist: dist, charId: currentCharacterId };
-            document.getElementById('move-modal-text').innerText = `Distanza bersaglio: ${dist} passi.\nScegli la tua andatura:`;
-
-            // --- NUOVO: Calcola il costo esatto in FRAME e aggiorna i bottoni ---
-            document.querySelectorAll('.move-btn').forEach(btn => {
-                const framesPerStep = parseInt(btn.getAttribute('data-cost')) || 0;
-                const modeName = btn.getAttribute('data-name') || "Movimento";
-
-                // Frame richiesti: costo del passo per ogni esagono (doppio su terreno difficile e ghiaccio)
-                const requiredFrames = movementFrameCost(myChar.x, myChar.y, gridX, gridY, framesPerStep);
-
-                // Usiamo currentPaMov come contenitore per i 120 frame di movimento
-                let currentFrames = parseInt(window.currentPaMov) || 0;
-
-                // 1. Aggiorna il TESTO del bottone e la TRASPARENZA prima di cliccare
-                btn.innerText = `${modeName} (Costo: ${requiredFrames} Frame)`;
-
-                if (requiredFrames > currentFrames) {
-                    btn.style.opacity = '0.3';
-                    btn.style.cursor = 'not-allowed';
-                    btn.onclick = null; // Impedisce il click se non hai abbastanza frame
-                } else {
-                    btn.style.opacity = '1';
-                    btn.style.cursor = 'pointer';
-
-                    // 2. Azione al CLICK (blindata contro collisioni e desincronizzazioni)
-                    btn.onclick = () => {
-                        if (!window.pendingMove) return;
-
-                        const pending = { ...window.pendingMove };
-
-                        // Nel tempo trascorso con la modale aperta un'altra pedina
-                        // potrebbe aver occupato la casella.
-                        if (isHexOccupied(pending.x, pending.y, pending.charId)) {
-                            document.getElementById('move-modal').style.display = 'none';
-                            window.pendingMove = null;
-                            statusBar.innerText = "⛔ La casella è stata occupata da un'altra pedina.";
-                            requestRender();
-                            return;
-                        }
-
-                        const framesBefore = parseInt(window.currentPaMov) || 0;
-
-                        if (requiredFrames > framesBefore) {
-                            statusBar.innerText = "⛔ Non hai abbastanza Frame di movimento.";
-                            return;
-                        }
-
-                        const framesAfter = framesBefore - requiredFrames;
-                        const moveId = `${Date.now()}-${Math.random()}`;
-
-                        const moveData = {
-                            char_id: pending.charId,
-                            target_x: pending.x,
-                            target_y: pending.y,
-                            move_id: moveId,
-                            // Il server ricalcola il costo in frame dall'andatura
-                            mode: modeName
-                        };
-
-                        const movingChar = characters.find(
-                            c => Number(c.id) === Number(pending.charId)
-                        );
-
-                        if (!movingChar) {
-                            window.pendingMove = null;
-                            document.getElementById('move-modal').style.display = 'none';
-                            return;
-                        }
-
-                        window.pendingLocalMoves[pending.charId] = {
-                            moveId,
-                            x: pending.x,
-                            y: pending.y,
-                            fromX: movingChar.x,
-                            fromY: movingChar.y,
-                            combat: true,
-                            paBefore: framesBefore,
-                            paAfter: framesAfter
-                        };
-
-                        // Aggiornamento locale immediato. I Frame vengono mostrati
-                        // subito, ma saranno sincronizzati al server solo dopo
-                        // la conferma del movimento.
-                        movingChar.x = moveData.target_x;
-                        movingChar.y = moveData.target_y;
-                        window.currentPaMov = framesAfter;
-                        window.playersPa[pending.charId] = framesAfter;
-
-                        const paEl = document.getElementById('ui-pa-mov');
-                        if (paEl) paEl.innerText = framesAfter;
-
-                        document.getElementById('move-modal').style.display = 'none';
-                        window.pendingMove = null;
-
-                        requestRender();
-
-                        // Il server confermerà o rifiuterà la posizione.
-                        socket.emit('declare_move', moveData);
-                    };
-                }
-            });
-
-            document.getElementById('move-modal').style.display = 'block';
-            return; // Ferma il codice qui, non si muove finché non clicca un pulsante!
+        // In combattimento ci si muove solo con "Muovi" (o M): un clic sulla
+        // mappa non sposta più la pedina per sbaglio
+        if (combatState.is_active) {
+            statusBar.innerText = isMyTurn
+                ? "🦶 Premi «Muovi» (o il tasto M) nel pannello del turno per spostarti."
+                : "⏳ Non è il tuo turno.";
+            return;
         }
 
         // Se non siamo in combattimento, muoviti normalmente
@@ -651,3 +555,74 @@ canvas.addEventListener('pointerleave', () => {
     isLaserDrawing = false;
     drawingPointerLeave();
 });
+
+// ==========================================
+// MOVIMENTO IN COMBATTIMENTO
+// Si attiva con "Muovi" (o M): il clic sceglie la destinazione, l'andatura
+// è quella scelta nel pannello. Il server ricalcola e scala i frame.
+// ==========================================
+function performCombatMove(gridX, gridY) {
+    const mover = getMovingCombatant();
+    if (!mover) {
+        setMoveMode(false);
+        return;
+    }
+
+    if (combatState.interrupts?.length) {
+        statusBar.innerText = "⚡ Interruzione in corso: aspetta che finisca.";
+        return;
+    }
+    if (Number(mover.x) === gridX && Number(mover.y) === gridY) return;
+    if (window.pendingLocalMoves?.[mover.id]) {
+        statusBar.innerText = "⏳ Movimento in sincronizzazione...";
+        return;
+    }
+    if (isHexOccupied(gridX, gridY, mover.id)) {
+        statusBar.innerText = "⛔ Questa casella è già occupata.";
+        return;
+    }
+    if (!isMaster && window.fowEnabled && !window.revealedHexes.has(`${gridX},${gridY}`)) {
+        statusBar.innerText = "☁️ L'area è avvolta dalla nebbia: avvicinati prima di camminarci.";
+        return;
+    }
+    if (pathCrossesWall(mover.x, mover.y, gridX, gridY)) {
+        statusBar.innerText = "⛔ Un muro blocca il percorso: aggiralo.";
+        return;
+    }
+
+    const frames = Number(combatState.players_pa?.[mover.id] ?? 120);
+    const cost = movementFrameCost(mover.x, mover.y, gridX, gridY, MOVE_PACES[window.movePace]);
+    if (cost > frames) {
+        statusBar.innerText = `⛔ Servono ${cost} frame di movimento, ne hai ${frames}.`;
+        return;
+    }
+
+    const moveId = `${Date.now()}-${Math.random()}`;
+    window.pendingLocalMoves[mover.id] = {
+        moveId,
+        x: gridX,
+        y: gridY,
+        fromX: mover.x,
+        fromY: mover.y,
+        combat: true,
+        paBefore: frames,
+        paAfter: frames - cost
+    };
+
+    // Aggiornamento locale immediato; il server conferma o rifiuta
+    mover.x = gridX;
+    mover.y = gridY;
+    if (combatState.players_pa) combatState.players_pa[mover.id] = frames - cost;
+
+    socket.emit('declare_move', {
+        char_id: mover.id,
+        target_x: gridX,
+        target_y: gridY,
+        move_id: moveId,
+        mode: window.movePace
+    });
+
+    setMoveMode(false);
+    window.updateCombatActionPanel?.();
+    requestRender();
+}

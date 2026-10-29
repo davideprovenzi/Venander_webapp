@@ -2586,3 +2586,117 @@ body.player-mode #btn-toggle-notes {
 .catalog-forge-actions #forge-submit {
     background: #e67e22;
 }
+
+/* ==========================================
+   MOVIMENTO IN COMBATTIMENTO E SCELTA DELLA MINACCIA
+   ========================================== */
+
+.combat-move {
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid #2980b9;
+    border-radius: 5px;
+    background: rgba(41, 128, 185, 0.12);
+}
+
+.combat-move-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #85c1e9;
+}
+
+.combat-move-paces {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.move-pace {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px 2px;
+    border: 1px solid #566573;
+    border-radius: 4px;
+    background: #2c3e50;
+    color: #ecf0f1;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.move-pace small {
+    font-size: 9px;
+    color: #95a5a6;
+}
+
+.move-pace.active {
+    border-color: #3498db;
+    background: #2980b9;
+    font-weight: bold;
+}
+
+.move-pace.active small {
+    color: #d6eaf8;
+}
+
+.combat-move-btn {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    background: #2980b9;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.combat-move-btn.active {
+    background: #f1c40f;
+    color: #000;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.6);
+}
+
+.threat-placement-bar {
+    display: none;
+    margin-bottom: 8px;
+    padding: 7px;
+    border: 1px solid #f1c40f;
+    border-radius: 5px;
+    background: rgba(241, 196, 15, 0.12);
+    font-size: 12px;
+    color: #f9e79f;
+}
+
+.threat-placement-bar.open {
+    display: block;
+}
+
+.threat-placement-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.threat-placement-actions button {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    background: #7f8c8d;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.threat-placement-actions #threat-placement-confirm {
+    background: #d68910;
+}
+
+.threat-placement-actions #threat-placement-confirm:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
