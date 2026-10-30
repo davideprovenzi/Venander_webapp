@@ -4178,14 +4178,27 @@ if (tracker && !document.getElementById('tracker-header')) {
 
 const trackerHeader = document.getElementById('tracker-header');
 let isDraggingTracker = false;
+
+// ◀ / ▶ riduce la barra dei turni alla sola maniglia
+const trackerToggle = document.getElementById('tracker-toggle');
+trackerToggle?.addEventListener('mousedown', (e) => e.stopPropagation());
+trackerToggle?.addEventListener('click', () => {
+    const collapsed = tracker.classList.toggle('collapsed');
+    trackerToggle.textContent = collapsed ? '▶' : '◀';
+});
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
 if (trackerHeader) {
     trackerHeader.addEventListener('mousedown', (e) => {
         isDraggingTracker = true;
-        dragOffsetX = e.clientX - tracker.getBoundingClientRect().left;
-        dragOffsetY = e.clientY - tracker.getBoundingClientRect().top;
+        const rect = tracker.getBoundingClientRect();
+        // La barra parte centrata in alto: al primo trascinamento si "stacca"
+        tracker.style.transform = 'none';
+        tracker.style.left = rect.left + 'px';
+        tracker.style.top = rect.top + 'px';
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -4690,6 +4703,19 @@ window.updateEquippedPanel = function(char) {
                         white-space:nowrap;
                     ">
                         ⚔️ ${damage}
+                    </div>
+                `;
+            }
+
+            // CARICATORE (armi da fuoco): clic per ricaricare
+            const ammoSpec = getFirearmSpec(compItem);
+            if (ammoSpec) {
+                const loaded = itemData.ammo_loaded?.count ?? 0;
+                overlayHtml += `
+                    <div class="doll-ammo-badge${loaded ? '' : ' empty'}"
+                         title="${loaded ? escapeHtml(itemData.ammo_loaded?.name || '') : 'Scarica'}: clic per ricaricare"
+                         onclick="event.stopPropagation(); window.reloadWeapon(${char.id}, '${actualSlotKey}')">
+                        🔫 ${loaded}/${ammoSpec.capacity}
                     </div>
                 `;
             }
@@ -6070,6 +6096,7 @@ function syncAttackLimb() {
 function updateAttackWeaponInfo() {
 
     syncAttackLimb();
+    updateAttackAmmoRow();
 
     const actionSelect =
         document.getElementById(
@@ -7338,6 +7365,10 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
         limb:
             limb,
 
+        // Area mirata (facoltativa): il Master vede l'armatura che la copre
+        aim:
+            document.getElementById('attack-aim')?.value || null,
+
         // NUOVI DATI
         compendium_id:
             actionOption.dataset.compendiumId ||
@@ -7720,6 +7751,8 @@ socket.on(
             🛡️ Reazione:
             <b>${escapeHtml(data.reaction_label || data.reaction_type)}</b>
 
+            ${data.aim_label ? `<br>🎯 Mirato a: <b>${escapeHtml(data.aim_label)}</b>` : ''}
+
             ${
                 describeAttackTerrain(data.attacker_id, data.defender_id)
                     .map(note => `<br>${note}`)
@@ -7759,31 +7792,178 @@ socket.on(
         ).value =
             data.damage ?? 0;
 
-        document.getElementById(
-            'master-review-message'
-        ).value =
-            buildMasterCombatMessage(
-                data
-            );
+        // Nota libera: vuota, in chat vanno già esito e danno
+        document.getElementById('master-review-message').value = '';
+
+        // Armatura: si propone il pezzo dell'area mirata (o quello che ha parato)
+        const armorSelect = document.getElementById('master-review-armor-slot');
+        const pieces = data.armor_pieces || [];
+        armorSelect.innerHTML = '';
+        armorSelect.add(new Option('Nessuna armatura', ''));
+        pieces.forEach(piece => armorSelect.add(new Option(`${piece.name} (${piece.hp}/${piece.max_hp})`, piece.slot)));
+        armorSelect.value = data.armor_slot || '';
+        document.getElementById('master-review-armor-damage').value = 0;
+        document.getElementById('master-review-armor-row').style.display = pieces.length ? 'block' : 'none';
+
+        const damageInput = document.getElementById('master-review-damage');
+        damageInput.disabled = false;
+        reviewDamageBeforeMiss = null;
+
+        // Bonus/malus: quelli già decisi in passato partono applicati
+        reviewModifiers = (data.modifiers || []).map(m => ({ ...m, saved: m.value, applied: m.value !== null }));
+        savedCustomModifiers = data.custom_modifiers || [];
+        const savedList = document.getElementById('review-modifier-saved');
+        savedList.innerHTML = '';
+        savedCustomModifiers.forEach(m => savedList.appendChild(new Option(m.label, m.label)));
+        renderReviewModifiers();
 
         modal.style.display =
             'block';
     }
 );
 
-function buildMasterCombatMessage(
-    data
-) {
-
-    return (
-        `⚔️ ${data.attacker_name} attacca ` +
-        `${data.defender_name} con ${data.weapon}.\n\n` +
-
-        `Attacco: ${data.att_roll}\n` +
-        `Difesa (${data.reaction_label || data.reaction_type}): ${data.def_roll}\n` +
-        `Danno: ${data.damage ?? 0}`
-    );
+// Esito proposto dai tiri (stessa regola di default_combat_outcome in app.py)
+function defaultCombatOutcome(reaction, attRoll, defRoll) {
+    const defended = Number(defRoll) >= Number(attRoll);
+    if (reaction === 'Schivata') return defended ? 'schivato' : 'colpito';
+    if (reaction === 'Parata') return defended ? 'parato' : 'parzialmente_parato';
+    return 'colpito';
 }
+
+const NON_HIT_OUTCOMES = ['parato', 'schivato', 'mancato'];
+
+// ==========================================
+// BONUS / MALUS ALL'ATTACCO
+// Ogni situazione (area mirata, copertura, altura...) ha un valore che il
+// Master decide la prima volta; le volte dopo è già pronto e modificabile.
+// ==========================================
+let reviewModifiers = [];
+let savedCustomModifiers = [];
+
+function getModifiedAttackRoll() {
+    const base = parseInt(document.getElementById('master-review-att-roll').value) || 0;
+    return base + reviewModifiers
+        .filter(m => m.applied && Number.isFinite(m.value))
+        .reduce((sum, m) => sum + m.value, 0);
+}
+
+// Totale con i modificatori ed esito riproposto in base al tiro modificato
+function updateReviewModifierTotal() {
+    const base = parseInt(document.getElementById('master-review-att-roll').value) || 0;
+    const total = getModifiedAttackRoll();
+    const def = document.getElementById('master-review-def-roll').value;
+
+    document.getElementById('review-modifier-total').textContent = total === base
+        ? `🎲 Attacco ${base} · Difesa ${def}`
+        : `🎲 Attacco ${base} → ${total} con modificatori · Difesa ${def}`;
+
+    if (pendingMasterCombatResult) {
+        document.getElementById('master-review-outcome').value =
+            defaultCombatOutcome(pendingMasterCombatResult.reaction_type, total, def);
+        syncReviewOutcome();
+    }
+}
+
+function renderReviewModifiers() {
+    const rows = document.getElementById('review-modifier-rows');
+    rows.innerHTML = '';
+
+    if (!reviewModifiers.length) {
+        rows.innerHTML = '<div class="review-modifier-empty">Nessuna situazione particolare.</div>';
+    }
+
+    reviewModifiers.forEach(modifier => {
+        const row = document.createElement('label');
+        row.className = 'review-modifier-row';
+
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        check.checked = modifier.applied;
+        check.title = 'Applica (togli la spunta per ignorarlo questa volta)';
+
+        const name = document.createElement('span');
+        name.className = 'review-modifier-name';
+        name.textContent = modifier.label;
+
+        const value = document.createElement('input');
+        value.type = 'number';
+        value.value = modifier.value ?? '';
+        value.placeholder = '±';
+
+        const tag = document.createElement('span');
+        tag.className = 'review-modifier-tag';
+        tag.textContent = modifier.saved === null || modifier.saved === undefined
+            ? 'nuovo'
+            : `salvato ${modifier.saved > 0 ? '+' : ''}${modifier.saved}`;
+        tag.classList.toggle('new', modifier.saved === null || modifier.saved === undefined);
+
+        check.addEventListener('change', () => {
+            modifier.applied = check.checked && Number.isFinite(modifier.value);
+            check.checked = modifier.applied;
+            updateReviewModifierTotal();
+        });
+
+        // Scrivere un valore lo applica; svuotarlo lo toglie
+        value.addEventListener('input', () => {
+            const parsed = parseInt(value.value);
+            modifier.value = Number.isFinite(parsed) ? parsed : null;
+            modifier.applied = Number.isFinite(parsed);
+            check.checked = modifier.applied;
+            updateReviewModifierTotal();
+        });
+
+        row.append(check, name, value, tag);
+        rows.appendChild(row);
+    });
+
+    updateReviewModifierTotal();
+}
+
+document.getElementById('review-modifier-add-btn')?.addEventListener('click', () => {
+    const nameInput = document.getElementById('review-modifier-name');
+    const valueInput = document.getElementById('review-modifier-value');
+    const label = nameInput.value.trim();
+    if (!label) return;
+
+    // Una situazione già usata in passato riprende il suo valore
+    const known = savedCustomModifiers.find(m => m.label.toLowerCase() === label.toLowerCase());
+    const typed = parseInt(valueInput.value);
+    const value = Number.isFinite(typed) ? typed : (known ? known.value : null);
+    const key = known ? known.key : `custom_${label.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`;
+
+    if (reviewModifiers.some(m => m.key === key)) return;
+
+    reviewModifiers.push({ key, label: known ? known.label : label, value, saved: known ? known.value : null, applied: value !== null });
+    nameInput.value = '';
+    valueInput.value = '';
+    renderReviewModifiers();
+});
+let reviewDamageBeforeMiss = null;
+
+// Parato / Schivato / Mancato: danno a 0 (e si ripristina se si torna a un colpo)
+function syncReviewOutcome() {
+    const outcome = document.getElementById('master-review-outcome').value;
+    const damageInput = document.getElementById('master-review-damage');
+    const missed = NON_HIT_OUTCOMES.includes(outcome);
+
+    if (missed && !damageInput.disabled) {
+        reviewDamageBeforeMiss = damageInput.value;
+        damageInput.value = 0;
+    } else if (!missed && damageInput.disabled && reviewDamageBeforeMiss !== null) {
+        damageInput.value = reviewDamageBeforeMiss;
+    }
+    damageInput.disabled = missed;
+}
+
+document.getElementById('master-review-outcome')?.addEventListener('change', syncReviewOutcome);
+
+// I tiri cambiati a mano ripropongono l'esito
+['master-review-att-roll', 'master-review-def-roll'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => {
+        if (!pendingMasterCombatResult) return;
+        updateReviewModifierTotal();
+    });
+});
 
 document.getElementById(
     'master-review-publish'
@@ -7856,7 +8036,20 @@ document.getElementById(
                     ),
 
                 message:
-                    message
+                    message,
+
+                outcome:
+                    document.getElementById('master-review-outcome').value,
+
+                // Bonus/malus applicati: il server li ricorda per la prossima volta
+                modifiers:
+                    reviewModifiers.map(({ key, label, value, applied }) => ({ key, label, value, applied })),
+
+                armor_slot:
+                    document.getElementById('master-review-armor-slot').value || null,
+
+                armor_damage:
+                    parseInt(document.getElementById('master-review-armor-damage').value) || 0
             }
         );
 
@@ -8231,3 +8424,173 @@ socket.on(
     document.getElementById('dice-panel-header')?.addEventListener('click', syncChatExportButtons);
     syncChatExportButtons();
 })();
+
+// ==========================================
+// COLONNA DESTRA: CHAT IN ALTO, PANNELLO DEL TURNO IN BASSO
+// La chat aperta si accorcia per non coprire il pannello del turno
+// (finché il pannello non viene trascinato altrove).
+// ==========================================
+(() => {
+    const chatContent = document.getElementById('dice-panel-content');
+    const chatPanel = document.getElementById('dice-panel');
+    const actionPanel = document.getElementById('combat-action-panel');
+    const actionHeader = document.getElementById('action-header');
+    if (!chatContent || !chatPanel || !actionPanel) return;
+
+    const DEFAULT_HEIGHT = 0.75;   // come prima: 75% dello schermo
+    const MIN_HEIGHT = 160;
+    const GAP = 12;
+
+    function fitChatToActionPanel() {
+        const panelVisible = actionPanel.style.display !== 'none' && actionPanel.offsetParent !== null;
+        let height = window.innerHeight * DEFAULT_HEIGHT;
+
+        if (panelVisible && actionPanel.dataset.dragged !== '1') {
+            const chatTop = chatContent.getBoundingClientRect().top || chatPanel.getBoundingClientRect().bottom;
+            const free = actionPanel.getBoundingClientRect().top - chatTop - GAP;
+            height = Math.max(MIN_HEIGHT, Math.min(height, free));
+        }
+
+        chatContent.style.height = `${Math.round(height)}px`;
+    }
+
+    // Spostato a mano: da lì in poi la chat torna alla sua altezza normale
+    actionHeader?.addEventListener('mousedown', () => {
+        actionPanel.dataset.dragged = '1';
+    });
+
+    new ResizeObserver(fitChatToActionPanel).observe(actionPanel);
+    new MutationObserver(fitChatToActionPanel).observe(actionPanel, { attributes: true, attributeFilter: ['style'] });
+    new MutationObserver(fitChatToActionPanel).observe(chatContent, { attributes: true, attributeFilter: ['style'] });
+    window.addEventListener('resize', fitChatToActionPanel);
+    fitChatToActionPanel();
+})();
+
+// ==========================================
+// BANNER DEL RISULTATO
+// Dopo la revisione del Master, tutti vedono per qualche secondo esito,
+// HP persi e danno all'armatura, sotto la barra dei turni.
+// ==========================================
+(() => {
+    const banner = document.getElementById('combat-banner');
+    if (!banner) return;
+
+    const BANNER_MS = 4000;
+    let hideTimer = null;
+
+    socket.on('combat_banner', (data) => {
+        const parts = [
+            `⚔️ <b>${escapeHtml(data.defender)}</b>`,
+            `<span class="combat-banner-outcome">${escapeHtml(data.outcome.toUpperCase())}</span>`
+        ];
+        if (data.aim) parts.push(`🎯 ${escapeHtml(data.aim)}`);
+        if (data.hit) parts.push(`<span class="combat-banner-hp">-${data.damage} HP</span>`);
+        if (data.armor) {
+            parts.push(`<span class="combat-banner-armor">🛡️ ${escapeHtml(data.armor.name)} -${data.armor.damage}</span>`);
+        }
+
+        banner.innerHTML = parts.join(' · ');
+        banner.classList.toggle('miss', !data.hit);
+        banner.classList.add('show');
+
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => banner.classList.remove('show'), BANNER_MS);
+    });
+})();
+
+// ==========================================
+// MUNIZIONI E CARICATORI
+// Stesse regole di app.py: proiettili dello zaino che citano il calibro
+// o il nome dell'arma. Il server verifica e scala i frame in combattimento.
+// ==========================================
+const PROJECTILE_PATTERN = /\b(proiettil\w*|munizion\w*|fmj|pallettoni|cartucc\w*|bossol\w*)\b/i;
+
+function getFirearmSpec(comp) {
+    const ammo = comp?.weapon?.ammo;
+    const capacity = parseInt(ammo?.capacity) || 0;
+    return capacity > 0 ? { caliber: String(ammo.type || ''), capacity } : null;
+}
+
+function getCompatibleAmmo(char, comp, gunName) {
+    const keys = [getFirearmSpec(comp)?.caliber, comp?.name, gunName]
+        .filter(Boolean)
+        .map(key => key.toLowerCase());
+
+    return (char.backpack || [])
+        .map((entry, index) => ({ entry, index }))
+        .filter(({ entry }) => {
+            if (!entry || typeof entry !== 'object' || (entry.qty ?? 1) <= 0) return false;
+            const text = `${entry.name || ''} ${entry.desc || ''}`.toLowerCase();
+            return PROJECTILE_PATTERN.test(text) && keys.some(key => text.includes(key));
+        });
+}
+
+function getEquippedFirearm(char, slot) {
+    const item = char?.stats?.equipped?.[slot];
+    if (!item) return null;
+    const comp = findCompendioItem({ compendium_id: item.compendium_id || null, name: item.name, custom_definition: item.custom_definition });
+    const spec = getFirearmSpec(comp);
+    return spec ? { item, comp, spec } : null;
+}
+
+// Dalla doll: se c'è un solo tipo di proiettile adatto si ricarica subito, altrimenti si sceglie
+window.reloadWeapon = function(charId, slot) {
+    const char = characters.find(c => c.id === charId);
+    const firearm = getEquippedFirearm(char, slot);
+    if (!firearm) return;
+
+    const options = getCompatibleAmmo(char, firearm.comp, firearm.item.name);
+    if (!options.length) {
+        statusBar.innerText = `⛔ Nessun proiettile adatto a ${firearm.item.name} nello zaino (deve citare "${firearm.spec.caliber}" o "${firearm.item.name}").`;
+        return;
+    }
+
+    let choice = options[0];
+    if (options.length > 1) {
+        const answer = prompt(
+            `Con cosa carichi ${firearm.item.name}?\n` +
+            options.map((o, i) => `${i + 1}) ${o.entry.name} ×${o.entry.qty ?? 1}`).join('\n'),
+            '1'
+        );
+        if (answer === null) return;
+        choice = options[(parseInt(answer) || 1) - 1] || options[0];
+    }
+
+    socket.emit('load_weapon', { char_id: charId, slot, ammo_index: choice.index });
+};
+
+// Pannello d'attacco: colpi nel caricatore e ricarica dell'arma scelta
+function updateAttackAmmoRow() {
+    const row = document.getElementById('attack-ammo-row');
+    if (!row) return;
+
+    const option = document.getElementById('attack-weapon')?.selectedOptions[0];
+    const char = characters.find(c => c.id === getActingCombatantId());
+    const firearm = option ? getEquippedFirearm(char, option.dataset.slot) : null;
+
+    row.style.display = firearm ? 'block' : 'none';
+    if (!firearm) return;
+
+    const loaded = firearm.item.ammo_loaded?.count ?? 0;
+    const status = document.getElementById('attack-ammo-status');
+    status.textContent = `🔫 Caricatore: ${loaded}/${firearm.spec.capacity}` +
+        (loaded ? ` · ${firearm.item.ammo_loaded.name}` : ' · SCARICA');
+    status.classList.toggle('empty', !loaded);
+
+    const select = document.getElementById('attack-ammo-select');
+    const options = getCompatibleAmmo(char, firearm.comp, firearm.item.name);
+    select.innerHTML = '';
+    if (!options.length) select.add(new Option('Nessun proiettile adatto', ''));
+    options.forEach(o => select.add(new Option(`${o.entry.name} ×${o.entry.qty ?? 1}`, o.index)));
+    document.getElementById('attack-ammo-reload-btn').disabled = !options.length;
+
+    row.dataset.charId = char.id;
+    row.dataset.slot = option.dataset.slot;
+}
+
+document.getElementById('attack-ammo-reload-btn')?.addEventListener('click', () => {
+    const row = document.getElementById('attack-ammo-row');
+    const index = document.getElementById('attack-ammo-select').value;
+    if (index === '') return;
+    socket.emit('load_weapon', { char_id: Number(row.dataset.charId), slot: row.dataset.slot, ammo_index: Number(index) });
+});

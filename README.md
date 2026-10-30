@@ -37,6 +37,17 @@ Use the **"Chi sei?"** selector at the top of the page:
 
 There is no authentication; the selector is trust-based. Do not expose the server to the public internet.
 
+### Test environment
+
+To try changes without touching the real session, run a second copy of the game next to it:
+
+```bash
+python test_env.py          # fresh copy of the real game, on http://localhost:5001
+python test_env.py --keep   # reuse the previous test copy instead
+```
+
+It uses `instance/venander_test.db`, a copy of the real database taken at every start (safe even while the real game is running), and shows a red "AMBIENTE DI PROVA" banner. Combat, undo and threats live in each server's memory, so the two never mix. The real game keeps running on port 5000 with `python app.py`.
+
 ## Data
 
 - **Database**: SQLite at `instance/venander.db` (Flask-SQLAlchemy resolves `sqlite:///venander.db` into the `instance/` folder). It is created on first run and seeded with three default players ("Giocatore 1-3").

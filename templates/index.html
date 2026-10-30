@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Venander</title>
+    <title>{% if test_mode %}🧪 PROVA · {% endif %}Venander</title>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
@@ -12,6 +12,10 @@
 </head>
 
 <body>
+    {% if test_mode %}
+    <!-- Ambiente di prova: copia della partita, non tocca la sessione vera -->
+    <div class="test-mode-banner">🧪 AMBIENTE DI PROVA: copia della partita, le modifiche qui non toccano la sessione vera</div>
+    {% endif %}
 
     <h1>Venander</h1>
 
@@ -46,12 +50,11 @@
     <!-- Pulsante Scheda Fluttuante in basso a destra -->
     <button id="sheet-btn" style="display: none; position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #3498db; color: white; border: none; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.6); font-size: 28px; cursor: pointer; z-index: 1100; align-items: center; justify-content: center; transition: transform 0.2s ease, background 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.background='#2980b9';" onmouseout="this.style.transform='scale(1)'; this.style.background='#3498db';" title="Apri Scheda">📄</button>
 
-    <div id="combat-tracker" style="display: none; position: absolute; top: 20px; right: 20px; z-index: 1000; width: 280px; background: rgba(255, 255, 255, 0.95); border: 2px solid #2c3e50; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden;">
+    <div id="combat-tracker" style="display: none;">
 
-        <div id="tracker-header" style="background: #2c3e50; color: white; padding: 8px; font-size: 14px; font-weight: bold; text-align: center; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
-            <span style="visibility: hidden; padding: 0 5px;">▼</span>
-            <span>⚔️ Ordine di Turno 🖐️</span>
-            <span id="tracker-toggle" style="cursor: pointer; padding: 0 5px;" title="Riduci a icona">▼</span>
+        <div id="tracker-header" title="Ordine di turno: trascina per spostare">
+            <span class="tracker-grip">⚔️</span>
+            <span id="tracker-toggle" title="Riduci / espandi">◀</span>
         </div>
 
         <div id="tracker-content" style="display: block;">
@@ -1139,7 +1142,7 @@
     </div>
 
     <!-- PANNELLO AZIONE COMBATTIMENTO -->
-    <div id="combat-action-panel" style="display: none; position: absolute; bottom: 40px; right: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #e74c3c; border-radius: 8px; padding: 15px; color: white; width: 280px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
+    <div id="combat-action-panel" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: rgba(10, 15, 20, 0.95); border: 2px solid #e74c3c; border-radius: 8px; padding: 15px; color: white; width: 280px; box-shadow: 0 4px 20px rgba(0,0,0,0.8);">
 
         <div id="action-header" style="background: #c0392b; color: white; padding: 8px; font-size: 13px; font-weight: bold; text-align: center; border-radius: 4px 4px 0 0; margin: -15px -15px 15px -15px; cursor: grab; user-select: none; display: flex; justify-content: space-between; align-items: center;">
             <span style="visibility: hidden; padding: 0 5px;">▼</span>
@@ -1171,6 +1174,15 @@
             </div>
             <select id="attack-target" style="width: 100%; padding: 5px; margin-bottom: 8px; border-radius: 3px; border: 1px solid #7f8c8d;"></select>
             <select id="attack-weapon" style="width: 100%; padding: 5px; margin-bottom: 10px; border-radius: 3px; background: #2c3e50; color: white; border: 1px solid #34495e; font-weight: bold;"></select>
+
+            <!-- Caricatore dell'arma da fuoco scelta: colpi e ricarica -->
+            <div id="attack-ammo-row" class="attack-ammo-row">
+                <span id="attack-ammo-status"></span>
+                <div class="attack-ammo-reload">
+                    <select id="attack-ammo-select"></select>
+                    <button id="attack-ammo-reload-btn" type="button" title="Ricarica (in combattimento costa i frame di 'Cambiare caricatore')">🔄</button>
+                </div>
+            </div>
 
             <div id="attack-weapon-info"
                 style="
@@ -1215,6 +1227,17 @@
                 </select>
                 <input type="number" id="attack-speed" readonly style="width: 60px; text-align: center; border-radius: 3px; border: 1px solid #7f8c8d; font-weight: bold;">
             </div>
+
+            <!-- Dove mira l'attaccante: il Master vede l'armatura che copre quell'area -->
+            <select id="attack-aim" class="attack-aim" title="Area mirata">
+                <option value="">🎯 Area mirata: nessuna</option>
+                <option value="testa">🎯 Testa</option>
+                <option value="busto">🎯 Busto</option>
+                <option value="braccio_dx">🎯 Braccio Dx</option>
+                <option value="braccio_sx">🎯 Braccio Sx</option>
+                <option value="gamba_dx">🎯 Gamba Dx</option>
+                <option value="gamba_sx">🎯 Gamba Sx</option>
+            </select>
 
             <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
                 Costo in Frame (110 - Vel): <strong id="attack-cost" style="color: #e74c3c; font-size: 14px;">25</strong>
@@ -1312,6 +1335,9 @@
             <button id="potion-offer-accept" type="button">🧪 Bevi</button>
         </div>
     </div>
+
+    <!-- RISULTATO DELLO SCONTRO: banner per tutti -->
+    <div id="combat-banner" class="combat-banner"></div>
 
     <!-- SUPERFICI: DECISIONE DEL MASTER -->
     <div id="surface-prompt-modal" class="surface-prompt-modal">
@@ -1556,8 +1582,34 @@
             "
         >
 
+        <!-- Bonus/malus all'attacco per la situazione: il valore deciso resta per le volte dopo -->
+        <div id="master-review-modifiers" class="review-modifiers">
+            <div class="review-modifiers-title">⚖️ Bonus / malus all'attacco</div>
+            <div id="review-modifier-rows"></div>
+            <div class="review-modifier-add">
+                <input id="review-modifier-name" list="review-modifier-saved" maxlength="120" placeholder="Altra situazione (es. Bersaglio in movimento)">
+                <datalist id="review-modifier-saved"></datalist>
+                <input id="review-modifier-value" type="number" placeholder="±">
+                <button id="review-modifier-add-btn" type="button" title="Aggiungi">＋</button>
+            </div>
+            <div id="review-modifier-total" class="review-modifier-total"></div>
+        </div>
+
         <label>
-            💥 Danno
+            🎯 Esito
+        </label>
+
+        <select id="master-review-outcome" class="master-review-outcome">
+            <option value="colpito">Colpito</option>
+            <option value="bruciapelo">Colpito a bruciapelo</option>
+            <option value="parzialmente_parato">Colpito ma parzialmente parato</option>
+            <option value="parato">Parato</option>
+            <option value="schivato">Schivato</option>
+            <option value="mancato">Mancato</option>
+        </select>
+
+        <label>
+            💥 Danno finale (HP persi dal difensore)
         </label>
 
         <input
@@ -1572,13 +1624,23 @@
             "
         >
 
+        <!-- Danno all'armatura, separato dagli HP: pezzo dell'area mirata (o che ha parato) -->
+        <div id="master-review-armor-row" class="master-review-armor-row">
+            <label>🛡️ Danno all'armatura</label>
+            <div class="master-review-armor-inputs">
+                <select id="master-review-armor-slot"></select>
+                <input id="master-review-armor-damage" type="number" min="0" value="0">
+            </div>
+        </div>
+
         <label>
-            💬 Messaggio pubblico
+            💬 Nota per i giocatori (facoltativa)
         </label>
 
         <textarea
             id="master-review-message"
-            rows="5"
+            placeholder="Es. il proiettile gli sfiora la spalla..."
+            rows="3"
             style="
                 width:100%;
                 box-sizing:border-box;

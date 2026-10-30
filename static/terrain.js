@@ -109,7 +109,8 @@ function describeAttackTerrain(attackerId, defenderId) {
 
     // Copertura sull'esagono del difensore o su quello subito prima, lungo la linea di tiro
     const line = hexLine(attacker.x, attacker.y, defender.x, defender.y);
-    const coverHexes = [line[line.length - 1], line[line.length - 2]].filter(Boolean);
+    // Mai l'esagono dell'attaccante (c'è quando sono adiacenti)
+    const coverHexes = line.slice(1).slice(-2);
     const covers = coverHexes.map(h => terrainAt(h.col, h.row));
 
     if (covers.includes('copertura_totale')) notes.push('🧱 Difensore in copertura totale');

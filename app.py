@@ -20,8 +20,14 @@ from threading import Lock
 # ==========================================
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "chiave_segreta_venander"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///venander.db"
+# L'ambiente di prova (test_env.py) usa una copia del database: venander_test.db
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.environ.get('VENANDER_DB', 'venander.db')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+TEST_MODE = os.environ.get("VENANDER_TEST_MODE") == "1"
+
+@app.context_processor
+def inject_test_mode():
+    return {"test_mode": TEST_MODE}
 
 db = SQLAlchemy(app)
 socketio = SocketIO(
@@ -206,6 +212,12 @@ class ItemPriceOverride(db.Model):
     """Prezzo deciso dal Master durante il gioco; vince su quello del compendio."""
     compendium_id = db.Column(db.String(60), primary_key=True)
     cost_eur = db.Column(db.Integer, nullable=True)  # None = prezzo da definire
+
+class CombatModifier(db.Model):
+    """Bonus/malus all'attacco deciso dal Master per una situazione, riproposto le volte dopo."""
+    key = db.Column(db.String(80), primary_key=True)  # es. "mira_testa", "copertura_parziale"
+    label = db.Column(db.String(120), nullable=False)
+    value = db.Column(db.Integer, nullable=False)
 
 class NpcTemplate(db.Model):
     """Modello di NPC del Master: statistiche, equipaggiamento e armi pronti da spawnare."""
@@ -1722,8 +1734,175 @@ def handle_update_character_sheet(data):
     if "shop" in data: char.shop = data["shop"]
     if "notes" in data: char.notes = data["notes"]
     if "knowledge" in data: char.knowledge = clean_knowledge(data["knowledge"])
+    if "stats" in data or "backpack" in data: auto_load_new_firearms(char)
     db.session.commit()
     emit_character_update(char)
+
+# ==========================================
+# MUNIZIONI E CARICATORI
+# Un'arma da fuoco (compendio con weapon.ammo) ha un caricatore: si carica
+# con proiettili dello zaino che citano il suo calibro o il suo nome,
+# ogni colpo ne usa uno, a vuoto non si spara. Ricaricare in combattimento
+# costa i frame di "Cambiare caricatore" della tabella azioni.
+# ==========================================
+PROJECTILE_PATTERN = re.compile(r"\b(proiettil\w*|munizion\w*|fmj|pallettoni|cartucc\w*|bossol\w*)\b", re.IGNORECASE)
+
+def firearm_spec(comp):
+    """(calibro, capienza) per un'arma da fuoco, altrimenti None."""
+    ammo = ((comp or {}).get("weapon") or {}).get("ammo") or {}
+    try:
+        capacity = int(ammo.get("capacity") or 0)
+    except (TypeError, ValueError):
+        capacity = 0
+    return (str(ammo.get("type") or ""), capacity) if capacity > 0 else None
+
+def equipped_item_compendium(item):
+    if isinstance(item.get("custom_definition"), dict):
+        return item["custom_definition"]
+    return get_compendium_item(compendium_id=item.get("compendium_id"), name=item.get("name"))
+
+def projectile_fits(entry, comp, gun_name):
+    """Il proiettile deve citare il calibro dell'arma o il suo nome (es. "9mm", "revolver")."""
+    text = f"{entry.get('name', '')} {entry.get('desc', '')}".lower()
+    if not PROJECTILE_PATTERN.search(text):
+        return False
+    caliber = (firearm_spec(comp) or ("", 0))[0].lower()
+    keys = {caliber, str(comp.get("name", "")).lower(), str(gun_name or "").lower()}
+    return any(key and key in text for key in keys)
+
+def compatible_ammo(char, comp, gun_name):
+    return [
+        (index, entry) for index, entry in enumerate(char.backpack or [])
+        if isinstance(entry, dict) and int(entry.get("qty", 1) or 0) > 0 and projectile_fits(entry, comp, gun_name)
+    ]
+
+def return_ammo_to_backpack(backpack, loaded):
+    """I colpi tolti dal caricatore tornano nello zaino (si sommano se c'è già la voce)."""
+    for entry in backpack:
+        if isinstance(entry, dict) and entry.get("name", "").lower() == loaded["name"].lower():
+            entry["qty"] = int(entry.get("qty", 0) or 0) + loaded["count"]
+            return
+    backpack.append({"name": loaded["name"], "qty": loaded["count"], "desc": loaded.get("desc", "")})
+
+def set_loaded_ammo(char, slot, loaded):
+    """Scrive il caricatore su tutti gli slot dell'arma (anche a due mani)."""
+    stats = copy.deepcopy(char.stats or {})
+    equipped = stats.get("equipped") or {}
+    group = (equipped.get(slot) or {}).get("equip_group_id")
+    for key, item in equipped.items():
+        if isinstance(item, dict) and (key == slot or (group and item.get("equip_group_id") == group)):
+            item["ammo_loaded"] = loaded
+    char.stats = stats
+    flag_modified(char, "stats")
+
+def load_firearm(char, slot, ammo_index):
+    """Carica l'arma con i proiettili scelti. Restituisce (caricati, nome) oppure un errore (str)."""
+    item = ((char.stats or {}).get("equipped") or {}).get(slot)
+    comp = equipped_item_compendium(item) if isinstance(item, dict) else None
+    spec = firearm_spec(comp)
+    if not spec:
+        return "Quest'arma non usa munizioni."
+
+    fitting = dict(compatible_ammo(char, comp, item.get("name")))
+    if ammo_index not in fitting:
+        return f"Questi proiettili non vanno bene per {item.get('name')}."
+
+    backpack = copy.deepcopy(char.backpack or [])
+    entry = backpack[ammo_index]
+    take = min(spec[1], int(entry.get("qty", 1) or 1))
+    loaded_name, loaded_desc = entry.get("name", "Proiettili"), entry.get("desc", "")
+
+    entry["qty"] = int(entry.get("qty", 1) or 1) - take
+    if entry["qty"] <= 0:
+        backpack.pop(ammo_index)
+
+    # Quello che c'era nel caricatore torna nello zaino
+    previous = item.get("ammo_loaded") or {}
+    if previous.get("count"):
+        return_ammo_to_backpack(backpack, previous)
+
+    char.backpack = backpack
+    flag_modified(char, "backpack")
+    set_loaded_ammo(char, slot, {"name": loaded_name, "desc": loaded_desc, "count": take})
+    return take, loaded_name
+
+def auto_load_new_firearms(char):
+    """Un'arma da fuoco appena equipaggiata si carica da sola con i primi proiettili adatti."""
+    for slot, item in list(((char.stats or {}).get("equipped") or {}).items()):
+        if not isinstance(item, dict) or "ammo_loaded" in item:
+            continue
+        comp = equipped_item_compendium(item)
+        if not firearm_spec(comp):
+            continue
+        fitting = compatible_ammo(char, comp, item.get("name"))
+        if fitting:
+            load_firearm(char, slot, fitting[0][0])
+        else:
+            # Segna l'arma come vista: resta scarica finché non si ricarica
+            set_loaded_ammo(char, slot, {"name": None, "desc": "", "count": 0})
+
+@socketio.on("load_weapon")
+@undoable("Ricarica")
+def handle_load_weapon(data):
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+    if not controls_character(char):
+        return
+
+    slot = data.get("slot")
+    item = ((char.stats or {}).get("equipped") or {}).get(slot)
+    if not isinstance(item, dict):
+        return
+
+    try:
+        ammo_index = int(data.get("ammo_index"))
+    except (TypeError, ValueError):
+        return
+
+    # Prima si controlla arma e proiettili, poi (in combattimento) si pagano i frame
+    comp = equipped_item_compendium(item)
+    if not firearm_spec(comp):
+        emit_combat_error("Quest'arma non usa munizioni.")
+        return
+    if ammo_index not in dict(compatible_ammo(char, comp, item.get("name"))):
+        emit_combat_error(f"Questi proiettili non vanno bene per {item.get('name')}.")
+        return
+
+    # In combattimento ricaricare è un'azione: nel proprio turno, pagando i frame
+    cost_text = ""
+    if combat_state.get("is_active") and any(int(e.get("id", -1)) == char.id for e in combat_state.get("turn_order", [])):
+        if not is_players_turn(char):
+            emit_combat_error("Puoi ricaricare solo nel tuo turno.")
+            return
+        kind = "pistola" if any(k in str((comp or {}).get("name", item.get("name"))).lower() for k in ("pistol", "revolver")) else "fucile"
+        rule = get_action_speed_rule(f"Cambiare caricatore {kind}")
+        cost = int((rule or {}).get("frames", 0))
+        if cost:
+            # Si ricarica a due mani: paga prima il braccio dell'arma, il resto l'altro
+            gun_arm = SLOT_COMBAT_LIMBS.get(slot, "bd")
+            other_arm = "bs" if gun_arm == "bd" else "bd"
+            first = min(cost, get_limb_frames(char.id)[gun_arm])
+            shares = {gun_arm: first, other_arm: cost - first}
+            limb_error = spend_limb_frames(char.id, shares, cost)
+            if limb_error:
+                emit_combat_error(limb_error)
+                return
+            cost_text = f" (<b>{cost} Frame</b>)"
+
+    result = load_firearm(char, slot, ammo_index)
+    if isinstance(result, str):
+        emit_combat_error(result)
+        return
+
+    db.session.commit()
+    emit_character_update(char)
+
+    count, ammo_name = result
+    socketio.emit("dice_result", {
+        "name": char.name,
+        "message": f"🔄 ricarica <b>{html.escape(str(item.get('name')))}</b> con <b>{html.escape(str(ammo_name))}</b>: {count} colpi{cost_text}.",
+        "is_master_roll": False
+    })
 
 def clean_knowledge(raw):
     """Conoscenze: solo nome e descrizione, testo semplice."""
@@ -4196,8 +4375,118 @@ UNARMED_LIMBS = {"pugno dx": "bd", "pugno sx": "bs"}
 INCOMING_ATTACK_FIELDS = (
     "attack_id", "attacker_id", "attacker_name", "defender_id", "defender_name",
     "weapon", "speed", "compendium_id", "source_slot", "damage_formula", "damage_type",
-    "range", "distance", "activation_mode", "area_shape"
+    "range", "distance", "activation_mode", "area_shape", "aim"
 )
+
+# Aree a cui si può mirare e pezzi di armatura che le coprono (in ordine di priorità)
+AIM_AREAS = {
+    "testa": ("Testa", ["elmo", "visore"]),
+    "busto": ("Busto", ["petto", "schiena", "cintura"]),
+    "braccio_dx": ("Braccio Dx", ["spalla_dx", "avambr_dx", "guanto_dx"]),
+    "braccio_sx": ("Braccio Sx", ["spalla_sx", "avambr_sx", "guanto_sx"]),
+    "gamba_dx": ("Gamba Dx", ["gambe", "stivale_dx"]),
+    "gamba_sx": ("Gamba Sx", ["gambe", "stivale_sx"]),
+}
+
+def armor_pieces(character):
+    """Pezzi di armatura indossati con la loro durabilità (uno per oggetto, anche se occupa più slot)."""
+    pieces, seen = [], set()
+    for slot, item in ((character.stats or {}).get("equipped") or {}).items():
+        if not isinstance(item, dict):
+            continue
+        group = item.get("equip_group_id") or slot
+        current, maximum = get_equipment_hp(item)
+        if group in seen or maximum <= 0:
+            continue
+        seen.add(group)
+        pieces.append({"slot": slot, "name": item.get("name", slot), "hp": current, "max_hp": maximum})
+    return pieces
+
+def detect_attack_situations(attacker, defender, aim):
+    """Situazioni dello scontro che possono dare un bonus/malus all'attacco.
+
+    Ognuna porta il valore salvato dal Master (None = mai decisa).
+    """
+    ws = WorldState.query.first()
+    terrain = ws.terrain or {}
+    situations = []
+
+    if aim in AIM_AREAS:
+        situations.append((f"mira_{aim}", f"Mira: {AIM_AREAS[aim][0]}"))
+
+    # Copertura: sull'esagono del difensore o su quello subito prima lungo la linea di tiro
+    # (mai l'esagono dell'attaccante, che c'è quando sono adiacenti)
+    line = hex_line(attacker.pos_x, attacker.pos_y, defender.pos_x, defender.pos_y)
+    cover_hexes = line[1:][-2:]
+    covers = {terrain.get(hex_key(col, row)) for col, row in cover_hexes}
+    if "copertura_totale" in covers:
+        situations.append(("copertura_totale", "Bersaglio in copertura totale"))
+    elif "copertura_parziale" in covers:
+        situations.append(("copertura_parziale", "Bersaglio in copertura parziale"))
+
+    attacker_high = terrain.get(hex_key(attacker.pos_x, attacker.pos_y)) == "altura"
+    defender_high = terrain.get(hex_key(defender.pos_x, defender.pos_y)) == "altura"
+    if attacker_high and not defender_high:
+        situations.append(("altura_attaccante", "Attaccante in altura"))
+    if defender_high and not attacker_high:
+        situations.append(("altura_difensore", "Difensore in altura"))
+
+    if not has_line_of_sight(attacker.pos_x, attacker.pos_y, defender.pos_x, defender.pos_y, sight_blocking_hexes(ws)):
+        situations.append(("senza_vista", "Nessuna linea di vista"))
+
+    return [
+        {"key": key, "label": label, "value": saved.value if saved else None}
+        for key, label in situations
+        for saved in [db.session.get(CombatModifier, key)]
+    ]
+
+def saved_custom_modifiers():
+    """Situazioni aggiunte a mano dal Master: si possono ripescare nella revisione."""
+    return [
+        {"key": m.key, "label": m.label, "value": m.value}
+        for m in CombatModifier.query.filter(CombatModifier.key.like("custom_%")).order_by(CombatModifier.label).all()
+    ]
+
+def save_combat_modifiers(raw_modifiers):
+    """Salva i modificatori applicati dal Master per riproporli le volte successive."""
+    for raw in raw_modifiers if isinstance(raw_modifiers, list) else []:
+        if not isinstance(raw, dict) or not raw.get("applied"):
+            continue
+        key = re.sub(r"[^a-z0-9_]", "", str(raw.get("key", "")).lower())[:80]
+        label = str(raw.get("label", "")).strip()[:120]
+        try:
+            value = int(raw.get("value"))
+        except (TypeError, ValueError):
+            continue
+        if not key or not label:
+            continue
+        modifier = db.session.get(CombatModifier, key) or CombatModifier(key=key)
+        modifier.label = label
+        modifier.value = value
+        db.session.merge(modifier)
+
+def default_armor_slot(character, aim, reaction, def_limb):
+    """Pezzo proposto al Master: quello che copre l'area mirata, oppure quello che ha parato."""
+    worn = {piece["slot"] for piece in armor_pieces(character)}
+    equipped = (character.stats or {}).get("equipped") or {}
+
+    if aim in AIM_AREAS:
+        for slot in AIM_AREAS[aim][1]:
+            item = equipped.get(slot)
+            if isinstance(item, dict):
+                # Un oggetto su più slot è registrato con il suo primo slot
+                group = item.get("equip_group_id")
+                match = next((p["slot"] for p in armor_pieces(character)
+                              if p["slot"] == slot or (group and equipped.get(p["slot"], {}).get("equip_group_id") == group)), None)
+                if match:
+                    return match
+
+    if reaction == "Parata":
+        slot, _ = get_defense_equipment(character, def_limb)
+        if slot in worn:
+            return slot
+
+    return None
 
 def incoming_attack_payload(attack):
     return {field: attack.get(field) for field in INCOMING_ATTACK_FIELDS}
@@ -4230,6 +4519,8 @@ def handle_declare_attack(data):
     # Un giocatore non può colpire ciò che non vede (nascosto o invisibile)
     if not is_master_request() and defender.role == "npc" and (defender.is_hidden or defender.is_invisible):
         return
+
+    aim = data.get("aim") if data.get("aim") in AIM_AREAS else None
 
     attack_limb = str(data.get("limb", "bd"))
     if attack_limb not in LIMB_KEYS:
@@ -4350,6 +4641,18 @@ def handle_declare_attack(data):
         )
         return
 
+    # Arma da fuoco: serve almeno un colpo nel caricatore
+    loaded_ammo = None
+    if firearm_spec(comp_item) and equipped_item and equipped_slot:
+        if "ammo_loaded" not in equipped_item:
+            auto_load_new_firearms(attacker)
+            equipped_item = ((attacker.stats or {}).get("equipped") or {}).get(equipped_slot) or equipped_item
+        loaded_ammo = equipped_item.get("ammo_loaded") or {}
+        if int(loaded_ammo.get("count", 0) or 0) < 1:
+            db.session.commit()
+            emit_combat_error(f"{weapon_name} è scarica: ricarica prima di sparare.")
+            return
+
     damage_data = (comp_item or {}).get("combat", {}).get("damage", {})
     activation = (comp_item or {}).get("activation", {})
     area = (comp_item or {}).get("combat", {}).get("area", {})
@@ -4366,6 +4669,11 @@ def handle_declare_attack(data):
     if limb_error:
         emit_combat_error(limb_error)
         return
+
+    if loaded_ammo is not None:
+        set_loaded_ammo(attacker, equipped_slot, {**loaded_ammo, "count": int(loaded_ammo["count"]) - 1})
+        db.session.commit()
+        emit_character_update(attacker)
 
     attack_id = str(uuid.uuid4())
 
@@ -4388,7 +4696,8 @@ def handle_declare_attack(data):
         "range": attack_range,
         "distance": distance,
         "activation_mode": activation.get("mode"),
-        "area_shape": area.get("shape")
+        "area_shape": area.get("shape"),
+        "aim": aim
     }
 
     pending_attacks[attack_id] = attack
@@ -4549,7 +4858,13 @@ def handle_resolve_reaction(data):
         "distance": attack.get("distance"),
         "range": attack.get("range"),
         "compendium_id": attack.get("compendium_id"),
-        "source_slot": attack.get("source_slot")
+        "source_slot": attack.get("source_slot"),
+        "aim": attack.get("aim"),
+        "aim_label": AIM_AREAS[attack["aim"]][0] if attack.get("aim") in AIM_AREAS else None,
+        "armor_pieces": armor_pieces(defender),
+        "modifiers": detect_attack_situations(attacker, defender, attack.get("aim")),
+        "custom_modifiers": saved_custom_modifiers(),
+        "armor_slot": default_armor_slot(defender, attack.get("aim"), reaction, def_limb_key)
     }
 
     pending_combat_results[result_id] = result
@@ -4559,6 +4874,52 @@ def handle_resolve_reaction(data):
 
     # Nessun HP viene modificato e nessun tiro viene pubblicato qui.
     emit_to_masters("master_pending_combat_result", result)
+
+# Esiti dello scontro scelti dal Master: (nome in chat, il colpo va a segno?)
+COMBAT_OUTCOMES = {
+    "colpito": ("Colpito", True),
+    "bruciapelo": ("Colpito a bruciapelo", True),
+    "parzialmente_parato": ("Colpito ma parzialmente parato", True),
+    "parato": ("Parato", False),
+    "schivato": ("Schivato", False),
+    "mancato": ("Mancato", False),
+}
+
+def combat_outcome_sentence(outcome, reaction, defender_name, damage):
+    """Frase della chat per l'esito, es. "🩸 Schivata fallita! DiDDi subisce 6 danni"."""
+    name = f"<b>{html.escape(defender_name)}</b>"
+    takes = f"{name} subisce <b>{damage} {'danno' if damage == 1 else 'danni'}</b>"
+
+    if outcome == "schivato":
+        return f"💨 {name} schiva l'attacco!"
+    if outcome == "parato":
+        return f"🛡️ {name} para l'attacco!"
+    if outcome == "mancato":
+        return f"💨 L'attacco manca {name}!"
+    if outcome == "bruciapelo":
+        return f"💥 Colpito a bruciapelo! {takes}"
+    if outcome == "parzialmente_parato":
+        return f"🛡️ Parata parziale! {takes}"
+
+    # Colpito: la frase dipende dalla reazione tentata
+    if reaction == "Schivata":
+        return f"🩸 Schivata fallita! {takes}"
+    if reaction == "Parata":
+        return f"🩸 L'attacco trapassa la guardia! {takes}"
+    return f"⚔️ Nessuna difesa! {takes}"
+
+def default_combat_outcome(reaction, att_roll, def_roll):
+    """Esito proposto dai tiri; il Master può sempre cambiarlo."""
+    try:
+        defended = int(def_roll) >= int(att_roll)
+    except (TypeError, ValueError):
+        defended = False
+
+    if reaction == "Schivata":
+        return "schivato" if defended else "colpito"
+    if reaction == "Parata":
+        return "parato" if defended else "parzialmente_parato"
+    return "colpito"
 
 @socketio.on("master_publish_combat_result")
 @undoable("Risultato dello scontro")
@@ -4597,109 +4958,73 @@ def handle_master_publish_combat_result(data):
         pending_combat_results.pop(result_id, None)
         return
 
+    # Il danno scritto dal Master è quello finale: sono gli HP che il difensore perde
     try:
-        att_roll = int(data.get("att_roll"))
-        def_roll = int(data.get("def_roll"))
         damage = max(0, int(data.get("damage", 0)))
+        armor_damage = max(0, int(data.get("armor_damage", 0) or 0))
     except (TypeError, ValueError):
         return
 
     reaction = result.get("reaction_type", "Schivata")
-    def_limb_key = result.get("def_limb", "bd")
-    resolution_lines = []
+    outcome = data.get("outcome")
+    if outcome not in COMBAT_OUTCOMES:
+        outcome = default_combat_outcome(reaction, result.get("att_roll"), result.get("def_roll"))
 
-    if reaction == "Schivata":
-        if def_roll >= att_roll:
-            float_text(defender, "Schivato!", "info")
-            resolution_lines.append(
-                f"💨 <b>{html.escape(defender.name)}</b> schiva perfettamente l'attacco!"
-            )
-        else:
-            defender.hp_current = max(0, defender.hp_current - damage)
-            if defender.role == "npc":
-                resolution_lines.append(
-                    f"🩸 Schivata fallita! <b>{html.escape(defender.name)}</b> subisce "
-                    f"<b>{damage} danni</b>."
-                )
-            else:
-                resolution_lines.append(
-                    f"🩸 Schivata fallita! <b>{html.escape(defender.name)}</b> subisce "
-                    f"<b>{damage} danni</b> (HP Rimanenti: {defender.hp_current})."
-                )
+    label, is_hit = COMBAT_OUTCOMES[outcome]
+    if not is_hit:
+        damage = 0
 
-    elif reaction == "Parata":
-        if def_roll >= att_roll:
-            float_text(defender, "Parato!", "info")
-            resolution_lines.append(
-                f"🛡️ <b>{html.escape(defender.name)}</b> para perfettamente! "
-                "L'attacco è respinto senza danni."
-            )
-        else:
-            defense_slot, defense_item = get_defense_equipment(defender, def_limb_key)
-            armor_hp, armor_max_hp = get_equipment_hp(defense_item)
+    defender.hp_current = max(0, defender.hp_current - damage)
 
-            damage_to_armor = min(damage, armor_hp) if armor_hp > 0 else 0
-            damage_to_player = damage - damage_to_armor
+    # Bonus/malus applicati: restano in memoria per la prossima volta
+    save_combat_modifiers(data.get("modifiers"))
 
-            if defense_item and armor_hp > 0:
-                new_armor_hp = armor_hp - damage_to_armor
-                set_equipment_current_hp(defender, defense_slot, new_armor_hp)
-                float_text(defender, f"🛡️ -{damage_to_armor}", "info")
-                resolution_lines.append(
-                    f"🛡️ <b>{html.escape(str(defense_item.get('name', 'Equipaggiamento')))}</b> "
-                    f"assorbe <b>{damage_to_armor}</b> danni "
-                    f"({new_armor_hp}/{armor_max_hp} HP)."
-                )
-
-            if damage_to_player > 0:
-                defender.hp_current = max(0, defender.hp_current - damage_to_player)
-                if defender.role == "npc":
-                    resolution_lines.append(
-                        f"🩸 L'attacco trapassa la guardia! <b>{html.escape(defender.name)}</b> "
-                        f"subisce <b>{damage_to_player} danni</b>."
-                    )
-                else:
-                    resolution_lines.append(
-                        f"🩸 L'attacco trapassa la guardia! <b>{html.escape(defender.name)}</b> "
-                        f"subisce <b>{damage_to_player} danni</b> "
-                        f"(HP Rimanenti: {defender.hp_current})."
-                    )
-            elif damage == 0:
-                resolution_lines.append("🛡️ Nessun danno da applicare.")
-
-    elif reaction == "Scambio":
-        defender.hp_current = max(0, defender.hp_current - damage)
-        if defender.role == "npc":
-            resolution_lines.append(
-                f"⚔️ Nessuna difesa! <b>{html.escape(defender.name)}</b> accetta "
-                f"<b>{damage} danni</b> per colpire a sua volta."
-            )
-        else:
-            resolution_lines.append(
-                f"⚔️ Nessuna difesa! <b>{html.escape(defender.name)}</b> accetta "
-                f"<b>{damage} danni</b> per colpire a sua volta "
-                f"(HP Rimanenti: {defender.hp_current})."
-            )
+    # Danno all'armatura, separato dagli HP: va al pezzo scelto dal Master
+    armor_hit = None
+    armor_slot = data.get("armor_slot")
+    piece = next((p for p in armor_pieces(defender) if p["slot"] == armor_slot), None)
+    if piece and armor_damage and piece["hp"] > 0:
+        taken = min(armor_damage, piece["hp"])
+        set_equipment_current_hp(defender, armor_slot, piece["hp"] - taken)
+        float_text(defender, f"🛡️ -{taken}", "info")
+        armor_hit = {"name": piece["name"], "damage": taken, "hp": piece["hp"] - taken, "max_hp": piece["max_hp"]}
 
     db.session.commit()
-
     emit_character_update(defender)
 
-    public_message = str(data.get("message", "")).strip()
-
-    if public_message:
-        # Il testo del Master viene trattato come testo semplice; i newline diventano <br>.
-        public_message = html.escape(public_message).replace("\n", "<br>")
+    # Banner del risultato sullo schermo di tutti (solo al Master se il difensore è nascosto)
+    banner = {
+        "attacker": attacker.name,
+        "defender": defender.name,
+        "outcome": label,
+        "hit": is_hit,
+        "damage": damage,
+        "aim": AIM_AREAS[result["aim"]][0] if result.get("aim") in AIM_AREAS else None,
+        "armor": armor_hit
+    }
+    if defender.role == "npc" and (defender.is_hidden or defender.is_invisible):
+        emit_to_masters("combat_banner", banner)
     else:
-        public_message = (
-            "⚔️ <b>RISOLUZIONE SCONTRO</b> ⚔️"
-            f"<br>Attacco ({html.escape(str(result.get('weapon', 'Attacco')))}): <b>{att_roll}</b>"
-            f"<br>Difesa ({html.escape(str(result.get('reaction_label') or reaction))}): <b>{def_roll}</b>"
-            f"<br>Danno impostato dal Master: <b>{damage}</b>"
+        socketio.emit("combat_banner", banner)
+
+    if not is_hit:
+        float_text(defender, f"{label}!", "info")
+
+    # In chat: esito e danni, niente tiri di dado
+    public_message = (
+        "⚔️ <b>RISOLUZIONE SCONTRO</b> ⚔️<br>"
+        + combat_outcome_sentence(outcome, reaction, defender.name, damage)
+    )
+    if armor_hit:
+        public_message += (
+            f"<br>🛡️ <b>{html.escape(str(armor_hit['name']))}</b>: -{armor_hit['damage']} "
+            f"({armor_hit['hp']}/{armor_hit['max_hp']})"
         )
 
-        if resolution_lines:
-            public_message += "<br>" + "<br>".join(resolution_lines)
+    note = str(data.get("message", "")).strip()
+    if note:
+        # La nota del Master è testo semplice; i newline diventano <br>
+        public_message += "<br><i>" + html.escape(note).replace("\n", "<br>") + "</i>"
 
     emit(
         "dice_result",
