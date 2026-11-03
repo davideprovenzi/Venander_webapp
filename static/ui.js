@@ -6097,6 +6097,7 @@ function updateAttackWeaponInfo() {
 
     syncAttackLimb();
     updateAttackAmmoRow();
+    updateAttackAimRow();
 
     const actionSelect =
         document.getElementById(
@@ -7827,6 +7828,8 @@ function defaultCombatOutcome(reaction, attRoll, defRoll) {
     const defended = Number(defRoll) >= Number(attRoll);
     if (reaction === 'Schivata') return defended ? 'schivato' : 'colpito';
     if (reaction === 'Parata') return defended ? 'parato' : 'parzialmente_parato';
+    // Colpo mirato o nella zona minacciata: niente reazione al colpo
+    if (reaction === 'Nessuna') return defended ? 'mancato' : 'colpito';
     return 'colpito';
 }
 
@@ -8594,3 +8597,170 @@ document.getElementById('attack-ammo-reload-btn')?.addEventListener('click', () 
     if (index === '') return;
     socket.emit('load_weapon', { char_id: Number(row.dataset.charId), slot: row.dataset.slot, ammo_index: Number(index) });
 });
+
+// ==========================================
+// MIRA (ARMI A DISTANZA)
+// Con un'arma a distanza si prende prima la mira: il bersaglio reagisce,
+// poi si può sparare. Nella propria zona minacciata si spara subito.
+// ==========================================
+function isRangedCompendium(comp) {
+    return !!getFirearmSpec(comp) || /distanza/i.test(String(comp?.type || ''));
+}
+
+function getSelectedRangedWeapon() {
+    const option = document.getElementById('attack-weapon')?.selectedOptions[0];
+    const shooter = characters.find(c => c.id === getActingCombatantId());
+    const item = shooter?.stats?.equipped?.[option?.dataset.slot];
+    if (!option || !item) return null;
+
+    const comp = findCompendioItem({ compendium_id: item.compendium_id || null, name: item.name, custom_definition: item.custom_definition });
+    return isRangedCompendium(comp) ? { shooter, slot: option.dataset.slot, item, comp } : null;
+}
+
+function updateAttackAimRow() {
+    const row = document.getElementById('attack-aim-row');
+    const attackBtn = document.getElementById('btn-execute-attack');
+    if (!row || !attackBtn) return;
+
+    const ranged = combatState.is_active ? getSelectedRangedWeapon() : null;
+    const target = characters.find(c => c.id === parseInt(document.getElementById('attack-target')?.value));
+
+    row.style.display = ranged ? 'block' : 'none';
+    attackBtn.disabled = false;
+    attackBtn.textContent = 'SFERRA ATTACCO';
+    if (!ranged) return;
+
+    const status = document.getElementById('attack-aim-status');
+    const aimBtn = document.getElementById('btn-declare-aim');
+    const dropBtn = document.getElementById('btn-drop-aim');
+    const myAim = combatAims.find(a => a.shooter_id === ranged.shooter.id);
+    const aimOnTarget = myAim && target && myAim.target_id === target.id ? myAim : null;
+    const inMyZone = target && combatThreats.some(t =>
+        t.char_id === ranged.shooter.id && (t.hexes || []).includes(`${target.x},${target.y}`)
+    );
+
+    dropBtn.style.display = myAim ? 'block' : 'none';
+    aimBtn.style.display = 'block';
+    aimBtn.disabled = !target;
+    aimBtn.textContent = myAim && !aimOnTarget ? '🎯 MIRA QUESTO BERSAGLIO' : '🎯 MIRA';
+
+    if (inMyZone) {
+        status.textContent = '⚠️ Il bersaglio è nella tua zona minacciata: puoi sparare subito.';
+        aimBtn.style.display = 'none';
+        attackBtn.textContent = '🔫 SPARA';
+    } else if (aimOnTarget?.ready) {
+        status.textContent = `🎯 Mira su ${aimOnTarget.target_name} · ha reagito: ${aimOnTarget.reaction}`;
+        aimBtn.style.display = 'none';
+        attackBtn.textContent = '🔫 SPARA';
+    } else if (aimOnTarget) {
+        status.textContent = `⏳ In attesa della reazione di ${aimOnTarget.target_name}...`;
+        aimBtn.style.display = 'none';
+        attackBtn.disabled = true;
+        attackBtn.textContent = '⏳ IN ATTESA DELLA REAZIONE';
+    } else {
+        status.textContent = myAim
+            ? `🎯 Stai mirando ${myAim.target_name}: per sparare a questo bersaglio prendi la mira.`
+            : '🎯 Arma a distanza: prima prendi la mira sul bersaglio.';
+        attackBtn.disabled = true;
+        attackBtn.textContent = '🔫 PRIMA PRENDI LA MIRA';
+    }
+}
+
+document.getElementById('btn-declare-aim')?.addEventListener('click', () => {
+    const ranged = getSelectedRangedWeapon();
+    const targetId = parseInt(document.getElementById('attack-target')?.value);
+    if (!ranged || !targetId) return;
+    socket.emit('declare_aim', { char_id: ranged.shooter.id, target_id: targetId, slot: ranged.slot });
+});
+
+document.getElementById('btn-drop-aim')?.addEventListener('click', () => {
+    const shooterId = getActingCombatantId();
+    const myAim = combatAims.find(a => a.shooter_id === shooterId);
+    if (myAim) socket.emit('drop_aim', { aim_id: myAim.id });
+});
+
+document.getElementById('attack-target')?.addEventListener('change', updateAttackAimRow);
+
+// Popup del bersaglio: un'azione utile della tabella (con i suoi frame) o nessuna reazione
+(() => {
+    const modal = document.getElementById('aim-alert-modal');
+    const select = document.getElementById('aim-alert-action');
+    if (!modal || !select) return;
+
+    const AIM_REACTION_CATEGORIES = ['Difesa', 'Movimento'];
+    const aimLimbPicker = createLimbPicker('aim-alert-limbs');
+    const queue = [];
+
+    function currentAim() {
+        return queue[0] || null;
+    }
+
+    function updateCost() {
+        const aim = currentAim();
+        const rule = findActionSpeedRule(select.value);
+        const target = characters.find(c => c.id === aim?.target_id);
+        document.getElementById('aim-alert-cost').textContent = rule ? `⚡ Vel ${rule.speed} · ${rule.frames} frame` : '';
+        document.getElementById('aim-alert-limbs').style.display = rule ? 'block' : 'none';
+        aimLimbPicker.update({
+            cost: rule ? Number(rule.frames) : 0,
+            available: combatState.players_limbs?.[target?.id],
+            preferred: rule?.category === 'Movimento' ? LIMB_ORDER_LEGS : LIMB_ORDER_ARMS,
+            suggest: true
+        });
+    }
+
+    function showNext() {
+        const aim = currentAim();
+        if (!aim) {
+            modal.classList.remove('open');
+            return;
+        }
+
+        document.getElementById('aim-alert-text').innerHTML =
+            `<b>${escapeHtml(aim.shooter_name)}</b> prende la mira su <b>${escapeHtml(aim.target_name)}</b> ` +
+            `con <b>${escapeHtml(aim.weapon || '')}</b>. Come reagisci?`;
+
+        select.innerHTML = '';
+        select.add(new Option('Nessuna reazione', ''));
+        getActionSpeedEntries()
+            .filter(entry => AIM_REACTION_CATEGORIES.includes(entry.category) && !entry.special)
+            .forEach(entry => select.add(new Option(`${entry.action} (${entry.frames} frame)`, entry.action)));
+
+        updateCost();
+        modal.classList.add('open');
+    }
+
+    select.addEventListener('change', updateCost);
+
+    document.getElementById('aim-alert-confirm')?.addEventListener('click', () => {
+        const aim = currentAim();
+        if (!aim) return;
+
+        const action = select.value || null;
+        const shares = action ? aimLimbPicker.getShares() : {};
+        if (action && !shares) {
+            alert('Frame insufficienti negli arti scelti: aggiungi un altro arto.');
+            return;
+        }
+
+        socket.emit('aim_response', { aim_id: aim.id, action, limb_shares: shares });
+        queue.shift();
+        showNext();
+    });
+
+    socket.on('aim_alert', (aim) => {
+        if (queue.some(a => a.id === aim.id)) return;
+        queue.push(aim);
+        if (queue.length === 1) showNext();
+    });
+
+    // Mira abbassata o interrotta prima della risposta: il popup si chiude
+    socket.on('aims_update', (aims) => {
+        const pending = new Set((aims || []).filter(a => !a.ready).map(a => a.id));
+        const before = queue.length;
+        for (let i = queue.length - 1; i >= 0; i--) {
+            if (!pending.has(queue[i].id)) queue.splice(i, 1);
+        }
+        if (queue.length !== before) showNext();
+    });
+})();

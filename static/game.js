@@ -326,8 +326,23 @@ function renderTurnOrderList() {
 
         const meta = document.createElement('span');
         meta.className = 'turn-row-meta';
-        const hasThreat = combatThreats.some(t => t.char_id === actor.id);
-        meta.textContent = `${hasThreat ? '⚠️ ' : ''}${actor.distance}m`;
+        const threats = combatThreats.filter(t => t.char_id === actor.id);
+        meta.textContent = `${threats.length ? '⚠️ ' : ''}${actor.distance}m`;
+
+        // Chi controlla il personaggio può ritirare le sue minacce in qualsiasi momento
+        const canControl = isMaster || actor.id === parseInt(userSelect?.value);
+        if (threats.length && canControl) {
+            const cancel = document.createElement('button');
+            cancel.type = 'button';
+            cancel.className = 'turn-threat-cancel';
+            cancel.textContent = '✖';
+            cancel.title = 'Ritira la minaccia';
+            cancel.addEventListener('mousedown', (e) => e.stopPropagation());
+            cancel.addEventListener('click', () => {
+                threats.forEach(t => socket.emit('cancel_threat', { threat_id: t.id }));
+            });
+            meta.prepend(cancel);
+        }
         header.appendChild(meta);
 
         row.appendChild(header);
@@ -3324,5 +3339,71 @@ window.floatingTexts = [];
 
 socket.on('floating_text', (data) => {
     window.floatingTexts.push({ ...data, start: performance.now() });
+    requestRender();
+});
+
+// ==========================================
+// MINACCIA SCATTATA
+// Chi minaccia riceve un avviso, anche se non è il suo turno: può agire
+// subito (il pannello del turno passa a lui) o lasciar passare.
+// ==========================================
+let lastThreatAlertKey = null;
+
+function isMyInterrupt(interrupt) {
+    if (!interrupt) return false;
+    const threatener = characters.find(c => c.id === interrupt.threatener_id);
+    if (isMaster) return threatener?.role === 'npc';
+    return interrupt.threatener_id === parseInt(userSelect?.value);
+}
+
+function updateThreatAlert() {
+    const modal = document.getElementById('threat-alert-modal');
+    const interrupt = combatState.interrupts?.[0];
+    if (!modal) return;
+
+    if (!combatState.is_active || !isMyInterrupt(interrupt)) {
+        modal.classList.remove('open');
+        lastThreatAlertKey = null;
+        return;
+    }
+
+    // Una sola volta per ogni interruzione
+    const key = `${interrupt.threat_id}-${interrupt.intruder_id}`;
+    if (key === lastThreatAlertKey) return;
+    lastThreatAlertKey = key;
+
+    document.getElementById('threat-alert-text').innerHTML =
+        `<b>${escapeHtml(interrupt.intruder_name)}</b> è entrato nella zona minacciata da ` +
+        `<b>${escapeHtml(interrupt.threatener_name)}</b>.<br>Puoi agire adesso, prima che continui.`;
+    modal.classList.add('open');
+}
+
+document.getElementById('threat-alert-act')?.addEventListener('click', () => {
+    document.getElementById('threat-alert-modal').classList.remove('open');
+
+    // Il pannello del turno è già passato a chi minaccia: lo si mette in evidenza
+    const panel = document.getElementById('combat-action-panel');
+    const content = document.getElementById('action-content');
+    if (content) content.style.display = 'block';
+    panel?.classList.add('flash');
+    setTimeout(() => panel?.classList.remove('flash'), 1600);
+});
+
+document.getElementById('threat-alert-pass')?.addEventListener('click', () => {
+    document.getElementById('threat-alert-modal').classList.remove('open');
+    socket.emit('end_interrupt');
+});
+
+// Registrato in fondo: gira dopo l'aggiornamento di combatState
+socket.on('combat_update', () => setTimeout(updateThreatAlert, 0));
+
+// ==========================================
+// MIRE IN CORSO (armi a distanza)
+// ==========================================
+let combatAims = [];
+
+socket.on('aims_update', (aims) => {
+    combatAims = Array.isArray(aims) ? aims : [];
+    window.updateCombatActionPanel?.();
     requestRender();
 });

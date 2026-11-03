@@ -111,6 +111,47 @@ function drawLines() {
 }
 
 // ==========================================
+// MIRE: linea rossa da chi mira al bersaglio (tratteggiata finché il
+// bersaglio non ha reagito), con il mirino sul bersaglio
+// ==========================================
+function drawAims() {
+    if (!combatState.is_active || !combatAims.length) return;
+
+    ctx.save();
+    combatAims.forEach(aim => {
+        const shooter = characters.find(c => c.id === aim.shooter_id);
+        const target = characters.find(c => c.id === aim.target_id);
+        if (!shooter || !target) return;
+        if (!isMaster && (!isNpcVisibleToPlayers(shooter) || !isNpcVisibleToPlayers(target))) return;
+
+        const from = hexToPixel(shooter.x, shooter.y);
+        const to = hexToPixel(target.x, target.y);
+
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.strokeStyle = 'rgba(231, 76, 60, 0.85)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash(aim.ready ? [] : [6, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Mirino
+        const r = HEX_SIZE * 0.85;
+        ctx.beginPath();
+        ctx.arc(to.x, to.y, r, 0, 2 * Math.PI);
+        ctx.moveTo(to.x - r - 4, to.y); ctx.lineTo(to.x - r + 6, to.y);
+        ctx.moveTo(to.x + r - 6, to.y); ctx.lineTo(to.x + r + 4, to.y);
+        ctx.moveTo(to.x, to.y - r - 4); ctx.lineTo(to.x, to.y - r + 6);
+        ctx.moveTo(to.x, to.y + r - 6); ctx.lineTo(to.x, to.y + r + 4);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+    ctx.restore();
+}
+
+// ==========================================
 // NUMERI FLUTTUANTI
 // Salgono sopra la pedina e svaniscono; finché ce n'è uno si ridisegna.
 // ==========================================
@@ -1189,6 +1230,7 @@ function render() {
 
     // Aree minacciate sopra la nebbia, sotto le pedine
     drawThreats();
+    drawAims();
 
     // 3.1 Percorso Movimento (Sopra le pedine)
     drawMovementPath();

@@ -554,21 +554,19 @@ def clear_threats_of(char_id):
         emit_threats()
 
 def find_threat_stop(mover, path):
-    """Primo esagono del percorso in cui il personaggio entra in un'area nemica minacciata.
+    """Primo esagono del percorso in cui il personaggio entra in un'area minacciata da altri.
 
     Restituisce (indice nel percorso, minacce scattate) oppure (None, []).
     """
     def inside(threat, hex_pos):
         return f"{hex_pos[0]},{hex_pos[1]}" in threat["hexes"]
 
-    enemy_threats = [
-        t for t in combat_threats
-        if t["char_id"] != mover.id and t["owner_role"] != mover.role
-    ]
+    # Scatta per chiunque entri, tranne chi minaccia: è lui a decidere se agire o lasciar passare
+    other_threats = [t for t in combat_threats if t["char_id"] != mover.id]
 
     for index in range(1, len(path)):
         entered = [
-            t for t in enemy_threats
+            t for t in other_threats
             if inside(t, path[index]) and not inside(t, path[index - 1])
         ]
         if entered:
@@ -597,6 +595,7 @@ def take_game_snapshot():
     return {
         "combat_state": copy.deepcopy(combat_state),
         "threats": copy.deepcopy(combat_threats),
+        "aims": copy.deepcopy(combat_aims),
         "pending_attacks": copy.deepcopy(pending_attacks),
         "pending_results": copy.deepcopy(pending_combat_results),
         "surface_prompts": copy.deepcopy(pending_surface_prompts),
@@ -1080,6 +1079,7 @@ def handle_register_session_role(data):
     # Il Master riceve anche le minacce degli NPC, le scene e i modelli NPC.
     if previous_role != role:
         socketio.emit("threats_update", threats_visible_to(role), to=request.sid)
+        socketio.emit("aims_update", combat_aims, to=request.sid)
         if role == "master":
             socketio.emit("scene_list", get_scene_list(), to=request.sid)
             socketio.emit("undo_status", {
@@ -1122,6 +1122,8 @@ def handle_toggle_combat():
     combat_state["interrupts"] = []
     combat_threats.clear()
     emit_threats()
+    combat_aims.clear()
+    emit_aims()
 
     if combat_state["is_active"]:
         characters = Character.query.filter_by(is_hidden=False).all()
@@ -1419,6 +1421,11 @@ def handle_move(data):
             ),
             "is_master_roll": False
         })
+
+    # Chi si muove perde la mira; e chi si sposta può uscire dalla vista di altri
+    if (char.pos_x, char.pos_y) != (walked_path[0][0], walked_path[0][1]):
+        break_aims(lambda aim: aim["shooter_id"] == char.id, "si è mosso")
+    check_aims()
 
     if triggered_threats:
         start_threat_interrupts(char, triggered_threats)
@@ -1735,6 +1742,7 @@ def handle_update_character_sheet(data):
     if "notes" in data: char.notes = data["notes"]
     if "knowledge" in data: char.knowledge = clean_knowledge(data["knowledge"])
     if "stats" in data or "backpack" in data: auto_load_new_firearms(char)
+    if "stats" in data: check_aims()
     db.session.commit()
     emit_character_update(char)
 
@@ -3386,6 +3394,9 @@ def handle_paint_terrain(data):
 
     socketio.emit("terrain_update", {"layer": layer, "changes": {key: value for key in hexes}})
 
+    # Un muro o del fumo nuovi possono chiudere una linea di vista
+    check_aims()
+
 @socketio.on("clear_terrain")
 def handle_clear_terrain(data):
     if not is_master_request():
@@ -4137,6 +4148,29 @@ def handle_declare_threat(data):
     else:
         emit("dice_result", message, broadcast=True)
 
+@socketio.on("cancel_threat")
+@undoable("Minaccia ritirata")
+def handle_cancel_threat(data):
+    """Chi minaccia (o il Master) ritira la zona quando vuole, anche fuori turno."""
+    global combat_threats
+
+    threat = next((t for t in combat_threats if t["id"] == (data or {}).get("threat_id")), None)
+    if not threat:
+        return
+
+    owner = db.session.get(Character, threat["char_id"])
+    if not controls_character(owner):
+        return
+
+    combat_threats = [t for t in combat_threats if t["id"] != threat["id"]]
+    emit_threats()
+
+    message = {"name": owner.name, "message": "ritira la minaccia.", "is_master_roll": False}
+    if owner.role == "npc":
+        emit_to_masters("dice_result", message)
+    else:
+        socketio.emit("dice_result", message)
+
 @socketio.on("end_interrupt")
 @undoable("Fine interruzione")
 def handle_end_interrupt():
@@ -4180,6 +4214,7 @@ def handle_undo_last_action():
         live.clear()
         live.update(copy.deepcopy(saved))
     combat_threats = copy.deepcopy(snapshot["threats"])
+    combat_aims[:] = copy.deepcopy(snapshot["aims"])
 
     changed_chars = []
     for char_id, fields in snapshot["characters"].items():
@@ -4199,6 +4234,7 @@ def handle_undo_last_action():
 
     socketio.emit("combat_update", combat_state)
     emit_threats()
+    emit_aims()
 
     # Popup legati all'azione annullata: chiusi o riaperti
     for attack_id in current_attacks - set(pending_attacks):
@@ -4641,6 +4677,25 @@ def handle_declare_attack(data):
         )
         return
 
+    # Armi a distanza: prima si mira (o il bersaglio è nella zona minacciata)
+    ranged_shot_label = None
+    if is_ranged_weapon(comp_item) and combat_state.get("is_active"):
+        check_aims()
+        aim_on_target = next(
+            (a for a in combat_aims if a["shooter_id"] == attacker.id and a["target_id"] == defender.id),
+            None
+        )
+        if target_in_shooter_threat(attacker, defender):
+            ranged_shot_label = "Nella zona minacciata"
+        elif aim_on_target and aim_on_target["ready"]:
+            ranged_shot_label = f"Mirato ({aim_on_target['reaction']})"
+        elif aim_on_target:
+            emit_combat_error(f"Aspetta che {defender.name} reagisca alla mira.")
+            return
+        else:
+            emit_combat_error(f"Prima devi prendere la mira su {defender.name}.")
+            return
+
     # Arma da fuoco: serve almeno un colpo nel caricatore
     loaded_ammo = None
     if firearm_spec(comp_item) and equipped_item and equipped_slot:
@@ -4717,7 +4772,63 @@ def handle_declare_attack(data):
         broadcast=True
     )
 
+    # Colpo mirato (o nella zona minacciata): il bersaglio ha già reagito alla mira,
+    # il colpo va dritto alla revisione del Master
+    if ranged_shot_label:
+        build_pending_result(attack, attacker, defender, "Nessuna", ranged_shot_label, 0, "bd")
+        return
+
     emit("incoming_attack", incoming_attack_payload(attack), broadcast=True)
+
+def build_pending_result(attack, attacker, defender, reaction, reaction_label, def_speed, def_limb_key):
+    """Tira i dadi e manda il risultato in revisione al Master (nessun HP cambia qui)."""
+    try:
+        att_speed = int(attack["speed"])
+    except (TypeError, ValueError):
+        att_speed = 0
+
+    # I dadi vengono tirati qui, ma il risultato resta segreto fino alla pubblicazione del Master.
+    att_roll = random.randint(1, 20) + (att_speed // 10)
+    def_roll = random.randint(1, 20) + (def_speed // 10)
+
+    result_id = str(uuid.uuid4())
+    result = {
+        "result_id": result_id,
+        "attack_id": attack["attack_id"],
+        "attacker_id": attacker.id,
+        "attacker_name": attacker.name,
+        "defender_id": defender.id,
+        "defender_name": defender.name,
+        "weapon": attack.get("weapon", "Mani Nude"),
+        "reaction_type": reaction,
+        "reaction_label": reaction_label,
+        "def_limb": def_limb_key,
+        "att_speed": att_speed,
+        "def_speed": def_speed,
+        "att_roll": att_roll,
+        "def_roll": def_roll,
+        "damage": attack.get("resolved_damage"),
+        "damage_formula": attack.get("resolved_damage_formula") or attack.get("damage_formula"),
+        "damage_note": attack.get("damage_note"),
+        "damage_type": attack.get("damage_type"),
+        "distance": attack.get("distance"),
+        "range": attack.get("range"),
+        "compendium_id": attack.get("compendium_id"),
+        "source_slot": attack.get("source_slot"),
+        "aim": attack.get("aim"),
+        "aim_label": AIM_AREAS[attack["aim"]][0] if attack.get("aim") in AIM_AREAS else None,
+        "armor_pieces": armor_pieces(defender),
+        "modifiers": detect_attack_situations(attacker, defender, attack.get("aim")),
+        "custom_modifiers": saved_custom_modifiers(),
+        "armor_slot": default_armor_slot(defender, attack.get("aim"), reaction, def_limb_key)
+    }
+
+    pending_combat_results[result_id] = result
+
+    # Una reazione può essere inviata una sola volta.
+    pending_attacks.pop(attack["attack_id"], None)
+
+    emit_to_masters("master_pending_combat_result", result)
 
 @socketio.on("resolve_reaction")
 @undoable("Reazione")
@@ -4826,54 +4937,197 @@ def handle_resolve_reaction(data):
     if def_limb_key not in LIMB_KEYS:
         def_limb_key = "bd"
 
-    damage = attack.get("resolved_damage")
-    damage_formula = attack.get("resolved_damage_formula") or attack.get("damage_formula")
-    damage_note = attack.get("damage_note")
+    build_pending_result(attack, attacker, defender, reaction, reaction_action or reaction, def_speed, def_limb_key)
 
-    # I dadi vengono tirati qui, ma il risultato resta segreto fino alla pubblicazione del Master.
-    att_roll = random.randint(1, 20) + (att_speed // 10)
-    def_roll = random.randint(1, 20) + (def_speed // 10)
+# ==========================================
+# MIRA (ARMI A DISTANZA)
+# Per sparare bisogna prima mirare: il bersaglio viene avvisato e reagisce
+# (un'azione della tabella o niente), poi si può sparare. La mira resta
+# finché qualcosa non la spezza: chi mira si muove, la linea di vista si
+# chiude, l'arma lascia la mano, la si abbassa o finisce il combattimento.
+# Chi spara a un bersaglio dentro una sua zona minacciata non deve mirare.
+# ==========================================
+combat_aims = []
 
-    result_id = str(uuid.uuid4())
+def is_ranged_weapon(comp):
+    return bool(firearm_spec(comp)) or "distanza" in str((comp or {}).get("type", "")).lower()
 
-    result = {
-        "result_id": result_id,
-        "attack_id": attack_id,
-        "attacker_id": attacker.id,
-        "attacker_name": attacker.name,
-        "defender_id": defender.id,
-        "defender_name": defender.name,
-        "weapon": weapon_name,
-        "reaction_type": reaction,
-        "reaction_label": reaction_action or reaction,
-        "def_limb": def_limb_key,
-        "att_speed": att_speed,
-        "def_speed": def_speed,
-        "att_roll": att_roll,
-        "def_roll": def_roll,
-        "damage": damage,
-        "damage_formula": damage_formula,
-        "damage_note": damage_note,
-        "damage_type": attack.get("damage_type"),
-        "distance": attack.get("distance"),
-        "range": attack.get("range"),
-        "compendium_id": attack.get("compendium_id"),
-        "source_slot": attack.get("source_slot"),
-        "aim": attack.get("aim"),
-        "aim_label": AIM_AREAS[attack["aim"]][0] if attack.get("aim") in AIM_AREAS else None,
-        "armor_pieces": armor_pieces(defender),
-        "modifiers": detect_attack_situations(attacker, defender, attack.get("aim")),
-        "custom_modifiers": saved_custom_modifiers(),
-        "armor_slot": default_armor_slot(defender, attack.get("aim"), reaction, def_limb_key)
+def emit_aims():
+    socketio.emit("aims_update", combat_aims)
+
+def aim_action_kind(comp, item_name):
+    name = str((comp or {}).get("name") or item_name or "").lower()
+    return "pistola" if any(k in name for k in ("pistol", "revolver")) else "fucile"
+
+def spend_two_arms(char_id, slot, cost):
+    """Azioni a due mani (mirare, ricaricare): paga prima il braccio dell'arma, il resto l'altro."""
+    gun_arm = SLOT_COMBAT_LIMBS.get(slot, "bd")
+    other_arm = "bs" if gun_arm == "bd" else "bd"
+    first = min(cost, get_limb_frames(char_id)[gun_arm])
+    return spend_limb_frames(char_id, {gun_arm: first, other_arm: cost - first}, cost)
+
+def break_aims(should_break, reason):
+    """Toglie le mire che non reggono più e lo annuncia in chat."""
+    broken = [aim for aim in combat_aims if should_break(aim)]
+    if not broken:
+        return
+    combat_aims[:] = [aim for aim in combat_aims if aim not in broken]
+    for aim in broken:
+        why = reason(aim) if callable(reason) else reason
+        socketio.emit("dice_result", {
+            "name": "SISTEMA",
+            "message": (
+                f"🎯 La mira di <b>{html.escape(aim['shooter_name'])}</b> su "
+                f"<b>{html.escape(aim['target_name'])}</b> si interrompe: {html.escape(why)}."
+            ),
+            "is_master_roll": False
+        })
+    emit_aims()
+
+def check_aims():
+    """Linea di vista ancora libera e arma ancora in mano, per ogni mira."""
+    if not combat_aims:
+        return
+    blocked = sight_blocking_hexes(WorldState.query.first())
+
+    def broken_reason(aim):
+        shooter = db.session.get(Character, aim["shooter_id"])
+        target = db.session.get(Character, aim["target_id"])
+        if not shooter or not target:
+            return "personaggio non più in campo"
+        weapon = ((shooter.stats or {}).get("equipped") or {}).get(aim["slot"])
+        if not isinstance(weapon, dict) or weapon.get("name") != aim["weapon"]:
+            return "l'arma non è più in mano"
+        if not has_line_of_sight(shooter.pos_x, shooter.pos_y, target.pos_x, target.pos_y, blocked):
+            return "linea di vista ostruita"
+        return None
+
+    reasons = {aim["id"]: broken_reason(aim) for aim in combat_aims}
+    break_aims(lambda aim: reasons.get(aim["id"]), lambda aim: reasons[aim["id"]])
+
+def target_in_shooter_threat(shooter, target):
+    key = hex_key(target.pos_x, target.pos_y)
+    return any(t["char_id"] == shooter.id and key in t["hexes"] for t in combat_threats)
+
+def notify_aim_target(aim, target):
+    """Il bersaglio sceglie come reagire; per gli NPC (o un giocatore assente) decide il Master."""
+    sids = [sid for sid, cid in client_character_ids.items() if cid == target.id]
+    if target.role == "npc" or not sids:
+        emit_to_masters("aim_alert", aim)
+    for sid in sids:
+        socketio.emit("aim_alert", aim, to=sid)
+
+@socketio.on("declare_aim")
+@undoable("Mira")
+def handle_declare_aim(data):
+    data = data or {}
+    shooter = db.session.get(Character, data.get("char_id"))
+    target = db.session.get(Character, data.get("target_id"))
+
+    if not combat_state.get("is_active") or not shooter or not target or shooter.id == target.id:
+        return
+    if not controls_character(shooter) or not is_players_turn(shooter):
+        return
+
+    slot = data.get("slot")
+    weapon = ((shooter.stats or {}).get("equipped") or {}).get(slot)
+    comp = equipped_item_compendium(weapon) if isinstance(weapon, dict) else None
+    if not comp or not is_ranged_weapon(comp):
+        emit_combat_error("Si mira solo con un'arma a distanza equipaggiata.")
+        return
+
+    if not has_line_of_sight(shooter.pos_x, shooter.pos_y, target.pos_x, target.pos_y, sight_blocking_hexes(WorldState.query.first())):
+        emit_combat_error(f"Non vedi {target.name}: la linea di vista è ostruita.")
+        return
+
+    weapon_range = compendium_attack_range(comp)
+    distance = hex_distance(shooter.pos_x, shooter.pos_y, target.pos_x, target.pos_y)
+    if weapon_range is not None and distance > weapon_range:
+        emit_combat_error(f"{target.name} è fuori portata: {distance} m, massimo {weapon_range:g} m.")
+        return
+
+    rule = get_action_speed_rule(f"Mirare con {aim_action_kind(comp, weapon.get('name'))}")
+    cost = int((rule or {}).get("frames", 0))
+    if cost:
+        limb_error = spend_two_arms(shooter.id, slot, cost)
+        if limb_error:
+            emit_combat_error(limb_error)
+            return
+
+    # Una mira alla volta: una nuova sostituisce la precedente
+    combat_aims[:] = [aim for aim in combat_aims if aim["shooter_id"] != shooter.id]
+    aim = {
+        "id": str(uuid.uuid4()),
+        "shooter_id": shooter.id,
+        "shooter_name": shooter.name,
+        "target_id": target.id,
+        "target_name": target.name,
+        "slot": slot,
+        "weapon": weapon.get("name"),
+        "ready": False,
+        "reaction": None
     }
+    combat_aims.append(aim)
+    emit_aims()
 
-    pending_combat_results[result_id] = result
+    socketio.emit("dice_result", {
+        "name": shooter.name,
+        "message": (
+            f"🎯 prende la mira su <b>{html.escape(target.name)}</b> con "
+            f"<b>{html.escape(str(weapon.get('name')))}</b>" + (f" (<b>{cost} Frame</b>)." if cost else ".")
+        ),
+        "is_master_roll": False
+    })
+    notify_aim_target(aim, target)
 
-    # Una reazione può essere inviata una sola volta.
-    pending_attacks.pop(attack_id, None)
+@socketio.on("aim_response")
+@undoable("Reazione alla mira")
+def handle_aim_response(data):
+    """Il bersaglio reagisce alla mira (anche fuori turno): un'azione della tabella o niente."""
+    data = data or {}
+    aim = next((a for a in combat_aims if a["id"] == data.get("aim_id")), None)
+    if not aim or aim["ready"]:
+        return
 
-    # Nessun HP viene modificato e nessun tiro viene pubblicato qui.
-    emit_to_masters("master_pending_combat_result", result)
+    target = db.session.get(Character, aim["target_id"])
+    if not controls_character(target):
+        return
+
+    action = data.get("action")
+    cost_text = ""
+    if action:
+        rule = get_action_speed_rule(action)
+        if not rule or rule.get("special"):
+            emit_combat_error("Azione non valida come reazione alla mira.")
+            return
+        cost = int(rule.get("frames", 0))
+        limb_error = spend_limb_frames(target.id, data.get("limb_shares") or {}, cost)
+        if limb_error:
+            emit_combat_error(limb_error)
+            return
+        action = rule["action"]
+        cost_text = f" (<b>{cost} Frame</b>)"
+
+    aim["ready"] = True
+    aim["reaction"] = action or "Nessuna reazione"
+    emit_aims()
+
+    socketio.emit("dice_result", {
+        "name": target.name,
+        "message": (
+            f"reagisce alla mira di <b>{html.escape(aim['shooter_name'])}</b>: "
+            + (f"<b>{html.escape(action)}</b>{cost_text}." if action else "nessuna reazione.")
+        ),
+        "is_master_roll": False
+    })
+
+@socketio.on("drop_aim")
+@undoable("Mira abbassata")
+def handle_drop_aim(data):
+    aim = next((a for a in combat_aims if a["id"] == (data or {}).get("aim_id")), None)
+    if not aim or not controls_character(db.session.get(Character, aim["shooter_id"])):
+        return
+    break_aims(lambda a: a["id"] == aim["id"], "abbassa la mira")
 
 # Esiti dello scontro scelti dal Master: (nome in chat, il colpo va a segno?)
 COMBAT_OUTCOMES = {
@@ -4902,6 +5156,8 @@ def combat_outcome_sentence(outcome, reaction, defender_name, damage):
         return f"🛡️ Parata parziale! {takes}"
 
     # Colpito: la frase dipende dalla reazione tentata
+    if reaction == "Nessuna":
+        return f"🎯 Colpo a segno! {takes}"
     if reaction == "Schivata":
         return f"🩸 Schivata fallita! {takes}"
     if reaction == "Parata":
@@ -4919,6 +5175,8 @@ def default_combat_outcome(reaction, att_roll, def_roll):
         return "schivato" if defended else "colpito"
     if reaction == "Parata":
         return "parato" if defended else "parzialmente_parato"
+    if reaction == "Nessuna":
+        return "mancato" if defended else "colpito"
     return "colpito"
 
 @socketio.on("master_publish_combat_result")

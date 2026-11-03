@@ -1242,6 +1242,12 @@
             <div style="text-align: center; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
                 Costo in Frame (110 - Vel): <strong id="attack-cost" style="color: #e74c3c; font-size: 14px;">25</strong>
             </div>
+            <!-- Armi a distanza: prima la mira (il bersaglio reagisce), poi lo sparo -->
+            <div id="attack-aim-row" class="attack-aim-row">
+                <div id="attack-aim-status"></div>
+                <button id="btn-declare-aim" type="button" class="attack-aim-btn">🎯 MIRA</button>
+                <button id="btn-drop-aim" type="button" class="attack-aim-drop">✖ Abbassa la mira</button>
+            </div>
             <button id="btn-execute-attack" style="width: 100%; padding: 10px; background: #c0392b; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">SFERRA ATTACCO</button>
 
             <!-- AZIONE DALLA TABELLA (movimento, oggetti, cure, gadget...) -->
@@ -1334,6 +1340,26 @@
             <button id="potion-offer-decline" type="button">No, grazie</button>
             <button id="potion-offer-accept" type="button">🧪 Bevi</button>
         </div>
+    </div>
+
+    <!-- MINACCIA SCATTATA: avviso per chi minaccia (anche fuori dal suo turno) -->
+    <div id="threat-alert-modal" class="threat-alert-modal">
+        <div class="threat-alert-title">⚡ Minaccia!</div>
+        <p id="threat-alert-text"></p>
+        <div class="threat-alert-actions">
+            <button id="threat-alert-pass" type="button">➡️ Lascia passare</button>
+            <button id="threat-alert-act" type="button">⚔️ Agisci ora</button>
+        </div>
+    </div>
+
+    <!-- MIRA: il bersaglio sceglie come reagire (anche fuori dal suo turno) -->
+    <div id="aim-alert-modal" class="aim-alert-modal">
+        <div class="aim-alert-title">🎯 Sei sotto mira!</div>
+        <p id="aim-alert-text"></p>
+        <select id="aim-alert-action"></select>
+        <div id="aim-alert-cost" class="aim-alert-cost"></div>
+        <div id="aim-alert-limbs" class="limb-picker"></div>
+        <button id="aim-alert-confirm" type="button">Reagisci</button>
     </div>
 
     <!-- RISULTATO DELLO SCONTRO: banner per tutti -->
