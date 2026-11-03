@@ -16,7 +16,7 @@ azzera combattimento, annulla e minacce in corso.
 Uso:
     python test_env.py            # copia fresca della partita vera
     python test_env.py --keep     # riprende la copia di prova precedente
-    python test_env.py --port 5002
+    python test_env.py --port 5001
 """
 import argparse
 import os
