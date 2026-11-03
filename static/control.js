@@ -33,6 +33,11 @@ window.addEventListener('keydown', e => {
             changed = true;
         }
 
+        if (window.trinketPlacement) {
+            cancelTrinketPlacement();
+            changed = true;
+        }
+
         if (window.isRulerMode) {
             window.isRulerMode = false;
             window.rulerStart = null;
@@ -128,6 +133,20 @@ canvas.addEventListener('click', (event) => {
     if (window.threatPlacement) {
         const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
         toggleThreatHex(threatHex.col, threatHex.row);
+        return;
+    }
+
+    // Schivata di un'esplosione: il clic sceglie dove buttarsi (vedi trinkets.js)
+    if (window.explosionEscape) {
+        const escapeHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        escapeExplosionAt(escapeHex.col, escapeHex.row);
+        return;
+    }
+
+    // Trinket: il clic sceglie dove piazzarlo o lanciarlo (vedi trinkets.js)
+    if (window.trinketPlacement) {
+        const trinketHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        placeTrinketAt(trinketHex.col, trinketHex.row);
         return;
     }
 

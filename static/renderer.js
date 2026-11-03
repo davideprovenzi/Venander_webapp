@@ -1234,6 +1234,7 @@ function render() {
     // Aree minacciate sopra la nebbia, sotto le pedine
     drawThreats();
     drawAims();
+    window.drawTrinkets?.();
 
     // 3.1 Percorso Movimento (Sopra le pedine)
     drawMovementPath();

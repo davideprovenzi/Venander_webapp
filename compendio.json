@@ -17796,6 +17796,13 @@
         "speed": 70,
         "frames": 40,
         "special": "threat"
+      },
+      {
+        "category": "Tattica",
+        "action": "Riparazione rapida armatura",
+        "speed": 40,
+        "frames": 70,
+        "special": "armor_repair"
       }
     ]
   }

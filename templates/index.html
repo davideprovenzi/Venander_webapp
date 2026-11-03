@@ -122,6 +122,9 @@
                 <div style="visibility: hidden;"></div>
                 <div class="doll-slot" id="slot-stivale_sx"><div class="doll-icon"></div><div class="doll-name">Stivale Sx</div></div>
             </div>
+
+            <!-- Ridistribuisce i danni tra tutti i pezzi (in combattimento: Altra azione) -->
+            <button id="btn-quick-armor-repair" class="quick-armor-repair" type="button" title="Ogni pezzo finisce alla stessa percentuale di durabilità">🔧 Riparazione rapida armatura</button>
         </div>
     </div>
 
@@ -809,6 +812,8 @@
                         <ul id="ui-skills" style="padding-left: 20px; margin: 0; font-size: 14px;"></ul>
                         <!-- Abilità date dai gadget posseduti -->
                         <div id="ui-gadget-abilities" class="gadget-abilities"></div>
+                        <!-- Trinket Umbryll: piazzare, lanciare, far esplodere -->
+                        <div id="ui-trinkets"></div>
                     </div>
                 </div>
                 <div class="sheet-section">
@@ -1187,6 +1192,8 @@
                 </label>
                 <button id="btn-move-mode" type="button" class="combat-move-btn">🦶 Muovi (M)</button>
             </div>
+            <!-- TRINKET: piazzare, lanciare, far esplodere (si riempie da trinkets.js) -->
+            <div id="combat-trinket-section"></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; font-size: 11px; text-align: center;">
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Dx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bd">60</strong>/60</div>
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Braccio Sx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-bs">60</strong>/60</div>
@@ -1381,6 +1388,22 @@
         <div id="aim-alert-cost" class="aim-alert-cost"></div>
         <div id="aim-alert-limbs" class="limb-picker"></div>
         <button id="aim-alert-confirm" type="button">Reagisci</button>
+    </div>
+
+    <!-- BOMBA: chi è nell'area reagisce prima dell'esplosione -->
+    <div id="explosion-alert-modal" class="aim-alert-modal explosion-alert-modal">
+        <div class="aim-alert-title">💣 Bip... bip...</div>
+        <p id="explosion-alert-text"></p>
+        <select id="explosion-alert-action"></select>
+        <div id="explosion-alert-cost" class="aim-alert-cost"></div>
+        <div id="explosion-alert-limbs" class="limb-picker"></div>
+        <button id="explosion-alert-confirm" type="button">Reagisci</button>
+    </div>
+
+    <!-- BOMBA: il Master rivede e applica i danni -->
+    <div id="explosion-review-modal" class="explosion-review-modal">
+        <div class="explosion-review-title">💥 Esplosione</div>
+        <div id="explosion-review-body"></div>
     </div>
 
     <!-- RISULTATO DELLO SCONTRO: banner per tutti -->
@@ -1752,6 +1775,7 @@
     <script src="/static/terrain.js"></script>
     <script src="/static/ui.js"></script>
     <script src="/static/control.js"></script>
+    <script src="/static/trinkets.js"></script>
     <script src="/static/wiki.js"></script>
 
 </body>

@@ -160,6 +160,7 @@ function populatePlayerSheetUI(myChar) {
 
     populateList('ui-skills', myChar.skills);
     renderGadgetAbilities(myChar);
+    window.renderTrinketSheet?.(myChar);
     renderKnowledgeSection(myChar);
 
     // ======================================
@@ -3304,6 +3305,12 @@ document.getElementById('btn-execute-table-action')?.addEventListener('click', (
         return;
     }
 
+    // Riparazione rapida armatura: ha il suo evento (ridistribuisce la durabilità)
+    if (entry.special === 'armor_repair') {
+        socket.emit('quick_armor_repair', { char_id: actorId, limb_shares: shares });
+        return;
+    }
+
     // Minacciare: prima si scelgono gli esagoni sulla mappa (la portata la decide il server)
     if (entry.special === 'threat') {
         pendingThreatShares = { char_id: actorId, limb_shares: shares };
@@ -4530,6 +4537,9 @@ window.updateEquippedPanel = function(char) {
 
     panel.style.display = 'block';
     if (gadgetPanelEl) gadgetPanelEl.style.display = 'block';
+
+    // Personaggio mostrato: serve alla riparazione rapida
+    panel.dataset.charId = char?.id ?? '';
 
     // Nessuna migrazione/scrittura automatica durante il caricamento.
     // Le modifiche all'equipaggiamento partono solo da azioni esplicite dell'utente.
@@ -6830,6 +6840,7 @@ window.updateCombatActionPanel = function() {
     populateTableActionSection();
     refreshTableActionLimbs();
     updateMoveSection();
+    window.renderTrinketCombat?.();
 
     // ==========================================
     // FRAME ARTI
@@ -8819,3 +8830,11 @@ document.getElementById('attack-target')?.addEventListener('change', updateAttac
         if (queue.length !== before) showNext();
     });
 })();
+
+
+// Riparazione rapida dal pannello armatura (gratis fuori dal combattimento)
+document.getElementById('btn-quick-armor-repair')?.addEventListener('click', () => {
+    const charId = parseInt(document.getElementById('equipped-panel')?.dataset.charId);
+    if (!charId) return;
+    socket.emit('quick_armor_repair', { char_id: charId });
+});
