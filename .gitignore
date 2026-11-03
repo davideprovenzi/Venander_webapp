@@ -1,5 +1,5 @@
 # Database della partita: è lo stato di gioco locale, non codice
-instance/
+#instance/
 
 # Python
 __pycache__/
