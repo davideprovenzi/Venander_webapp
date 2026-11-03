@@ -284,9 +284,7 @@ document.getElementById('surface-clear-btn')?.addEventListener('click', () => {
     if (confirm('Cancellare tutte le superfici di questa mappa?')) socket.emit('clear_terrain', { layer: 'surface' });
 });
 
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && window.terrainBrush) setTerrainBrush(null);
-});
+// Esc spegne il pennello insieme agli altri strumenti del Master (vedi control.js)
 
 // ==========================================
 // SUPERFICI: DECISIONE DEL MASTER

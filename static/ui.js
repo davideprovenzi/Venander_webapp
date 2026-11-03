@@ -3179,6 +3179,29 @@ document.getElementById('threat-placement-cancel')?.addEventListener('click', ca
 
 // Frame per passo: devono coincidere con MOVE_FRAME_COSTS in app.py
 const MOVE_PACES = { Camminata: 20, Corsa: 15, Furtivo: 25 };
+
+// Mezza barricata (copertura parziale): in combattimento un giocatore la scavalca
+// con 5 PA della statistica scelta (come BARRICADE_PA_COST in app.py)
+const BARRICADE_PA_COST = 5;
+window.barricadeStat = null;
+
+function getStatPa(char, stat) {
+    if (char.pa_stats && char.pa_stats[stat] !== undefined) return Number(char.pa_stats[stat]);
+    const value = parseInt(char.stats?.[stat]) || 1;
+    return 6 + (value - 1) * 3;
+}
+
+// Barricate attraversate dal percorso e PA necessari (solo per i giocatori)
+function getBarricadeCrossing(mover, x, y) {
+    if (mover.role !== 'player') return null;
+    const count = hexLine(mover.x, mover.y, x, y).slice(1)
+        .filter(h => terrainAt(h.col, h.row) === 'copertura_parziale').length;
+    if (!count) return null;
+
+    const stat = window.barricadeStat;
+    const cost = BARRICADE_PA_COST * count;
+    return { count, cost, stat, enough: !!stat && getStatPa(mover, stat) >= cost };
+}
 window.moveMode = false;
 window.movePace = 'Camminata';
 
@@ -3215,6 +3238,18 @@ function updateMoveSection() {
 
     const frames = Number(combatState.players_pa?.[mover.id] ?? 120);
     document.getElementById('combat-move-frames').textContent = `${frames} frame`;
+
+    // Statistica per le barricate: solo i giocatori pagano i PA
+    const barricadeRow = document.getElementById('combat-move-barricade');
+    const statSelect = document.getElementById('combat-move-barricade-stat');
+    const stats = Object.keys(mover.stats || {}).filter(key => typeof mover.stats[key] !== 'object');
+    barricadeRow.style.display = mover.role === 'player' && stats.length ? 'flex' : 'none';
+    if (mover.role === 'player') {
+        if (!stats.includes(window.barricadeStat)) window.barricadeStat = stats.includes('Destrezza') ? 'Destrezza' : stats[0];
+        statSelect.innerHTML = '';
+        stats.forEach(stat => statSelect.add(new Option(`${stat} (${getStatPa(mover, stat)} PA)`, stat)));
+        statSelect.value = window.barricadeStat;
+    }
     document.querySelectorAll('.move-pace').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.pace === window.movePace);
     });
@@ -3228,6 +3263,11 @@ document.querySelectorAll('.move-pace').forEach(btn => btn.addEventListener('cli
 }));
 
 document.getElementById('btn-move-mode')?.addEventListener('click', () => setMoveMode(!window.moveMode));
+
+document.getElementById('combat-move-barricade-stat')?.addEventListener('change', (e) => {
+    window.barricadeStat = e.target.value;
+    requestRender();
+});
 
 document.addEventListener('keydown', (e) => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
@@ -7788,10 +7828,8 @@ socket.on(
         ).value =
             data.def_roll;
 
-        document.getElementById(
-            'master-review-damage'
-        ).value =
-            data.damage ?? 0;
+        // Danno totale: si divide con l'armatura (vedi splitReviewDamage)
+        document.getElementById('master-review-total').value = data.damage ?? 0;
 
         // Nota libera: vuota, in chat vanno già esito e danno
         document.getElementById('master-review-message').value = '';
@@ -7803,11 +7841,9 @@ socket.on(
         armorSelect.add(new Option('Nessuna armatura', ''));
         pieces.forEach(piece => armorSelect.add(new Option(`${piece.name} (${piece.hp}/${piece.max_hp})`, piece.slot)));
         armorSelect.value = data.armor_slot || '';
-        document.getElementById('master-review-armor-damage').value = 0;
         document.getElementById('master-review-armor-row').style.display = pieces.length ? 'block' : 'none';
 
-        const damageInput = document.getElementById('master-review-damage');
-        damageInput.disabled = false;
+        document.getElementById('master-review-total').disabled = false;
         reviewDamageBeforeMiss = null;
 
         // Bonus/malus: quelli già decisi in passato partono applicati
@@ -7946,17 +7982,36 @@ let reviewDamageBeforeMiss = null;
 // Parato / Schivato / Mancato: danno a 0 (e si ripristina se si torna a un colpo)
 function syncReviewOutcome() {
     const outcome = document.getElementById('master-review-outcome').value;
-    const damageInput = document.getElementById('master-review-damage');
+    const totalInput = document.getElementById('master-review-total');
     const missed = NON_HIT_OUTCOMES.includes(outcome);
 
-    if (missed && !damageInput.disabled) {
-        reviewDamageBeforeMiss = damageInput.value;
-        damageInput.value = 0;
-    } else if (!missed && damageInput.disabled && reviewDamageBeforeMiss !== null) {
-        damageInput.value = reviewDamageBeforeMiss;
+    if (missed && !totalInput.disabled) {
+        reviewDamageBeforeMiss = totalInput.value;
+        totalInput.value = 0;
+    } else if (!missed && totalInput.disabled && reviewDamageBeforeMiss !== null) {
+        totalInput.value = reviewDamageBeforeMiss;
     }
-    damageInput.disabled = missed;
+
+    totalInput.disabled = missed;
+    document.getElementById('master-review-damage').disabled = missed;
+    document.getElementById('master-review-armor-damage').disabled = missed;
+    splitReviewDamage();
 }
+
+// Metà del danno all'armatura che copre il colpo (il punto dispari al personaggio),
+// fino a quanta durabilità le resta; senza armatura tutto al personaggio
+function splitReviewDamage() {
+    const total = Math.max(0, parseInt(document.getElementById('master-review-total').value) || 0);
+    const slot = document.getElementById('master-review-armor-slot').value;
+    const piece = (pendingMasterCombatResult?.armor_pieces || []).find(p => p.slot === slot);
+    const armorShare = piece ? Math.min(Math.floor(total / 2), Math.max(0, piece.hp)) : 0;
+
+    document.getElementById('master-review-armor-damage').value = armorShare;
+    document.getElementById('master-review-damage').value = total - armorShare;
+}
+
+document.getElementById('master-review-total')?.addEventListener('input', splitReviewDamage);
+document.getElementById('master-review-armor-slot')?.addEventListener('change', splitReviewDamage);
 
 document.getElementById('master-review-outcome')?.addEventListener('change', syncReviewOutcome);
 

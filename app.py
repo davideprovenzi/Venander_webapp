@@ -1366,6 +1366,29 @@ def handle_move(data):
                 else:
                     target_x, target_y = char.pos_x, char.pos_y
 
+        # Mezza barricata (copertura parziale): in combattimento un giocatore la scavalca
+        # spendendo 5 PA di una statistica a sua scelta, altrimenti non passa
+        barricade_cost = None
+        if (
+            combat_state.get("is_active") and char.role == "player"
+            and (mode or not is_master_request())
+        ):
+            path_now = hex_line(char.pos_x, char.pos_y, target_x, target_y)
+            barricades = sum(
+                1 for hx, hy in path_now[1:]
+                if (ws.terrain or {}).get(hex_key(hx, hy)) == "copertura_parziale"
+            )
+            if barricades:
+                stat = data.get("pa_stat")
+                if stat not in (char.stats or {}) or isinstance((char.stats or {}).get(stat), dict):
+                    reject("barricade_stat")
+                    return
+                needed = BARRICADE_PA_COST * barricades
+                if stat_pa_current(char, stat) < needed:
+                    reject("barricade_pa")
+                    return
+                barricade_cost = (stat, needed)
+
         # In combattimento il movimento costa frame, calcolati qui e non dal client.
         # Il Master può comunque riposizionare liberamente (senza andatura).
         move_cost = None
@@ -1393,6 +1416,12 @@ def handle_move(data):
                 return
 
         walked_path = hex_line(char.pos_x, char.pos_y, target_x, target_y)
+
+        if barricade_cost:
+            stat, needed = barricade_cost
+            pa_stats = dict(char.pa_stats or {})
+            pa_stats[stat] = stat_pa_current(char, stat) - needed
+            char.pa_stats = pa_stats
 
         char.pos_x = target_x
         char.pos_y = target_y
@@ -1429,6 +1458,13 @@ def handle_move(data):
 
     if triggered_threats:
         start_threat_interrupts(char, triggered_threats)
+
+    if barricade_cost:
+        socketio.emit("dice_result", {
+            "name": char.name,
+            "message": f"🧱 scavalca la barricata spendendo <b>{barricade_cost[1]} PA</b> di {html.escape(barricade_cost[0])}.",
+            "is_master_roll": False
+        })
 
     for surface in entered_surfaces:
         prompt_surface_effect(char, surface, "enter")
@@ -3289,6 +3325,9 @@ def handle_delete_drawings(data):
 # indicativo e lo applica il Master; muri e fumo bloccano la vista,
 # i muri anche il movimento; terreno difficile e ghiaccio costano doppio.
 # ==========================================
+# PA per scavalcare ogni esagono di mezza barricata (copertura parziale) in combattimento
+BARRICADE_PA_COST = 5
+
 TERRAIN_TYPES = {"altura", "copertura_parziale", "copertura_totale", "difficile", "muro"}
 
 SURFACE_EFFECTS = {
@@ -4389,6 +4428,45 @@ def handle_sync_fow(hex_list):
     emit("update_fow_hexes", hex_list, broadcast=True)
 
 # Gestione attacco limbs
+@socketio.on("set_frames")
+@undoable("Modifica dei frame")
+def handle_set_frames(data):
+    """Il Master imposta in qualsiasi momento i frame di movimento e degli arti di un combattente."""
+    if not is_master_request() or not combat_state.get("is_active"):
+        return
+
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+    if not char:
+        return
+
+    try:
+        movement = max(0, int(data.get("pa")))
+        limbs = {limb: max(0, int((data.get("limbs") or {}).get(limb))) for limb in LIMB_KEYS}
+    except (TypeError, ValueError):
+        emit_combat_error("Frame non validi: servono numeri interi.")
+        return
+
+    combat_state["players_pa"][str(char.id)] = movement
+    combat_state["players_limbs"][str(char.id)] = limbs
+
+    socketio.emit("sync_pa", {"char_id": char.id, "pa": movement})
+    socketio.emit("sync_limbs", {"char_id": char.id, "limbs": limbs})
+
+    message = {
+        "name": "👑 MASTER",
+        "message": (
+            f"imposta i frame di <b>{html.escape(char.name)}</b>: 🦶 {movement} · "
+            f"BD {limbs['bd']} · BS {limbs['bs']} · GD {limbs['gd']} · GS {limbs['gs']}"
+        ),
+        "is_master_roll": False
+    }
+    # Gli NPC nascosti restano segreti
+    if char.role == "npc" and (char.is_hidden or char.is_invisible):
+        emit_to_masters("dice_result", message)
+    else:
+        socketio.emit("dice_result", message)
+
 @socketio.on("sync_limbs")
 @undoable("Correzione frame arti")
 def handle_sync_limbs(data):

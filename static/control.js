@@ -40,6 +40,37 @@ window.addEventListener('keydown', e => {
             changed = true;
         }
 
+        // Strumenti del Master: Esc chiude il pannello (ui.js) e spegne anche lo strumento,
+        // così non si resta a disegnare o a dipingere muri senza accorgersene
+        if (isMaster) {
+            if (isDrawingMode) {
+                currentTempShape = null; // forma ancora in anteprima: si scarta
+                setDrawingMode(false);   // spegne anche gomma e selezione del disegno
+                changed = true;
+            }
+
+            if (window.terrainBrush) {
+                setTerrainBrush(null);
+                changed = true;
+            }
+
+            if (window.isSpawningNpc) {
+                window.isSpawningNpc = false;
+                changed = true;
+            }
+
+            if (window.isEditingMap) {
+                // Il pulsante sa rimettere a posto testo, colore e cursore
+                document.getElementById('toggle-map-edit-btn')?.click();
+                changed = true;
+            }
+
+            if (changed) {
+                canvas.style.cursor = 'pointer';
+                if (typeof statusBar !== 'undefined') statusBar.innerText = '[MASTER] Esc: strumenti spenti e selezione annullata.';
+            }
+        }
+
         if (changed && typeof render === 'function') render();
     }
 });
@@ -597,6 +628,13 @@ function performCombatMove(gridX, gridY) {
         return;
     }
 
+    // Mezza barricata: senza i PA non si scavalca
+    const barricade = getBarricadeCrossing(mover, gridX, gridY);
+    if (barricade && !barricade.enough) {
+        statusBar.innerText = `🧱 Per scavalcare la barricata servono ${barricade.cost} PA di ${barricade.stat}: non bastano.`;
+        return;
+    }
+
     const moveId = `${Date.now()}-${Math.random()}`;
     window.pendingLocalMoves[mover.id] = {
         moveId,
@@ -619,7 +657,9 @@ function performCombatMove(gridX, gridY) {
         target_x: gridX,
         target_y: gridY,
         move_id: moveId,
-        mode: window.movePace
+        mode: window.movePace,
+        // Statistica da cui pagare i PA delle barricate (se ce ne sono)
+        pa_stat: window.barricadeStat
     });
 
     setMoveMode(false);

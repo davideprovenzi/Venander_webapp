@@ -701,7 +701,9 @@ function drawMovementPath() {
 
     const frames = Number(combatState.players_pa?.[mover.id] ?? 120);
     const cost = movementFrameCost(mover.x, mover.y, target.col, target.row, MOVE_PACES[window.movePace]);
+    const barricade = getBarricadeCrossing(mover, target.col, target.row);
     const blocked = cost > frames ||
+        (barricade && !barricade.enough) ||
         pathCrossesWall(mover.x, mover.y, target.col, target.row) ||
         isHexOccupied(target.col, target.row, mover.id);
     const color = blocked ? '231, 76, 60' : '52, 152, 219';
@@ -727,7 +729,8 @@ function drawMovementPath() {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    const label = `${dist} passi · ${cost} frame${blocked && cost > frames ? ` (hai ${frames})` : ''}`;
+    const label = `${dist} passi · ${cost} frame${blocked && cost > frames ? ` (hai ${frames})` : ''}` +
+        (barricade ? ` · 🧱 +${barricade.cost} PA ${barricade.stat || ''}` : '');
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.lineWidth = 3;

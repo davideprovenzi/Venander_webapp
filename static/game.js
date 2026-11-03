@@ -313,6 +313,11 @@ function renderTurnOrderList() {
         const row = document.createElement('div');
         row.className = 'turn-row';
         row.classList.toggle('current', isCurrent);
+        row.classList.toggle('selected', isMaster && actor.id === selectedCharacterId);
+        if (isMaster) {
+            row.title = 'Clicca per selezionare (frame, vitali, scheda)';
+            row.addEventListener('click', () => selectCombatantFromTracker(actor.id));
+        }
         row.classList.toggle('acting', actor.id === actingId && !isCurrent);
 
         // Nome, distanza e indicatori
@@ -1403,7 +1408,9 @@ socket.on('move_rejected', (data) => {
             occupied: "⛔ Movimento annullato: la casella è già occupata.",
             frames: "⛔ Movimento rifiutato: frame di movimento insufficienti.",
             not_your_turn: "⛔ Movimento rifiutato: non è il tuo turno.",
-            wall: "⛔ Movimento rifiutato: un muro blocca il percorso."
+            wall: "⛔ Movimento rifiutato: un muro blocca il percorso.",
+            barricade_pa: "🧱 Movimento rifiutato: non hai abbastanza PA per scavalcare la barricata.",
+            barricade_stat: "🧱 Movimento rifiutato: scegli la statistica per scavalcare la barricata."
         };
         statusBar.innerText = reasons[reason] || "⛔ Movimento rifiutato dal server.";
     }
@@ -1515,6 +1522,8 @@ function updateMasterEditPanel(
         );
 
     if (!panel) return;
+
+    renderMasterFramesEditor(char);
 
     if (char) {
 
@@ -3407,3 +3416,83 @@ socket.on('aims_update', (aims) => {
     window.updateCombatActionPanel?.();
     requestRender();
 });
+
+// ==========================================
+// FRAME: CORREZIONE DEL MASTER
+// Nel pannello Selezione il Master imposta movimento e arti del
+// combattente selezionato, in qualsiasi momento del combattimento.
+// ==========================================
+const FRAME_FIELDS = ['pa', 'bd', 'bs', 'gd', 'gs'];
+
+function renderMasterFramesEditor(char) {
+    const box = document.getElementById('sel-frames');
+    if (!box) return;
+
+    const show = isMaster && combatState.is_active && !!char;
+    box.style.display = show ? 'block' : 'none';
+    if (!show) return;
+
+    // Non si sovrascrive quello che il Master sta scrivendo
+    if (box.contains(document.activeElement) && box.dataset.charId === String(char.id)) return;
+    box.dataset.charId = char.id;
+
+    const limbs = combatState.players_limbs?.[char.id] || {};
+    const values = {
+        pa: combatState.players_pa?.[char.id] ?? 120,
+        bd: limbs.bd ?? 60, bs: limbs.bs ?? 60, gd: limbs.gd ?? 60, gs: limbs.gs ?? 60
+    };
+    FRAME_FIELDS.forEach(field => {
+        document.getElementById(`sel-frames-${field}`).value = values[field];
+    });
+}
+
+function refreshMasterFramesEditor() {
+    if (!isMaster || selectedCharacterId === null) return;
+    renderMasterFramesEditor(characters.find(c => c.id === selectedCharacterId));
+}
+
+document.getElementById('sel-frames-save')?.addEventListener('click', () => {
+    const charId = Number(document.getElementById('sel-frames').dataset.charId);
+    const read = field => document.getElementById(`sel-frames-${field}`).value;
+
+    if (FRAME_FIELDS.some(field => read(field) === '' || Number(read(field)) < 0)) {
+        statusBar.innerText = '⛔ Frame non validi: scrivi numeri da 0 in su.';
+        return;
+    }
+
+    socket.emit('set_frames', {
+        char_id: charId,
+        pa: Number(read('pa')),
+        limbs: { bd: Number(read('bd')), bs: Number(read('bs')), gd: Number(read('gd')), gs: Number(read('gs')) }
+    });
+    document.activeElement?.blur();
+});
+
+document.getElementById('sel-frames-full')?.addEventListener('click', () => {
+    document.getElementById('sel-frames-pa').value = 120;
+    ['bd', 'bs', 'gd', 'gs'].forEach(limb => { document.getElementById(`sel-frames-${limb}`).value = 60; });
+});
+
+// Dalla barra dei turni: seleziona il combattente e apre il pannello Selezione
+function selectCombatantFromTracker(charId) {
+    const char = characters.find(c => c.id === charId);
+    if (!isMaster || !char) return;
+
+    selectedCharacterId = charId;
+    updateMasterEditPanel(char);
+    updateSheetButton();
+    window.updateEquippedPanel?.(char);
+
+    const section = document.getElementById('selected-entity-panel');
+    if (!section?.classList.contains('master-tool-section-active')) {
+        document.querySelector('.master-tool-btn[data-master-section="selected-entity-panel"]')?.click();
+    }
+
+    renderTurnOrderList();
+    requestRender();
+}
+
+// I frame cambiano (azioni, attacchi, correzioni): il pannello si aggiorna
+socket.on('sync_limbs', refreshMasterFramesEditor);
+socket.on('sync_pa', refreshMasterFramesEditor);
+socket.on('combat_update', () => setTimeout(refreshMasterFramesEditor, 0));
