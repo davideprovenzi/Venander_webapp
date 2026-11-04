@@ -8630,14 +8630,61 @@ function getCompatibleAmmo(char, comp, gunName) {
         .filter(Boolean)
         .map(key => key.toLowerCase());
 
-    return (char.backpack || [])
+    const options = (char.backpack || [])
         .map((entry, index) => ({ entry, index }))
         .filter(({ entry }) => {
             if (!entry || typeof entry !== 'object' || (entry.qty ?? 1) <= 0) return false;
+            // Scorta globale degli NPC: va bene per qualsiasi arma da fuoco
+            if (entry.npc_ammo) return char.role === 'npc';
             const text = `${entry.name || ''} ${entry.desc || ''}`.toLowerCase();
             return PROJECTILE_PATTERN.test(text) && keys.some(key => text.includes(key));
         });
+    // Come sul server: la scorta globale per prima
+    return options.sort((a, b) => (b.entry.npc_ammo ? 1 : 0) - (a.entry.npc_ammo ? 1 : 0));
 }
+
+// Selezione del Master: scorta globale dell'NPC e stato dei caricatori
+window.renderNpcAmmoEditor = function(char) {
+    const box = document.getElementById('sel-npc-ammo');
+    if (!box) return;
+    const show = isMaster && char?.role === 'npc';
+    box.style.display = show ? 'block' : 'none';
+    if (!show) return;
+
+    const input = document.getElementById('sel-npc-ammo-count');
+    const pool = (char.backpack || []).find(e => e && e.npc_ammo);
+    // Non si sovrascrive quello che il Master sta scrivendo
+    if (!(document.activeElement === input && box.dataset.charId === String(char.id))) {
+        input.value = pool ? (pool.qty ?? 0) : 0;
+    }
+    box.dataset.charId = char.id;
+
+    const guns = document.getElementById('sel-npc-ammo-guns');
+    guns.innerHTML = '';
+    const seen = new Set();
+    Object.keys(char.stats?.equipped || {}).forEach(slot => {
+        const firearm = getEquippedFirearm(char, slot);
+        const group = firearm?.item.equip_group_id || slot;
+        if (!firearm || seen.has(group)) return;
+        seen.add(group);
+        const loaded = firearm.item.ammo_loaded?.count ?? 0;
+        const line = document.createElement('div');
+        line.textContent = `🔫 ${firearm.item.name}: ${loaded}/${firearm.spec.capacity}${loaded ? '' : ' · SCARICA'}`;
+        line.classList.toggle('empty', !loaded);
+        guns.appendChild(line);
+    });
+    if (!seen.size) guns.textContent = 'Nessuna arma da fuoco equipaggiata.';
+};
+
+document.getElementById('sel-npc-ammo-save')?.addEventListener('click', () => {
+    const box = document.getElementById('sel-npc-ammo');
+    const count = parseInt(document.getElementById('sel-npc-ammo-count').value);
+    if (!Number.isFinite(count) || count < 0) {
+        statusBar.innerText = '⛔ Munizioni non valide: scrivi un numero da 0 in su.';
+        return;
+    }
+    socket.emit('set_npc_ammo', { char_id: Number(box.dataset.charId), count });
+});
 
 function getEquippedFirearm(char, slot) {
     const item = char?.stats?.equipped?.[slot];

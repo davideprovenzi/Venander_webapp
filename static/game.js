@@ -1524,6 +1524,7 @@ function updateMasterEditPanel(
     if (!panel) return;
 
     renderMasterFramesEditor(char);
+    window.renderNpcAmmoEditor?.(char);
 
     if (char) {
 

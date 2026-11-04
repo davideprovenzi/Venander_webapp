@@ -1926,16 +1926,40 @@ def projectile_fits(entry, comp, gun_name):
     keys = {caliber, str(comp.get("name", "")).lower(), str(gun_name or "").lower()}
     return any(key and key in text for key in keys)
 
+# Munizioni "globali" degli NPC: un'unica scorta per NPC, buona per qualsiasi
+# arma da fuoco (niente calibro). Sta nello zaino come voce speciale, così
+# passa anche ai modelli NPC; si ricarica dal caricatore come per i giocatori.
+NPC_AMMO_NAME = "Munizioni NPC"
+
+def npc_ammo_index(char):
+    return next(
+        (i for i, e in enumerate(char.backpack or []) if isinstance(e, dict) and e.get("npc_ammo")),
+        None
+    )
+
 def compatible_ammo(char, comp, gun_name):
-    return [
-        (index, entry) for index, entry in enumerate(char.backpack or [])
-        if isinstance(entry, dict) and int(entry.get("qty", 1) or 0) > 0 and projectile_fits(entry, comp, gun_name)
-    ]
+    fitting = []
+    for index, entry in enumerate(char.backpack or []):
+        if not isinstance(entry, dict) or int(entry.get("qty", 1) or 0) <= 0:
+            continue
+        if entry.get("npc_ammo"):
+            if char.role == "npc":
+                fitting.insert(0, (index, entry))   # la scorta globale per prima
+        elif projectile_fits(entry, comp, gun_name):
+            fitting.append((index, entry))
+    return fitting
 
 def return_ammo_to_backpack(backpack, loaded):
     """I colpi tolti dal caricatore tornano nello zaino (si sommano se c'è già la voce)."""
+    if loaded.get("npc_ammo"):
+        pool = next((e for e in backpack if isinstance(e, dict) and e.get("npc_ammo")), None)
+        if pool is None:
+            backpack.append({"name": NPC_AMMO_NAME, "qty": loaded["count"], "desc": "Munizioni globali dell'NPC", "npc_ammo": True})
+        else:
+            pool["qty"] = int(pool.get("qty", 0) or 0) + loaded["count"]
+        return
     for entry in backpack:
-        if isinstance(entry, dict) and entry.get("name", "").lower() == loaded["name"].lower():
+        if isinstance(entry, dict) and not entry.get("npc_ammo") and entry.get("name", "").lower() == loaded["name"].lower():
             entry["qty"] = int(entry.get("qty", 0) or 0) + loaded["count"]
             return
     backpack.append({"name": loaded["name"], "qty": loaded["count"], "desc": loaded.get("desc", "")})
@@ -1965,21 +1989,32 @@ def load_firearm(char, slot, ammo_index):
 
     backpack = copy.deepcopy(char.backpack or [])
     entry = backpack[ammo_index]
-    take = min(spec[1], int(entry.get("qty", 1) or 1))
     loaded_name, loaded_desc = entry.get("name", "Proiettili"), entry.get("desc", "")
+    is_pool = bool(entry.get("npc_ammo"))
+
+    # Scorta globale: i colpi rimasti nell'arma tornano prima nella scorta,
+    # così il caricatore si riempie fino in fondo
+    previous = item.get("ammo_loaded") or {}
+    if is_pool and previous.get("npc_ammo") and previous.get("count"):
+        entry["qty"] = int(entry.get("qty", 0) or 0) + int(previous["count"])
+        previous = {}
+    take = min(spec[1], int(entry.get("qty", 1) or 1))
 
     entry["qty"] = int(entry.get("qty", 1) or 1) - take
-    if entry["qty"] <= 0:
+    # La scorta globale resta anche a zero: il Master la vede e la riempie
+    if entry["qty"] <= 0 and not is_pool:
         backpack.pop(ammo_index)
 
     # Quello che c'era nel caricatore torna nello zaino
-    previous = item.get("ammo_loaded") or {}
     if previous.get("count"):
         return_ammo_to_backpack(backpack, previous)
 
     char.backpack = backpack
     flag_modified(char, "backpack")
-    set_loaded_ammo(char, slot, {"name": loaded_name, "desc": loaded_desc, "count": take})
+    loaded = {"name": loaded_name, "desc": loaded_desc, "count": take}
+    if is_pool:
+        loaded["npc_ammo"] = True
+    set_loaded_ammo(char, slot, loaded)
     return take, loaded_name
 
 def auto_load_new_firearms(char):
@@ -1996,6 +2031,48 @@ def auto_load_new_firearms(char):
         else:
             # Segna l'arma come vista: resta scarica finché non si ricarica
             set_loaded_ammo(char, slot, {"name": None, "desc": "", "count": 0})
+
+@socketio.on("set_npc_ammo")
+@undoable("Munizioni NPC")
+def handle_set_npc_ammo(data):
+    """Il Master imposta la scorta globale di colpi di un NPC."""
+    if not is_master_request():
+        return
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+    if not char or char.role != "npc":
+        return
+    try:
+        count = max(0, min(9999, int(data.get("count"))))
+    except (TypeError, ValueError):
+        return
+
+    backpack = copy.deepcopy(char.backpack or [])
+    index = npc_ammo_index(char)
+    if index is None:
+        backpack.append({"name": NPC_AMMO_NAME, "qty": count, "desc": "Munizioni globali dell'NPC", "npc_ammo": True})
+    else:
+        backpack[index]["qty"] = count
+    char.backpack = backpack
+    flag_modified(char, "backpack")
+
+    # Armi mai caricate si caricano subito; un caricatore svuotato sparando va
+    # ricaricato con la solita azione (frame in combattimento)
+    if count:
+        for slot, item in list(((char.stats or {}).get("equipped") or {}).items()):
+            if not isinstance(item, dict) or (item.get("ammo_loaded") or {}).get("name"):
+                continue
+            comp = equipped_item_compendium(item)
+            if firearm_spec(comp) and npc_ammo_index(char) is not None and int(char.backpack[npc_ammo_index(char)].get("qty", 0)) > 0:
+                load_firearm(char, slot, npc_ammo_index(char))
+
+    db.session.commit()
+    emit_character_update(char)
+    emit("dice_result", {
+        "name": "SISTEMA",
+        "message": f"🎯 Munizioni globali di <b>{html.escape(char.name)}</b>: {count} colpi di scorta.",
+        "is_master_roll": True
+    }, to=request.sid)
 
 @socketio.on("load_weapon")
 @undoable("Ricarica")
@@ -2021,7 +2098,11 @@ def handle_load_weapon(data):
         emit_combat_error("Quest'arma non usa munizioni.")
         return
     if ammo_index not in dict(compatible_ammo(char, comp, item.get("name"))):
-        emit_combat_error(f"Questi proiettili non vanno bene per {item.get('name')}.")
+        pool = (char.backpack or [])[ammo_index] if 0 <= ammo_index < len(char.backpack or []) else {}
+        if char.role == "npc" and isinstance(pool, dict) and pool.get("npc_ammo"):
+            emit_combat_error(f"{char.name} ha finito le munizioni globali.")
+        else:
+            emit_combat_error(f"Questi proiettili non vanno bene per {item.get('name')}.")
         return
 
     # In combattimento ricaricare è un'azione: nel proprio turno, pagando i frame
