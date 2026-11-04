@@ -11,7 +11,9 @@
 
 </head>
 
-<body>
+<body data-code-fingerprint="{{ code_fingerprint }}">
+    <!-- Avviso: server da riavviare o pagina da ricaricare (vedi game.js) -->
+    <div id="code-status-banner" class="code-status-banner"></div>
     {% if test_mode %}
     <!-- Ambiente di prova: copia della partita, non tocca la sessione vera -->
     <div class="test-mode-banner">🧪 AMBIENTE DI PROVA: copia della partita, le modifiche qui non toccano la sessione vera</div>
@@ -630,6 +632,9 @@
                         <button id="sel-frames-save" type="button">💾 Salva frame</button>
                     </div>
                 </div>
+
+                <!-- Bottino: cosa i giocatori potranno prendere dal corpo dell'NPC (vedi loot.js) -->
+                <div id="sel-loot" class="sel-loot"></div>
 
                 <!-- Munizioni globali dell'NPC: una scorta buona per tutte le sue armi da fuoco -->
                 <div id="sel-npc-ammo" class="sel-npc-ammo">
@@ -1432,6 +1437,16 @@
         <button id="aim-alert-confirm" type="button">Reagisci</button>
     </div>
 
+    <!-- BOTTINO: il giocatore fruga il corpo di un NPC a terra -->
+    <div id="loot-modal" class="loot-modal">
+        <div class="loot-title" id="loot-title">💰 Bottino</div>
+        <div id="loot-body"></div>
+        <div class="loot-actions">
+            <button id="loot-take-all" type="button">💰 Prendi tutto</button>
+            <button id="loot-close" type="button">Chiudi</button>
+        </div>
+    </div>
+
     <!-- SCAMBIO D'ATTACCO: i due tirano, il Master conferma chi vince -->
     <div id="exchange-modal" class="exchange-modal">
         <div class="exchange-title">⚔️ Scambio d'Attacco</div>
@@ -1826,6 +1841,7 @@
     <script src="/static/trinkets.js"></script>
     <script src="/static/exchange.js"></script>
     <script src="/static/sounds.js"></script>
+    <script src="/static/loot.js"></script>
     <script src="/static/wiki.js"></script>
 
 </body>

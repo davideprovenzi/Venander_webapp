@@ -213,6 +213,9 @@ canvas.addEventListener('click', (event) => {
     const gridX = hex.col;
     const gridY = hex.row;
 
+    // --- BOTTINO: un giocatore clicca il corpo di un NPC a terra (vedi loot.js) ---
+    if (!isMaster && window.tryOpenLootAt?.(gridX, gridY)) return;
+
     // --- POSIZIONAMENTO NPC (MASTER) ---
     if (isMaster && window.isSpawningNpc) {
         if (isHexOccupied(gridX, gridY)) {

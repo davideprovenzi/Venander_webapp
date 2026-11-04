@@ -1525,6 +1525,7 @@ function updateMasterEditPanel(
 
     renderMasterFramesEditor(char);
     window.renderNpcAmmoEditor?.(char);
+    window.renderLootEditor?.(char);
 
     if (char) {
 
@@ -3292,15 +3293,29 @@ function updateNpcTemplateMetaControls() {
 
 document.getElementById('npc-template-search')?.addEventListener('input', renderNpcTemplateSelect);
 
+// Azioni sui modelli con risposta del server: se non risponde (server avviato
+// prima di questa funzione) il Master lo sa subito invece di non vedere nulla
+function emitTemplateMeta(event, payload) {
+    socket.timeout(10000).emit(event, payload, (timeoutError, reply) => {
+        if (timeoutError) {
+            alert('Il server non ha risposto: la modifica NON è stata salvata.\n' +
+                  'Probabilmente il server va riavviato per avere questa funzione: ' +
+                  'Ctrl+C nel suo terminale e di nuovo "python app.py", poi ricarica la pagina.');
+            return;
+        }
+        if (reply?.error) alert(reply.error);
+    });
+}
+
 document.getElementById('npc-template-fav-btn')?.addEventListener('click', () => {
     const template = selectedNpcTemplate();
-    if (template) socket.emit('set_npc_template_meta', { id: template.id, favorite: !template.favorite });
+    if (template) emitTemplateMeta('set_npc_template_meta', { id: template.id, favorite: !template.favorite });
 });
 
 document.getElementById('npc-template-folder-save')?.addEventListener('click', () => {
     const template = selectedNpcTemplate();
     if (!template) return;
-    socket.emit('set_npc_template_meta', { id: template.id, category: document.getElementById('npc-template-folder').value.trim() });
+    emitTemplateMeta('set_npc_template_meta', { id: template.id, category: document.getElementById('npc-template-folder').value.trim() });
 });
 
 document.getElementById('npc-template-folder')?.addEventListener('keydown', (e) => {
@@ -3316,7 +3331,7 @@ document.getElementById('npc-template-folder-rename')?.addEventListener('click',
     const count = npcTemplates.filter(t => t.category === template.category).length;
     const name = prompt(`Nuovo nome per la cartella "${template.category}" (${count} modelli). Vuoto = togli la cartella:`, template.category);
     if (name === null) return;
-    socket.emit('rename_npc_template_category', { old: template.category, new: name.trim() });
+    emitTemplateMeta('rename_npc_template_category', { old: template.category, new: name.trim() });
 });
 
 function updateNpcTemplateInfo() {
@@ -3586,3 +3601,53 @@ function selectCombatantFromTracker(charId) {
 socket.on('sync_limbs', refreshMasterFramesEditor);
 socket.on('sync_pa', refreshMasterFramesEditor);
 socket.on('combat_update', () => setTimeout(refreshMasterFramesEditor, 0));
+
+// ==========================================
+// SERVER DA RIAVVIARE / PAGINA DA RICARICARE
+// Il server carica app.py solo all'avvio, la pagina invece arriva dal disco:
+// se il codice cambia senza riavvio i pulsanti nuovi non fanno nulla.
+// ==========================================
+(() => {
+    const banner = document.getElementById('code-status-banner');
+    const pageFingerprint = document.body.dataset.codeFingerprint || '';
+    if (!banner) return;
+
+    function show(status) {
+        if (!status) return;
+        let text = '';
+        if (status.db_replaced) {
+            // Il più grave: ogni modifica da ora in poi andrebbe persa
+            if (isMaster) {
+                text = '🛑 Il file del database è stato sostituito mentre il server era acceso (git pull o checkout?): ' +
+                       'quello che salvi ora andrà PERSO. Riavvia subito il server (Ctrl+C e di nuovo "python app.py").';
+            }
+        } else if (status.server_outdated) {
+            // Solo il Master può riavviarlo; ai giocatori basterebbe ricaricare dopo
+            if (isMaster) {
+                text = '⚠️ Il codice del gioco è cambiato ma il server non è stato riavviato: alcune funzioni nuove non risponderanno. ' +
+                       'Riavvialo (Ctrl+C nel suo terminale e di nuovo "python app.py"), poi ricarica la pagina.';
+            }
+        } else if (pageFingerprint && status.page && status.page !== pageFingerprint) {
+            text = '🔄 Il gioco è stato aggiornato: ricarica la pagina (F5) per avere la versione nuova.';
+        }
+        banner.textContent = text;
+        banner.classList.toggle('open', !!text);
+    }
+
+    function check() {
+        if (!socket.connected) return;
+        socket.timeout(5000).emit('get_code_status', (timeoutError, status) => {
+            if (timeoutError) {
+                // Un server che non conosce nemmeno questo controllo è sicuramente vecchio
+                if (isMaster) show({ server_outdated: true });
+                return;
+            }
+            show(status);
+        });
+    }
+
+    socket.on('code_status', show);
+    socket.on('connect', () => setTimeout(check, 1500));
+    userSelect?.addEventListener('change', () => setTimeout(check, 1500));
+    setInterval(check, 60000);
+})();

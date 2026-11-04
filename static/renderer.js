@@ -1260,6 +1260,7 @@ function render() {
 
     // 4. Personaggi
     drawTokens();
+    window.drawLootBadges?.();
     drawFloatingTexts();
 
     // 5. Puntatori Laser Temporanei (Sempre in primissimo piano)

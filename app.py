@@ -26,9 +26,65 @@ app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.environ.get('VENANDER_DB
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 TEST_MODE = os.environ.get("VENANDER_TEST_MODE") == "1"
 
+# ==========================================
+# VERSIONE DEL CODICE
+# Il server legge app.py una volta sola all'avvio, mentre le pagine (static,
+# templates) arrivano sempre dal disco: se il codice cambia e il server non
+# viene riavviato, la pagina mostra pulsanti nuovi che il server ignora.
+# L'impronta dei file all'avvio e quella attuale lo rivelano.
+# ==========================================
+CODE_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+def files_fingerprint(paths):
+    """Impronta di un gruppo di file (date e dimensioni: basta e costa poco)."""
+    import hashlib
+    parts = []
+    for path in sorted(paths):
+        try:
+            info = os.stat(path)
+        except OSError:
+            continue
+        parts.append(f"{os.path.relpath(path, CODE_ROOT)}:{info.st_mtime_ns}:{info.st_size}")
+    return hashlib.sha1("\n".join(parts).encode()).hexdigest()[:12]
+
+def server_fingerprint():
+    # Il codice che il server carica all'avvio: se cambia serve un riavvio
+    return files_fingerprint([os.path.join(CODE_ROOT, "app.py")])
+
+def page_fingerprint():
+    # Quello che il browser scarica: se cambia basta ricaricare la pagina
+    paths = []
+    for folder in ("static", "templates"):
+        for base, _dirs, files in os.walk(os.path.join(CODE_ROOT, folder)):
+            paths.extend(os.path.join(base, name) for name in files)
+    return files_fingerprint(paths)
+
+STARTUP_SERVER_FINGERPRINT = server_fingerprint()
+
+# Il file del database sostituito mentre il server gira (es. git pull o checkout
+# di un commit che contiene instance/venander.db): il server continuerebbe a
+# scrivere nella copia vecchia, ormai cancellata, e tutto andrebbe perso al riavvio.
+DB_FILE = os.path.join(app.instance_path, os.environ.get("VENANDER_DB", "venander.db"))
+
+def db_file_identity():
+    try:
+        info = os.stat(DB_FILE)
+        return (info.st_dev, info.st_ino)
+    except OSError:
+        return None
+
+STARTUP_DB_IDENTITY = None   # si legge dopo la creazione del database (vedi sotto)
+
+def code_status():
+    return {
+        "server_outdated": server_fingerprint() != STARTUP_SERVER_FINGERPRINT,
+        "db_replaced": STARTUP_DB_IDENTITY is not None and db_file_identity() != STARTUP_DB_IDENTITY,
+        "page": page_fingerprint()
+    }
+
 @app.context_processor
 def inject_test_mode():
-    return {"test_mode": TEST_MODE}
+    return {"test_mode": TEST_MODE, "code_fingerprint": page_fingerprint()}
 
 db = SQLAlchemy(app)
 socketio = SocketIO(
@@ -79,6 +135,7 @@ class Character(db.Model):
     notes = db.Column(db.Text, default="")
     # HP recuperati per ogni ora di riposo lungo (deciso dal Master)
     heal_rate = db.Column(db.Float, default=0)
+    loot = db.Column(db.JSON, default=list) # bottino che il Master lascia prendere dal corpo
     spawn_sound = db.Column(db.JSON, default=None) # {"url": ..., "scope": "all" | "master"} dal modello NPC
     # Conoscenze del personaggio: [{"name": ..., "desc": ...}]
     knowledge = db.Column(db.JSON, default=list)
@@ -300,6 +357,10 @@ with app.app_context():
         )
         db.session.commit()
 
+    if "loot" not in character_columns:
+        db.session.execute(text("ALTER TABLE character ADD COLUMN loot JSON DEFAULT '[]'"))
+        db.session.commit()
+
     if "spawn_sound" not in character_columns:
         db.session.execute(text("ALTER TABLE character ADD COLUMN spawn_sound JSON"))
         db.session.commit()
@@ -413,6 +474,9 @@ with app.app_context():
 # ==========================================
 # ROTTE WEB & SERIALIZZAZIONE
 # ==========================================
+# Identità del file del database ora che esiste (vedi code_status)
+STARTUP_DB_IDENTITY = db_file_identity()
+
 # ==========================================
 # SUONI DEGLI NPC
 # Il Master registra (o carica) un suono per un modello NPC: si sente
@@ -468,7 +532,8 @@ def get_char_data(char):
         "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop, "notes": char.notes,
         "heal_rate": char.heal_rate or 0,
         "knowledge": char.knowledge or [],
-        "spawn_sound": char.spawn_sound
+        "spawn_sound": char.spawn_sound,
+        "loot": char.loot or []
     }
 
 
@@ -495,6 +560,8 @@ def get_public_char_data(char):
         "is_invisible": char.is_invisible,
         # Gli HP restano segreti: ai giocatori basta sapere se è a terra
         "is_defeated": (char.hp_current or 0) <= 0,
+        # Il bottino si vede solo quando l'NPC è a terra (prima è un segreto del Master)
+        "loot": public_loot(char),
         # Il suono "solo Master" non arriva nemmeno ai giocatori
         "spawn_sound": char.spawn_sound if (char.spawn_sound or {}).get("scope") == "all" else None
     }
@@ -653,7 +720,7 @@ def emit_combat_error(message):
 UNDO_LIMIT = 15
 UNDO_CHAR_FIELDS = (
     "pos_x", "pos_y", "hp_current", "stamina_current", "conc_current",
-    "pa_stats", "bonuses", "stats", "weapons", "backpack", "heal_rate"
+    "pa_stats", "bonuses", "stats", "weapons", "backpack", "heal_rate", "loot", "xp"
 )
 undo_stack = []
 
@@ -1167,6 +1234,11 @@ def handle_disconnect():
     client_roles.pop(request.sid, None)
     client_character_ids.pop(request.sid, None)
 
+@socketio.on("get_code_status")
+def handle_get_code_status():
+    """Il client controlla ogni tanto se il server o la pagina sono rimasti indietro."""
+    return code_status()
+
 @socketio.on("connect")
 def handle_connect():
     # init_state viene inviato subito dopo register_session_role, così il server
@@ -1174,6 +1246,7 @@ def handle_connect():
     draw_list = [d.to_dict() for d in DrawItem.query.all()]
 
     emit("combat_update", combat_state)
+    emit("code_status", code_status())
     emit("init_drawings", draw_list) # Invia i nuovi disegni
     emit("compendio_data", load_compendio())
     emit("map_update", get_world_state())
@@ -1707,11 +1780,11 @@ def clean_template_category(value):
 def handle_set_npc_template_meta(data):
     """Il Master mette un modello in una cartella o lo segna come preferito."""
     if not is_master_request():
-        return
+        return {"error": "Solo il Master può organizzare i modelli."}
     data = data or {}
     template = db.session.get(NpcTemplate, data.get("id"))
     if not template:
-        return
+        return {"error": "Modello NPC non trovato."}
 
     meta = dict(template.data or {})
     if "category" in data:
@@ -1722,23 +1795,25 @@ def handle_set_npc_template_meta(data):
     flag_modified(template, "data")
     db.session.commit()
     emit_to_masters("npc_template_list", get_npc_template_list())
+    return {"ok": True}
 
 @socketio.on("rename_npc_template_category")
 def handle_rename_npc_template_category(data):
     """Rinomina (o svuota, con nome vuoto) una cartella per tutti i modelli che ci stanno."""
     if not is_master_request():
-        return
+        return {"error": "Solo il Master può organizzare i modelli."}
     data = data or {}
     old = clean_template_category(data.get("old"))
     new = clean_template_category(data.get("new"))
     if not old:
-        return
+        return {"error": "Cartella non valida."}
     for template in NpcTemplate.query.all():
         if (template.data or {}).get("category") == old:
             template.data = {**template.data, "category": new}
             flag_modified(template, "data")
     db.session.commit()
     emit_to_masters("npc_template_list", get_npc_template_list())
+    return {"ok": True}
 
 @socketio.on("set_template_sound")
 def handle_set_template_sound(data):
@@ -5041,6 +5116,234 @@ def handle_apply_explosion(data):
     socketio.emit("dice_result", {
         "name": "SISTEMA",
         "message": "💥 <b>BOOM!</b> La bomba di " + html.escape(explosion["owner_name"]) + " esplode.<br>" + ("<br>".join(lines) or "Nessun danno."),
+        "is_master_roll": False
+    })
+
+# ==========================================
+# BOTTINO
+# Il Master sceglie cosa si può prendere dal corpo di un NPC: lo sposta
+# dall'inventario dell'NPC al suo "bottino" (quello che resta addosso non si
+# tocca). Quando l'NPC è a terra, un giocatore adiacente lo fruga e prende
+# quello che vuole. Fuori dal combattimento è gratis; in combattimento si fa
+# nel proprio turno e costa "Raccogliere un oggetto da terra".
+# ==========================================
+LOOT_ACTION = "Raccogliere un oggetto da terra"
+LOOT_REACH = 1
+EQUIP_ONLY_KEYS = ("equip_group_id", "equipped_slots", "original_type", "ammo_loaded")
+
+def is_lootable_corpse(char):
+    return bool(char) and char.role == "npc" and (char.hp_current or 0) <= 0 and not char.is_hidden
+
+def public_loot(char):
+    if not is_lootable_corpse(char):
+        return []
+    result = []
+    for entry in char.loot or []:
+        if entry.get("kind") == "money":
+            result.append({"id": entry["id"], "kind": "money", "amount": entry.get("amount", 0)})
+        else:
+            item = entry.get("item") or {}
+            result.append({
+                "id": entry["id"], "kind": entry["kind"], "qty": entry.get("qty", 1),
+                "item": {k: item.get(k) for k in ("name", "compendium_id", "brand", "desc", "img", "durability_current", "durability_max")}
+            })
+    return result
+
+def item_matches(a, b):
+    if a.get("compendium_id") and b.get("compendium_id"):
+        return a["compendium_id"] == b["compendium_id"]
+    return str(a.get("name", "")).casefold() == str(b.get("name", "")).casefold()
+
+def add_to_backpack(backpack, item, qty):
+    for entry in backpack:
+        if isinstance(entry, dict) and not entry.get("npc_ammo") and item_matches(entry, item):
+            entry["qty"] = int(entry.get("qty", 1) or 1) + qty
+            return
+    backpack.append({**item, "qty": qty})
+
+@socketio.on("loot_add")
+@undoable("Bottino preparato")
+def handle_loot_add(data):
+    """Il Master sposta un oggetto (o del denaro) dall'NPC al suo bottino."""
+    if not is_master_request():
+        return
+    data = data or {}
+    npc = db.session.get(Character, data.get("char_id"))
+    if not npc or npc.role != "npc":
+        return
+
+    source = data.get("source")
+    loot = list(npc.loot or [])
+    entry = {"id": uuid.uuid4().hex}
+
+    if source == "money":
+        try:
+            amount = max(1, int(data.get("amount")))
+        except (TypeError, ValueError):
+            return
+        entry.update(kind="money", amount=amount)
+
+    elif source == "backpack":
+        backpack = copy.deepcopy(npc.backpack or [])
+        try:
+            index = int(data.get("index"))
+            item = backpack[index]
+        except (TypeError, ValueError, IndexError):
+            return
+        if not isinstance(item, dict) or item.get("npc_ammo"):
+            return
+        have = int(item.get("qty", 1) or 1)
+        try:
+            qty = max(1, min(have, int(data.get("qty") or have)))
+        except (TypeError, ValueError):
+            qty = have
+        entry.update(kind="item", qty=qty, item={k: v for k, v in item.items() if k != "qty"})
+        if qty >= have:
+            backpack.pop(index)
+        else:
+            item["qty"] = have - qty
+        npc.backpack = backpack
+        flag_modified(npc, "backpack")
+
+    elif source == "weapons":
+        weapons = copy.deepcopy(npc.weapons or [])
+        try:
+            index = int(data.get("index"))
+            item = weapons.pop(index)
+        except (TypeError, ValueError, IndexError):
+            return
+        entry.update(kind="weapon", qty=1, item=item)
+        npc.weapons = weapons
+        flag_modified(npc, "weapons")
+
+    elif source in ("equipped", "equipped_gadgets"):
+        stats = copy.deepcopy(npc.stats or {})
+        slots = stats.get(source) or {}
+        item = slots.get(data.get("slot"))
+        if not isinstance(item, dict):
+            return
+        # Un oggetto su più slot (guanti, spallacci...) si toglie da tutti
+        group = item.get("equip_group_id")
+        for key, other in list(slots.items()):
+            if key == data.get("slot") or (group and isinstance(other, dict) and other.get("equip_group_id") == group):
+                slots[key] = None
+        kind = "weapon" if item.get("original_type") == "weapon" else "item"
+        entry.update(kind=kind, qty=1, item={k: v for k, v in item.items() if k not in EQUIP_ONLY_KEYS})
+        stats[source] = slots
+        npc.stats = stats
+        flag_modified(npc, "stats")
+    else:
+        return
+
+    loot.append(entry)
+    npc.loot = loot
+    flag_modified(npc, "loot")
+    db.session.commit()
+    emit_character_update(npc)
+
+@socketio.on("loot_return")
+@undoable("Bottino tolto")
+def handle_loot_return(data):
+    """Il Master rimette addosso all'NPC un oggetto del bottino."""
+    if not is_master_request():
+        return
+    data = data or {}
+    npc = db.session.get(Character, data.get("char_id"))
+    entry = next((e for e in (npc.loot or []) if e["id"] == data.get("loot_id")), None) if npc else None
+    if not entry:
+        return
+
+    if entry["kind"] == "weapon":
+        npc.weapons = list(npc.weapons or []) + [entry["item"]]
+        flag_modified(npc, "weapons")
+    elif entry["kind"] == "item":
+        backpack = copy.deepcopy(npc.backpack or [])
+        add_to_backpack(backpack, entry["item"], int(entry.get("qty", 1)))
+        npc.backpack = backpack
+        flag_modified(npc, "backpack")
+    npc.loot = [e for e in npc.loot if e["id"] != entry["id"]]
+    flag_modified(npc, "loot")
+    db.session.commit()
+    emit_character_update(npc)
+
+@socketio.on("loot_take")
+@undoable("Bottino preso")
+def handle_loot_take(data):
+    """Un giocatore prende dal corpo uno o tutti gli oggetti del bottino."""
+    data = data or {}
+    taker = db.session.get(Character, data.get("char_id"))
+    npc = db.session.get(Character, data.get("npc_id"))
+    if not taker or taker.role != "player" or not controls_character(taker):
+        return
+    if not is_lootable_corpse(npc):
+        emit_combat_error("Si può frugare solo il corpo di un NPC a terra.")
+        return
+    if hex_distance(taker.pos_x, taker.pos_y, npc.pos_x, npc.pos_y) > LOOT_REACH:
+        emit_combat_error(f"Avvicinati a {npc.name} per frugarlo.")
+        return
+
+    loot = copy.deepcopy(npc.loot or [])
+    wanted = loot if data.get("all") else [e for e in loot if e["id"] == data.get("loot_id")]
+    if not wanted:
+        emit_combat_error("Questo oggetto non c'è più: qualcuno l'ha già preso.")
+        return
+
+    # Quantità parziale (es. 2 proiettili su 10): solo prendendo un oggetto alla volta
+    partial = None
+    if not data.get("all") and wanted[0]["kind"] == "item":
+        try:
+            partial = max(1, min(int(wanted[0].get("qty", 1)), int(data.get("qty") or wanted[0].get("qty", 1))))
+        except (TypeError, ValueError):
+            partial = None
+
+    cost_text = ""
+    if in_combat_turn_order(taker):
+        if not is_players_turn(taker):
+            emit_combat_error("In combattimento si fruga solo nel proprio turno.")
+            return
+        rule = get_action_speed_rule(LOOT_ACTION)
+        cost = int((rule or {}).get("frames", 40))
+        limb_error = spend_arms(taker.id, cost)
+        if limb_error:
+            emit_combat_error(limb_error)
+            return
+        cost_text = f" (<b>{cost} Frame</b>)"
+
+    backpack = copy.deepcopy(taker.backpack or [])
+    weapons = list(taker.weapons or [])
+    taken_names = []
+    taken_ids = set()
+    for entry in wanted:
+        if entry["kind"] == "money":
+            taker.xp = int(taker.xp or 0) + int(entry["amount"])
+            taken_names.append(f"{entry['amount']} €")
+            taken_ids.add(entry["id"])
+        elif entry["kind"] == "weapon":
+            weapons.append(entry["item"])
+            taken_names.append(entry["item"].get("name", "Arma"))
+            taken_ids.add(entry["id"])
+        else:
+            qty = partial if partial is not None else int(entry.get("qty", 1))
+            add_to_backpack(backpack, entry["item"], qty)
+            taken_names.append(f"{entry['item'].get('name', 'Oggetto')}" + (f" ×{qty}" if qty > 1 else ""))
+            if qty >= int(entry.get("qty", 1)):
+                taken_ids.add(entry["id"])
+            else:
+                entry["qty"] = int(entry["qty"]) - qty
+
+    taker.backpack = backpack
+    taker.weapons = weapons
+    flag_modified(taker, "backpack")
+    flag_modified(taker, "weapons")
+    npc.loot = [e for e in loot if e["id"] not in taken_ids]
+    flag_modified(npc, "loot")
+    db.session.commit()
+
+    emit_character_update(taker)
+    emit_character_update(npc)
+    socketio.emit("dice_result", {
+        "name": taker.name,
+        "message": f"💰 fruga <b>{html.escape(npc.name)}</b> e prende: " + ", ".join(f"<b>{html.escape(n)}</b>" for n in taken_names) + f"{cost_text}.",
         "is_master_roll": False
     })
 
