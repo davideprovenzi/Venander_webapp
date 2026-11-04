@@ -3736,3 +3736,72 @@ body.player-mode #btn-toggle-notes {
     background: #f1c40f;
     color: #000;
 }
+
+/* Mercato: armature per zona del corpo, poi per pezzo */
+.armor-area-row,
+.armor-piece-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.armor-piece-row {
+    margin-top: 6px;
+}
+
+.armor-area-btn {
+    padding: 5px 10px;
+    border: 1px solid #3498db;
+    border-radius: 4px;
+    background: #fff;
+    color: #3498db;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.armor-piece-btn {
+    padding: 3px 8px;
+    border: 1px dashed #3498db;
+    border-radius: 4px;
+    background: #fff;
+    color: #3498db;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.armor-area-btn.active,
+.armor-piece-btn.active {
+    background: #3498db;
+    color: #fff;
+}
+
+/* Modelli NPC: ricerca, preferiti e cartelle */
+.npc-template-search {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 6px;
+    padding: 5px;
+}
+
+#npc-template-fav-btn.active {
+    color: #f1c40f;
+}
+
+.npc-template-folder-row {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.npc-template-folder-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 4px;
+}
+
+.npc-template-folder-row button {
+    padding: 3px 6px;
+    cursor: pointer;
+}

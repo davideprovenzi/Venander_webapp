@@ -1657,7 +1657,9 @@ def get_npc_template_list():
             "token_url": data.get("token_url") or "",
             "weapons": len(data.get("weapons") or []),
             "equipped": len([item for item in equipped.values() if item]),
-            "sound": data.get("sound")
+            "sound": data.get("sound"),
+            "category": data.get("category") or "",
+            "favorite": bool(data.get("favorite"))
         })
 
     return result
@@ -1680,9 +1682,13 @@ def handle_save_npc_template(data):
         template = NpcTemplate(name=name)
         db.session.add(template)
 
-    previous_sound = (template.data or {}).get("sound")
+    previous = template.data or {}
     template.data = snapshot_npc_template(char)
-    template.data["sound"] = copy.deepcopy(char.spawn_sound) or previous_sound
+    template.data["sound"] = copy.deepcopy(char.spawn_sound) or previous.get("sound")
+    # Cartella e preferito: quelli scelti ora, altrimenti restano quelli di prima
+    category = data.get("category")
+    template.data["category"] = clean_template_category(category) if category is not None else previous.get("category", "")
+    template.data["favorite"] = bool(previous.get("favorite"))
     flag_modified(template, "data")
     db.session.commit()
 
@@ -1692,6 +1698,47 @@ def handle_save_npc_template(data):
         "message": f"📋 Modello NPC <b>{html.escape(name)}</b> salvato.",
         "is_master_roll": True
     }, to=request.sid)
+
+def clean_template_category(value):
+    """Nome della cartella di un modello NPC: testo semplice, corto ("" = nessuna cartella)."""
+    return " ".join(str(value or "").split())[:40]
+
+@socketio.on("set_npc_template_meta")
+def handle_set_npc_template_meta(data):
+    """Il Master mette un modello in una cartella o lo segna come preferito."""
+    if not is_master_request():
+        return
+    data = data or {}
+    template = db.session.get(NpcTemplate, data.get("id"))
+    if not template:
+        return
+
+    meta = dict(template.data or {})
+    if "category" in data:
+        meta["category"] = clean_template_category(data.get("category"))
+    if "favorite" in data:
+        meta["favorite"] = bool(data.get("favorite"))
+    template.data = meta
+    flag_modified(template, "data")
+    db.session.commit()
+    emit_to_masters("npc_template_list", get_npc_template_list())
+
+@socketio.on("rename_npc_template_category")
+def handle_rename_npc_template_category(data):
+    """Rinomina (o svuota, con nome vuoto) una cartella per tutti i modelli che ci stanno."""
+    if not is_master_request():
+        return
+    data = data or {}
+    old = clean_template_category(data.get("old"))
+    new = clean_template_category(data.get("new"))
+    if not old:
+        return
+    for template in NpcTemplate.query.all():
+        if (template.data or {}).get("category") == old:
+            template.data = {**template.data, "category": new}
+            flag_modified(template, "data")
+    db.session.commit()
+    emit_to_masters("npc_template_list", get_npc_template_list())
 
 @socketio.on("set_template_sound")
 def handle_set_template_sound(data):
@@ -2329,14 +2376,47 @@ def load_compendio():
     # Aggiunte del Master salvate nel database: non si perdono se il
     # compendio viene rigenerato dal foglio di calcolo
     items = compendio.setdefault("items", [])
-    items.extend(custom.data for custom in CustomCompendiumItem.query.all())
+    custom_items = [custom.data for custom in CustomCompendiumItem.query.all()]
+    items.extend(custom_items)
 
     overrides = {o.compendium_id: o.cost_eur for o in ItemPriceOverride.query.all()}
     for item in items:
         if item.get("id") in overrides:
             item.setdefault("equipment", {})["cost_eur"] = overrides[item["id"]]
 
+    apply_license_prices(items, {c.get("id") for c in custom_items})
     return compendio
+
+# Una licenza costa il 25% dell'arma standard che abilita (quella del compendio,
+# non le varianti create dal Master): segue il prezzo dell'arma nel Listino.
+LICENSE_PRICE_SHARE = 0.25
+
+def apply_license_prices(items, custom_ids):
+    standard_weapons = {}
+    for item in items:
+        if item.get("class") != "Arma":
+            continue
+        weapon = item.get("weapon") or {}
+        for key in (weapon.get("license_id"), str(weapon.get("license_name") or "").casefold()):
+            if not key:
+                continue
+            # Le armi del compendio vincono su quelle create dal Master
+            if key not in standard_weapons or standard_weapons[key].get("id") in custom_ids:
+                standard_weapons[key] = item
+
+    for item in items:
+        if item.get("class") != "Licenza":
+            continue
+        base = standard_weapons.get(item.get("id")) or standard_weapons.get(str(item.get("name", "")).casefold())
+        if not base:
+            continue   # licenza senza arma collegata: resta il prezzo deciso dal Master
+        base_cost = (base.get("equipment") or {}).get("cost_eur")
+        try:
+            price = int(float(base_cost) * LICENSE_PRICE_SHARE + 0.5) if base_cost not in (None, "") else None
+        except (TypeError, ValueError):
+            price = None
+        item.setdefault("equipment", {})["cost_eur"] = price
+        item["price_rule"] = {"percent": int(LICENSE_PRICE_SHARE * 100), "base_id": base.get("id"), "base_name": base.get("name")}
 
 # Oggetti creati dal Master nel Listino
 CUSTOM_ITEM_CLASSES = {"Gadget", "Armatura", "Arma", "Kit", "Munizione / consumabile", "Licenza"}
@@ -2446,6 +2526,11 @@ def handle_set_item_price(data):
     try:
         price = None if raw_price in (None, "") else max(0, int(raw_price))
     except (TypeError, ValueError):
+        return
+
+    # Il prezzo delle licenze collegate a un'arma si calcola da solo (25% dell'arma)
+    if (get_compendium_item(compendium_id=compendium_id) or {}).get("price_rule"):
+        emit_combat_error("Il prezzo di questa licenza è il 25% dell'arma: cambia il prezzo dell'arma.")
         return
 
     override = db.session.get(ItemPriceOverride, compendium_id) or ItemPriceOverride(compendium_id=compendium_id)

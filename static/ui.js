@@ -581,19 +581,41 @@ function populatePlayerSheetUI(myChar) {
         btn.onclick = () => { currentShopTab = tabName; populatePlayerSheetUI(myChar); };
     });
 
-    // 2. GESTIONE TIPI ARMATURA (Visibile solo se si è nel tab Armature)
+    // 2. ARMATURE: prima la zona del corpo, poi (se la zona ne ha più d'uno) il pezzo
     armorTypeContainer.innerHTML = '';
     if (currentShopTab === 'Armature') {
         armorTypeContainer.style.display = 'flex';
-        armorTypes.forEach(type => {
-            const typeBtn = document.createElement('button');
-            typeBtn.innerText = type;
-            typeBtn.style.padding = '3px 8px'; typeBtn.style.fontSize = '11px'; typeBtn.style.cursor = 'pointer'; typeBtn.style.borderRadius = '4px'; typeBtn.style.border = '1px dashed #3498db';
-            if (type === currentArmorType) { typeBtn.style.background = '#3498db'; typeBtn.style.color = 'white'; }
-            else { typeBtn.style.background = 'white'; typeBtn.style.color = '#3498db'; }
-            typeBtn.onclick = () => { currentArmorType = type; populatePlayerSheetUI(myChar); };
-            armorTypeContainer.appendChild(typeBtn);
+        armorTypeContainer.style.flexDirection = 'column';
+        const area = ARMOR_AREAS.find(a => a.key === currentArmorArea) || ARMOR_AREAS[0];
+        if (currentArmorType !== 'Tutti' && !area.pieces.includes(currentArmorType)) currentArmorType = 'Tutti';
+
+        const areaRow = document.createElement('div');
+        areaRow.className = 'armor-area-row';
+        ARMOR_AREAS.forEach(a => {
+            const areaBtn = document.createElement('button');
+            areaBtn.type = 'button';
+            areaBtn.className = 'armor-area-btn';
+            areaBtn.classList.toggle('active', a.key === area.key);
+            areaBtn.innerText = a.label;
+            areaBtn.onclick = () => { currentArmorArea = a.key; currentArmorType = 'Tutti'; populatePlayerSheetUI(myChar); };
+            areaRow.appendChild(areaBtn);
         });
+        armorTypeContainer.appendChild(areaRow);
+
+        if (area.pieces.length > 1) {
+            const pieceRow = document.createElement('div');
+            pieceRow.className = 'armor-piece-row';
+            ['Tutti', ...area.pieces].forEach(type => {
+                const typeBtn = document.createElement('button');
+                typeBtn.type = 'button';
+                typeBtn.className = 'armor-piece-btn';
+                typeBtn.classList.toggle('active', type === currentArmorType);
+                typeBtn.innerText = type;
+                typeBtn.onclick = () => { currentArmorType = type; populatePlayerSheetUI(myChar); };
+                pieceRow.appendChild(typeBtn);
+            });
+            armorTypeContainer.appendChild(pieceRow);
+        }
     } else {
         armorTypeContainer.style.display = 'none';
     }
@@ -625,18 +647,14 @@ function populatePlayerSheetUI(myChar) {
         );
     }
 
-    // Tipo armatura
-    if (
-        currentShopTab === 'Armature' &&
-        currentArmorType !== 'Tutti'
-    ) {
-        const wanted = currentArmorType.toLowerCase();
-
+    // Zona del corpo e pezzo dell'armatura
+    if (currentShopTab === 'Armature') {
+        const area = ARMOR_AREAS.find(a => a.key === currentArmorArea) || ARMOR_AREAS[0];
+        const wanted = currentArmorType !== 'Tutti' ? [currentArmorType] : area.pieces;
         shopItemsToShow = shopItemsToShow.filter(item => {
-            const raw =
-                item?.equipment?.slot?.raw?.toLowerCase() || '';
-
-            return raw.includes(wanted);
+            const piece = armorPieceOf(item);
+            // Pezzi senza slot riconoscibile: solo in "Tutte"
+            return piece ? wanted.includes(piece) : area.key === 'Tutte';
         });
     }
 
@@ -737,8 +755,15 @@ function populatePlayerSheetUI(myChar) {
                 ${armorStatsHtml}${weaponStatsHtml}${licenseHtml}${ownedText}
             </div>`;
 
+            // Licenza collegata a un'arma: prezzo calcolato (25% dell'arma), non si modifica qui
+            if (isMaster && item.price_rule) {
+                const priceEl = li.querySelector('.shop-price');
+                priceEl.title = `${item.price_rule.percent}% del prezzo di ${item.price_rule.base_name}: cambia il prezzo dell'arma`;
+                priceEl.textContent = `${priceText} · ${item.price_rule.percent}% arma`;
+            }
+
             // Il Master cambia il prezzo al volo cliccando sul cartellino
-            if (isMaster) {
+            if (isMaster && !item.price_rule) {
                 const priceEl = li.querySelector('.shop-price');
                 priceEl.textContent = `${priceText} ✏️`;
                 priceEl.title = 'Clicca per cambiare il prezzo';
@@ -2657,19 +2682,30 @@ let globalCompendio = {
 let currentShopTab = 'Gadget';
 let currentBrandSubTab = 'Tutti';
 let currentArmorType = 'Tutti';
+let currentArmorArea = 'Tutte';
 
-const armorTypes = [
-    'Tutti',
-    'Elmo',
-    'Spalla',
-    'Pettorali',
-    'Schiena',
-    'Avambraccio',
-    'Guanti',
-    'Cintura',
-    'Gambe',
-    'Stivali'
+// Armature del mercato divise per zona del corpo; dentro ogni zona il filtro per pezzo.
+// I pezzi si riconoscono dalla famiglia dello slot del compendio.
+const ARMOR_PIECES = {
+    Elmo: 'elmo', Spalla: 'spalla', Pettorali: 'petto', Schiena: 'schiena',
+    Avambraccio: 'avambraccio', Guanti: 'guanto', Cintura: 'cintura', Gambe: 'gambe', Stivali: 'stivale'
+};
+const ARMOR_AREAS = [
+    { key: 'Tutte', label: 'Tutte', pieces: Object.keys(ARMOR_PIECES) },
+    { key: 'Testa', label: '🪖 Testa', pieces: ['Elmo'] },
+    { key: 'Busto', label: '🦺 Busto', pieces: ['Pettorali', 'Schiena', 'Spalla'] },
+    { key: 'Braccia', label: '💪 Braccia', pieces: ['Avambraccio', 'Guanti'] },
+    { key: 'Gambe', label: '🦵 Gambe', pieces: ['Gambe', 'Stivali'] },
+    { key: 'Cintura', label: '🎗️ Cintura', pieces: ['Cintura'] }
 ];
+
+function armorPieceOf(item) {
+    const slot = item?.equipment?.slot || {};
+    const family = String(slot.family || '').toLowerCase();
+    const raw = String(slot.raw || '').toLowerCase();
+    return Object.keys(ARMOR_PIECES).find(piece => ARMOR_PIECES[piece] === family) ||
+        Object.keys(ARMOR_PIECES).find(piece => raw.includes(piece.toLowerCase())) || null;
+}
 
 function getCompendioItems() {
     return Array.isArray(globalCompendio?.items)
@@ -3938,6 +3974,17 @@ function renderMasterCatalog() {
         saveBtn.textContent = '💾';
         saveBtn.title = 'Salva il prezzo';
         saveBtn.addEventListener('click', savePrice);
+
+        // Licenza collegata a un'arma: il prezzo è il 25% dell'arma, non si scrive a mano
+        if (item.price_rule) {
+            const rule = item.price_rule;
+            price.readOnly = true;
+            price.title = `${rule.percent}% del prezzo di ${rule.base_name}: cambia il prezzo dell'arma`;
+            price.placeholder = `${rule.percent}% arma`;
+            saveBtn.disabled = true;
+            saveBtn.title = price.title;
+            meta.textContent += ` · 💡 ${rule.percent}% di ${rule.base_name}` + (cost === null ? ' (arma senza prezzo)' : '');
+        }
 
         const giveBtn = document.createElement('button');
         giveBtn.type = 'button';

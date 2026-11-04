@@ -260,11 +260,22 @@
                 <!-- MODELLO NPC: scheda completa salvata dal Master -->
                 <div class="npc-template-box">
                     <label class="npc-template-label">📋 Modello NPC</label>
+                    <!-- Tanti modelli: si cercano per nome o cartella -->
+                    <input id="npc-template-search" class="npc-template-search" type="search" placeholder="🔍 Cerca modello o cartella...">
                     <div class="npc-template-row">
                         <select id="npc-template-select">
                             <option value="">-- Nessun modello --</option>
                         </select>
+                        <button id="npc-template-fav-btn" type="button" title="Aggiungi / togli dai preferiti">☆</button>
                         <button id="npc-template-delete-btn" type="button" title="Elimina il modello scelto">🗑️</button>
+                    </div>
+                    <!-- Cartella del modello scelto (si crea scrivendo un nome nuovo) -->
+                    <div id="npc-template-folder-row" class="npc-template-folder-row">
+                        <label for="npc-template-folder">📁</label>
+                        <input id="npc-template-folder" list="npc-template-folders" maxlength="40" placeholder="Senza cartella">
+                        <datalist id="npc-template-folders"></datalist>
+                        <button id="npc-template-folder-save" type="button" title="Sposta il modello in questa cartella">💾</button>
+                        <button id="npc-template-folder-rename" type="button" title="Rinomina la cartella per tutti i suoi modelli">✏️</button>
                     </div>
                     <div id="npc-template-info" class="npc-template-info">Salva un NPC come modello dal pannello "Selezione" per riusarne statistiche, equipaggiamento e armi.</div>
                     <!-- Suono che si sente quando un NPC di questo modello compare (vedi sounds.js) -->

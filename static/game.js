@@ -3223,27 +3223,106 @@ socket.on('scene_list', (data) => {
 
 let npcTemplates = [];
 
+// Cartelle e preferiti: ⭐ in cima, poi le cartelle in ordine alfabetico, "Senza cartella" in fondo
+const NO_FOLDER_LABEL = '📂 Senza cartella';
+
+function getNpcTemplateFolders() {
+    return [...new Set(npcTemplates.map(t => t.category).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'it'));
+}
+
 function renderNpcTemplateSelect() {
     const select = document.getElementById('npc-template-select');
     if (!select) return;
 
     const previous = select.value;
-    select.innerHTML = '<option value="">-- Nessun modello --</option>';
+    const query = (document.getElementById('npc-template-search')?.value || '').trim().toLowerCase();
+    const matches = t => !query || t.name.toLowerCase().includes(query) || (t.category || '').toLowerCase().includes(query);
+    const visible = npcTemplates.filter(t => matches(t) || String(t.id) === previous);
+    const byName = (a, b) => a.name.localeCompare(b.name, 'it');
 
-    npcTemplates.forEach(template => {
-        const option = document.createElement('option');
-        option.value = template.id;
-        option.textContent = template.name;
-        select.appendChild(option);
+    select.innerHTML = '<option value="">-- Nessun modello --</option>';
+    const addGroup = (label, templates, showFolder) => {
+        if (!templates.length) return;
+        const group = document.createElement('optgroup');
+        group.label = label;
+        templates.sort(byName).forEach(template => {
+            const option = document.createElement('option');
+            option.value = template.id;
+            option.textContent = showFolder && template.category ? `${template.name} · ${template.category}` : template.name;
+            group.appendChild(option);
+        });
+        select.appendChild(group);
+    };
+
+    addGroup('⭐ Preferiti', visible.filter(t => t.favorite), true);
+    getNpcTemplateFolders().forEach(folder => {
+        addGroup(`📁 ${folder}`, visible.filter(t => !t.favorite && t.category === folder), false);
     });
+    addGroup(NO_FOLDER_LABEL, visible.filter(t => !t.favorite && !t.category), false);
+
+    // Suggerimenti delle cartelle esistenti
+    const datalist = document.getElementById('npc-template-folders');
+    if (datalist) {
+        datalist.innerHTML = '';
+        getNpcTemplateFolders().forEach(folder => datalist.appendChild(new Option(folder, folder)));
+    }
 
     if (npcTemplates.some(t => String(t.id) === previous)) select.value = previous;
     updateNpcTemplateInfo();
 }
 
+function selectedNpcTemplate() {
+    return npcTemplates.find(t => String(t.id) === document.getElementById('npc-template-select')?.value) || null;
+}
+
+function updateNpcTemplateMetaControls() {
+    const template = selectedNpcTemplate();
+    const fav = document.getElementById('npc-template-fav-btn');
+    const row = document.getElementById('npc-template-folder-row');
+    const folder = document.getElementById('npc-template-folder');
+    if (fav) {
+        fav.textContent = template?.favorite ? '⭐' : '☆';
+        fav.disabled = !template;
+        fav.classList.toggle('active', !!template?.favorite);
+    }
+    if (row) row.style.display = template ? 'flex' : 'none';
+    if (folder && template && document.activeElement !== folder) folder.value = template.category || '';
+}
+
+document.getElementById('npc-template-search')?.addEventListener('input', renderNpcTemplateSelect);
+
+document.getElementById('npc-template-fav-btn')?.addEventListener('click', () => {
+    const template = selectedNpcTemplate();
+    if (template) socket.emit('set_npc_template_meta', { id: template.id, favorite: !template.favorite });
+});
+
+document.getElementById('npc-template-folder-save')?.addEventListener('click', () => {
+    const template = selectedNpcTemplate();
+    if (!template) return;
+    socket.emit('set_npc_template_meta', { id: template.id, category: document.getElementById('npc-template-folder').value.trim() });
+});
+
+document.getElementById('npc-template-folder')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('npc-template-folder-save')?.click();
+});
+
+document.getElementById('npc-template-folder-rename')?.addEventListener('click', () => {
+    const template = selectedNpcTemplate();
+    if (!template?.category) {
+        alert('Questo modello non è in una cartella: scrivi un nome e premi 💾 per crearne una.');
+        return;
+    }
+    const count = npcTemplates.filter(t => t.category === template.category).length;
+    const name = prompt(`Nuovo nome per la cartella "${template.category}" (${count} modelli). Vuoto = togli la cartella:`, template.category);
+    if (name === null) return;
+    socket.emit('rename_npc_template_category', { old: template.category, new: name.trim() });
+});
+
 function updateNpcTemplateInfo() {
     const info = document.getElementById('npc-template-info');
     const template = npcTemplates.find(t => String(t.id) === document.getElementById('npc-template-select')?.value);
+    updateNpcTemplateMetaControls();
     if (!info) return;
 
     info.textContent = template
@@ -3302,7 +3381,17 @@ document.getElementById('btn-save-npc-template')?.addEventListener('click', () =
     const existing = npcTemplates.find(t => t.name.toLowerCase() === name.trim().toLowerCase());
     if (existing && !confirm(`Esiste già il modello "${existing.name}". Sovrascriverlo?`)) return;
 
-    socket.emit('save_npc_template', { char_id: char.id, name: name.trim() });
+    // Cartella: proposta quella che aveva già (o l'ultima usata); vuoto = nessuna
+    const folders = getNpcTemplateFolders();
+    const suggestion = existing?.category ?? window.lastNpcTemplateFolder ?? '';
+    const folder = prompt(
+        'Cartella del modello (vuoto = nessuna).' + (folders.length ? `\nCartelle esistenti: ${folders.join(', ')}` : ''),
+        suggestion
+    );
+    if (folder === null) return;
+    window.lastNpcTemplateFolder = folder.trim();
+
+    socket.emit('save_npc_template', { char_id: char.id, name: name.trim(), category: folder.trim() });
 });
 
 socket.on('npc_template_list', (templates) => {
