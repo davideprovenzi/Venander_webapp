@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 from flask_socketio import SocketIO, emit
@@ -12,6 +12,7 @@ import copy
 import functools
 import uuid
 import html
+import base64
 from uuid import uuid4
 from threading import Lock
 
@@ -78,6 +79,7 @@ class Character(db.Model):
     notes = db.Column(db.Text, default="")
     # HP recuperati per ogni ora di riposo lungo (deciso dal Master)
     heal_rate = db.Column(db.Float, default=0)
+    spawn_sound = db.Column(db.JSON, default=None) # {"url": ..., "scope": "all" | "master"} dal modello NPC
     # Conoscenze del personaggio: [{"name": ..., "desc": ...}]
     knowledge = db.Column(db.JSON, default=list)
 
@@ -298,6 +300,10 @@ with app.app_context():
         )
         db.session.commit()
 
+    if "spawn_sound" not in character_columns:
+        db.session.execute(text("ALTER TABLE character ADD COLUMN spawn_sound JSON"))
+        db.session.commit()
+
     # Migrazione leggera delle sidequest per supportare armi forgiate come ricompensa.
     sidequest_columns = {
         column["name"]
@@ -407,6 +413,45 @@ with app.app_context():
 # ==========================================
 # ROTTE WEB & SERIALIZZAZIONE
 # ==========================================
+# ==========================================
+# SUONI DEGLI NPC
+# Il Master registra (o carica) un suono per un modello NPC: si sente
+# quando un NPC di quel modello compare agli occhi dei giocatori.
+# I file stanno in instance/sounds, come il database (fuori da git).
+# ==========================================
+SOUND_DIR = os.path.join(app.instance_path, "sounds")
+SOUND_MAX_BYTES = 1_000_000
+SOUND_TYPES = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp3": "mp3",
+               "audio/wav": "wav", "audio/x-wav": "wav", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac"}
+SOUND_FILE_PATTERN = re.compile(r"^[0-9a-f]{32}\.(webm|ogg|mp3|wav|m4a|aac)$")
+
+@app.route("/sounds/<name>")
+def serve_sound(name):
+    if not SOUND_FILE_PATTERN.match(name):
+        abort(404)
+    return send_from_directory(SOUND_DIR, name, max_age=86400)
+
+def save_sound_data_url(data_url):
+    """data:audio/...;base64,... -> URL del file salvato (o un messaggio d'errore)."""
+    match = re.match(r"^data:([\w/+.-]+)(?:;[^,]*)?;base64,(.*)$", str(data_url or ""), re.S)
+    if not match:
+        return None, "Formato del suono non valido."
+    mime = match.group(1).lower()
+    ext = SOUND_TYPES.get(mime)
+    if not ext:
+        return None, f"Tipo di file non supportato ({mime}): usa mp3, ogg, wav, webm o m4a."
+    try:
+        raw = base64.b64decode(match.group(2), validate=False)
+    except (ValueError, TypeError):
+        return None, "Il file del suono è danneggiato."
+    if not raw or len(raw) > SOUND_MAX_BYTES:
+        return None, f"Il suono deve pesare al massimo {SOUND_MAX_BYTES // 1000} KB."
+    os.makedirs(SOUND_DIR, exist_ok=True)
+    name = f"{uuid.uuid4().hex}.{ext}"
+    with open(os.path.join(SOUND_DIR, name), "wb") as handle:
+        handle.write(raw)
+    return f"/sounds/{name}", None
+
 @app.route("/")
 def index():
     chars = Character.query.order_by(Character.id).all()
@@ -422,7 +467,8 @@ def get_char_data(char):
         "skills": char.skills, "backpack": char.backpack, "bonuses": char.bonuses, "is_hidden": char.is_hidden,
         "is_invisible": char.is_invisible,"xp": char.xp, "shop": char.shop, "notes": char.notes,
         "heal_rate": char.heal_rate or 0,
-        "knowledge": char.knowledge or []
+        "knowledge": char.knowledge or [],
+        "spawn_sound": char.spawn_sound
     }
 
 
@@ -448,7 +494,9 @@ def get_public_char_data(char):
         "is_hidden": char.is_hidden,
         "is_invisible": char.is_invisible,
         # Gli HP restano segreti: ai giocatori basta sapere se è a terra
-        "is_defeated": (char.hp_current or 0) <= 0
+        "is_defeated": (char.hp_current or 0) <= 0,
+        # Il suono "solo Master" non arriva nemmeno ai giocatori
+        "spawn_sound": char.spawn_sound if (char.spawn_sound or {}).get("scope") == "all" else None
     }
 
 
@@ -1530,6 +1578,7 @@ def handle_spawn_npc(data):
         if template:
             apply_npc_template(new_npc, template.data or {})
             new_npc.name = unique_character_name(new_npc.name)
+            new_npc.spawn_sound = copy.deepcopy((template.data or {}).get("sound"))
 
         db.session.add(new_npc)
         db.session.commit()
@@ -1596,7 +1645,8 @@ def get_npc_template_list():
             "lore": data.get("lore") or "",
             "token_url": data.get("token_url") or "",
             "weapons": len(data.get("weapons") or []),
-            "equipped": len([item for item in equipped.values() if item])
+            "equipped": len([item for item in equipped.values() if item]),
+            "sound": data.get("sound")
         })
 
     return result
@@ -1619,7 +1669,9 @@ def handle_save_npc_template(data):
         template = NpcTemplate(name=name)
         db.session.add(template)
 
+    previous_sound = (template.data or {}).get("sound")
     template.data = snapshot_npc_template(char)
+    template.data["sound"] = copy.deepcopy(char.spawn_sound) or previous_sound
     flag_modified(template, "data")
     db.session.commit()
 
@@ -1627,6 +1679,50 @@ def handle_save_npc_template(data):
     emit("dice_result", {
         "name": "SISTEMA",
         "message": f"📋 Modello NPC <b>{html.escape(name)}</b> salvato.",
+        "is_master_roll": True
+    }, to=request.sid)
+
+@socketio.on("set_template_sound")
+def handle_set_template_sound(data):
+    """Suono del modello: nuovo file, solo il pubblico (tutti / solo Master) o nessun suono."""
+    if not is_master_request():
+        return
+    data = data or {}
+    template = db.session.get(NpcTemplate, data.get("template_id"))
+    if not template:
+        return
+
+    sound = copy.deepcopy((template.data or {}).get("sound"))
+    scope = "master" if data.get("scope") == "master" else "all"
+    if data.get("remove"):
+        sound = None
+    elif data.get("data_url"):
+        url, error = save_sound_data_url(data["data_url"])
+        if error:
+            emit_combat_error(error)
+            return
+        sound = {"url": url, "scope": scope, "template_id": template.id}
+    elif sound:
+        sound["scope"] = scope
+    else:
+        return
+
+    template.data = {**(template.data or {}), "sound": sound}
+    flag_modified(template, "data")
+
+    # Anche gli NPC già in mappa di quel modello? No: solo quelli spawnati da ora.
+    # Se il Master vuole aggiornarli c'è il flag "apply_to_spawned".
+    if data.get("apply_to_spawned"):
+        for npc in Character.query.filter(Character.role == "npc").all():
+            if (npc.spawn_sound or {}).get("template_id") == template.id or npc.name.rstrip("0123456789 ") == template.name:
+                npc.spawn_sound = copy.deepcopy(sound)
+                emit_character_update(npc)
+
+    db.session.commit()
+    emit_to_masters("npc_template_list", get_npc_template_list())
+    emit("dice_result", {
+        "name": "SISTEMA",
+        "message": f"🔊 Suono del modello <b>{html.escape(template.name)}</b> " + ("rimosso." if not sound else "salvato."),
         "is_master_roll": True
     }, to=request.sid)
 

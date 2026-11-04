@@ -3626,3 +3626,58 @@ body.player-mode #btn-toggle-notes {
 .exchange-actions button.suggested {
     background: #27ae60;
 }
+
+/* ==========================================
+   SUONI DEGLI NPC
+   ========================================== */
+.npc-sound-box {
+    display: none;
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px dashed #16a085;
+    border-radius: 5px;
+    font-size: 12px;
+}
+
+.npc-sound-head {
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.npc-sound-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.npc-sound-row button {
+    padding: 5px 8px;
+    border: none;
+    border-radius: 4px;
+    background: #16a085;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.npc-sound-row button.recording {
+    background: #c0392b;
+    animation: npc-sound-pulse 1s infinite;
+}
+
+@keyframes npc-sound-pulse {
+    50% { opacity: 0.6; }
+}
+
+.npc-sound-scope {
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 4px;
+}
+
+.npc-sound-apply-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
