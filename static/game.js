@@ -3243,8 +3243,10 @@ function renderNpcTemplateSelect() {
     const byName = (a, b) => a.name.localeCompare(b.name, 'it');
 
     select.innerHTML = '<option value="">-- Nessun modello --</option>';
+    const treeGroups = [];
     const addGroup = (label, templates, showFolder) => {
         if (!templates.length) return;
+        treeGroups.push({ label, templates: [...templates].sort(byName), showFolder });
         const group = document.createElement('optgroup');
         group.label = label;
         templates.sort(byName).forEach(template => {
@@ -3270,8 +3272,91 @@ function renderNpcTemplateSelect() {
     }
 
     if (npcTemplates.some(t => String(t.id) === previous)) select.value = previous;
+    renderNpcTemplateTree(treeGroups, !!query);
     updateNpcTemplateInfo();
 }
+
+// ------------------------------------------
+// Elenco a cartelle: ogni cartella si apre e si chiude (ricordato in questo browser)
+// ------------------------------------------
+const NPC_FOLDERS_STORAGE_KEY = 'venander_npc_template_folders_closed';
+let npcTemplateGroups = [];
+
+function getClosedNpcFolders() {
+    try {
+        return new Set(JSON.parse(localStorage.getItem(NPC_FOLDERS_STORAGE_KEY) || '[]'));
+    } catch (e) {
+        return new Set();
+    }
+}
+
+function setClosedNpcFolders(closed) {
+    try {
+        localStorage.setItem(NPC_FOLDERS_STORAGE_KEY, JSON.stringify([...closed]));
+    } catch (e) { /* storage bloccato: si ricorda solo fino al ricaricamento */ }
+}
+
+function renderNpcTemplateTree(groups, searching) {
+    npcTemplateGroups = groups;
+    const tree = document.getElementById('npc-template-tree');
+    const select = document.getElementById('npc-template-select');
+    if (!tree || !select) return;
+
+    const closed = getClosedNpcFolders();
+    tree.innerHTML = '';
+    if (!groups.length) {
+        tree.textContent = npcTemplates.length ? 'Nessun modello trovato.' : 'Nessun modello salvato.';
+        return;
+    }
+
+    groups.forEach(group => {
+        // Cercando si apre tutto quello che corrisponde
+        const isOpen = searching || !closed.has(group.label);
+        const folder = document.createElement('div');
+        folder.className = 'npc-folder';
+
+        const head = document.createElement('button');
+        head.type = 'button';
+        head.className = 'npc-folder-head';
+        head.textContent = `${isOpen ? '▾' : '▸'} ${group.label} (${group.templates.length})`;
+        head.title = isOpen ? 'Chiudi la cartella' : 'Apri la cartella';
+        head.addEventListener('click', () => {
+            const now = getClosedNpcFolders();
+            if (now.has(group.label)) now.delete(group.label); else now.add(group.label);
+            setClosedNpcFolders(now);
+            renderNpcTemplateTree(npcTemplateGroups, searching);
+        });
+        folder.appendChild(head);
+
+        if (isOpen) {
+            group.templates.forEach(template => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'npc-folder-item';
+                item.dataset.id = String(template.id);
+                item.classList.toggle('active', String(template.id) === select.value);
+                item.textContent = (template.favorite ? '⭐ ' : '') + template.name +
+                    (group.showFolder && template.category ? ` · ${template.category}` : '');
+                item.addEventListener('click', () => {
+                    select.value = String(template.id);
+                    select.dispatchEvent(new Event('change'));
+                });
+                folder.appendChild(item);
+            });
+        }
+        tree.appendChild(folder);
+    });
+}
+
+document.getElementById('npc-template-collapse-all')?.addEventListener('click', () => {
+    setClosedNpcFolders(new Set(npcTemplateGroups.map(g => g.label)));
+    renderNpcTemplateSelect();
+});
+
+document.getElementById('npc-template-expand-all')?.addEventListener('click', () => {
+    setClosedNpcFolders(new Set());
+    renderNpcTemplateSelect();
+});
 
 function selectedNpcTemplate() {
     return npcTemplates.find(t => String(t.id) === document.getElementById('npc-template-select')?.value) || null;
@@ -3289,6 +3374,15 @@ function updateNpcTemplateMetaControls() {
     }
     if (row) row.style.display = template ? 'flex' : 'none';
     if (folder && template && document.activeElement !== folder) folder.value = template.category || '';
+    const current = document.getElementById('npc-template-current');
+    if (current) {
+        current.textContent = template ? `${template.favorite ? '⭐ ' : ''}${template.name}` : 'Nessun modello scelto';
+        current.classList.toggle('empty', !template);
+    }
+    // L'elenco a cartelle evidenzia quello scelto
+    document.querySelectorAll('#npc-template-tree .npc-folder-item').forEach(item => {
+        item.classList.toggle('active', !!template && item.dataset.id === String(template.id));
+    });
 }
 
 document.getElementById('npc-template-search')?.addEventListener('input', renderNpcTemplateSelect);

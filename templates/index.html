@@ -264,10 +264,18 @@
                     <label class="npc-template-label">📋 Modello NPC</label>
                     <!-- Tanti modelli: si cercano per nome o cartella -->
                     <input id="npc-template-search" class="npc-template-search" type="search" placeholder="🔍 Cerca modello o cartella...">
+                    <!-- Cartelle dei modelli: si aprono e si chiudono (vedi game.js) -->
+                    <div class="npc-template-tree-tools">
+                        <button id="npc-template-expand-all" type="button" title="Apri tutte le cartelle">▾ Espandi tutte</button>
+                        <button id="npc-template-collapse-all" type="button" title="Chiudi tutte le cartelle">▸ Comprimi tutte</button>
+                    </div>
+                    <div id="npc-template-tree" class="npc-template-tree"></div>
                     <div class="npc-template-row">
-                        <select id="npc-template-select">
+                        <!-- Il menu resta come selezione "vera" del modello, ma si usa l'elenco a cartelle -->
+                        <select id="npc-template-select" class="npc-template-select-hidden">
                             <option value="">-- Nessun modello --</option>
                         </select>
+                        <span id="npc-template-current" class="npc-template-current">Nessun modello scelto</span>
                         <button id="npc-template-fav-btn" type="button" title="Aggiungi / togli dai preferiti">☆</button>
                         <button id="npc-template-delete-btn" type="button" title="Elimina il modello scelto">🗑️</button>
                     </div>
