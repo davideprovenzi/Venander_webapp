@@ -776,9 +776,11 @@ function populatePlayerSheetUI(myChar) {
                 btn.onclick = () => {
                     if (!confirm(`Regalare "${item.name}" a ${myChar.name}? Non costa nulla.`)) return;
                     grantShopItem(myChar, item, shopGroup, itemDesc);
+                    // Privato: lo vedono solo il Master e chi riceve il regalo
                     socket.emit('combat_msg', {
                         name: '🎁 MASTER',
-                        message: `regala <b>${escapeHtml(item.name)}</b> a <b>${escapeHtml(myChar.name)}</b>.`
+                        message: `regala <b>${escapeHtml(item.name)}</b> a <b>${escapeHtml(myChar.name)}</b>.`,
+                        private_to: myChar.id
                     });
                 };
             } else if (itemCost === null) {
@@ -3871,9 +3873,11 @@ function giveCatalogItem(item) {
     if (!confirm(`Dare gratis "${item.name}" a ${char.name}?`)) return;
 
     grantShopItem(char, item, getShopGroup(item), getCompendioDescription(item));
+    // Privato: lo vedono solo il Master e chi riceve il regalo
     socket.emit('combat_msg', {
         name: '🎁 MASTER',
-        message: `regala <b>${escapeHtml(item.name)}</b> a <b>${escapeHtml(char.name)}</b>.`
+        message: `regala <b>${escapeHtml(item.name)}</b> a <b>${escapeHtml(char.name)}</b>.`,
+        private_to: char.id
     });
 }
 

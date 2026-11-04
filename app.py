@@ -4276,6 +4276,17 @@ def handle_combat_msg(data):
         return
 
     # Questo invia un messaggio di sistema senza attivare il controllo dadi!
+    # Con "private_to" (es. un regalo del Master) lo vedono solo il Master e quel personaggio.
+    private_to = data.get("private_to")
+    if private_to is not None:
+        recipient = db.session.get(Character, private_to)
+        if not recipient:
+            return
+        message = {"name": data["name"], "message": "🔒 " + data["message"], "is_master_roll": False}
+        emit_to_masters("dice_result", message)
+        emit_to_character(recipient.id, "dice_result", message)
+        return
+
     emit("dice_result", {"name": data["name"], "message": data["message"], "is_master_roll": False}, broadcast=True)
 
 @socketio.on("sync_pa")
