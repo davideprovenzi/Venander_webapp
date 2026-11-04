@@ -82,9 +82,31 @@ window.addEventListener('keydown', e => {
 
 window.addEventListener('keyup', e => window.keysDown[e.key.toLowerCase()] = false);
 
-// --- ZOOM (Rotellina) ---
+// --- ROTELLINA ---
+// Ctrl (o rotellina semplice) = zoom sul cursore
+// Maiusc = scorre a destra/sinistra, Alt = scorre su/giù
+const WHEEL_LINE_PX = 16;   // Firefox a volte misura la rotellina in righe, non in pixel
+let altWheelUsed = false;
+
 canvas.addEventListener('wheel', (event) => {
-    event.preventDefault(); // Evita che la pagina web scorra in giù
+    event.preventDefault(); // niente scorrimento della pagina né zoom del browser (Ctrl)
+
+    const unit = event.deltaMode === 1 ? WHEEL_LINE_PX : event.deltaMode === 2 ? canvas.height : 1;
+    // Con Maiusc molti browser spostano il valore su deltaX: si prende quello presente
+    const delta = (event.deltaY || event.deltaX) * unit;
+
+    if (event.shiftKey && !event.ctrlKey) {
+        camera.x -= delta;
+        render();
+        return;
+    }
+
+    if (event.altKey && !event.ctrlKey) {
+        altWheelUsed = true;
+        camera.y -= delta;
+        render();
+        return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
@@ -96,9 +118,9 @@ canvas.addEventListener('wheel', (event) => {
 
     // Modifica lo zoom (limiti da 0.3x a 4x)
     const zoomAmount = 0.1;
-    if (event.deltaY < 0) {
+    if (delta < 0) {
         camera.zoom = Math.min(camera.zoom + zoomAmount, 4);
-    } else {
+    } else if (delta > 0) {
         camera.zoom = Math.max(camera.zoom - zoomAmount, 0.3);
     }
 
@@ -107,6 +129,14 @@ canvas.addEventListener('wheel', (event) => {
     camera.y = mouseY - worldYBefore * camera.zoom;
 
     render();
+}, { passive: false });
+
+// Rilasciando Alt dopo averlo usato con la rotellina il browser aprirebbe il menu: si blocca
+window.addEventListener('keyup', (event) => {
+    if (event.key === 'Alt' && altWheelUsed) {
+        event.preventDefault();
+        altWheelUsed = false;
+    }
 });
 
 // ==========================================

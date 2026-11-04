@@ -2969,8 +2969,52 @@ function getSelectedReaction() {
     };
 }
 
+// Scambio d'attacco: niente secondo scambio per chi l'ha perso; chi lo sceglie indica l'arma
+function syncReactionExchange() {
+    const select = document.getElementById('reaction-type');
+    const exchangeOption = [...(select?.options || [])].find(o => (o.dataset.reaction || o.value) === 'Scambio');
+    const blocked = !!pendingIncomingAttack?.no_exchange;
+    if (exchangeOption) {
+        exchangeOption.hidden = blocked;
+        exchangeOption.disabled = blocked;
+        if (blocked && exchangeOption.selected) select.selectedIndex = 0;
+    }
+
+    const row = document.getElementById('reaction-exchange-row');
+    const weaponSelect = document.getElementById('reaction-exchange-weapon');
+    const isExchange = getSelectedReaction().type === 'Scambio';
+    if (!row || !weaponSelect) return;
+    row.style.display = isExchange ? 'block' : 'none';
+    if (!isExchange) return;
+
+    const defender = characters.find(c => c.id === pendingIncomingAttack?.defender_id);
+    const previous = weaponSelect.value;
+    weaponSelect.innerHTML = '';
+    collectCombatActions(defender).forEach(action => {
+        const option = new Option(`${action.name}${action.speed ? ` (Vel ${action.speed})` : ''}`, action.id);
+        option.dataset.weapon = action.name || '';
+        option.dataset.slot = action.slot || '';
+        option.dataset.compendiumId = action.compendiumId || '';
+        option.disabled = !!(action.licenseInfo && !action.hasLicense);
+        weaponSelect.add(option);
+    });
+    if (!weaponSelect.options.length) {
+        const unarmed = new Option('✊ Mani nude', 'unarmed');
+        unarmed.dataset.weapon = 'Mani Nude';
+        weaponSelect.add(unarmed);
+    }
+    if ([...weaponSelect.options].some(o => o.value === previous)) weaponSelect.value = previous;
+}
+
+function getExchangeWeaponChoice() {
+    const option = document.getElementById('reaction-exchange-weapon')?.selectedOptions[0];
+    if (!option) return { weapon: 'Mani Nude' };
+    return { weapon: option.dataset.weapon, source_slot: option.dataset.slot || null, compendium_id: option.dataset.compendiumId || null };
+}
+
 function applyReactionSpeedFromTable() {
     populateReactionOptions();
+    syncReactionExchange();
 
     const speedInput = document.getElementById('reaction-speed');
     const costEl = document.getElementById('reaction-cost');
@@ -7663,7 +7707,8 @@ document.getElementById('btn-execute-reaction')?.addEventListener('click', () =>
         reaction_action: reaction.action,
         def_limb: limb,
         def_speed: speed,
-        limb_shares: shares
+        limb_shares: shares,
+        exchange_weapon: reaction.type === 'Scambio' ? getExchangeWeaponChoice() : null
     });
 
     document.getElementById('defense-modal').style.display = 'none';

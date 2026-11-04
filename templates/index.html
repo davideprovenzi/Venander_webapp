@@ -1319,6 +1319,12 @@
             <option value="Scambio">⚔️ Scambio d'Attacco</option>
         </select>
 
+        <!-- Scambio d'attacco: con che cosa colpisci se vinci il tiro -->
+        <label id="reaction-exchange-row" style="display:none; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
+            🗡️ Se vinci colpisci con
+            <select id="reaction-exchange-weapon" style="width: 100%; padding: 6px; margin-top: 4px; border-radius: 3px;"></select>
+        </label>
+
         <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; font-size: 12px; color: #bdc3c7;">
             ⚡ Velocità
             <input type="number" id="reaction-speed" placeholder="Velocità" value="100" style="width: 70px; text-align: center; border-radius: 3px;">
@@ -1388,6 +1394,12 @@
         <div id="aim-alert-cost" class="aim-alert-cost"></div>
         <div id="aim-alert-limbs" class="limb-picker"></div>
         <button id="aim-alert-confirm" type="button">Reagisci</button>
+    </div>
+
+    <!-- SCAMBIO D'ATTACCO: i due tirano, il Master conferma chi vince -->
+    <div id="exchange-modal" class="exchange-modal">
+        <div class="exchange-title">⚔️ Scambio d'Attacco</div>
+        <div id="exchange-body"></div>
     </div>
 
     <!-- BOMBA: chi è nell'area reagisce prima dell'esplosione -->
@@ -1776,6 +1788,7 @@
     <script src="/static/ui.js"></script>
     <script src="/static/control.js"></script>
     <script src="/static/trinkets.js"></script>
+    <script src="/static/exchange.js"></script>
     <script src="/static/wiki.js"></script>
 
 </body>
