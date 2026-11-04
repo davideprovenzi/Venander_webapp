@@ -3715,3 +3715,24 @@ body.player-mode #btn-toggle-notes {
     color: #e74c3c;
     font-weight: bold;
 }
+
+/* Bersaglio: menu + scelta dalla mappa */
+.attack-target-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+#btn-pick-target {
+    padding: 0 10px;
+    border: 1px solid #7f8c8d;
+    border-radius: 3px;
+    background: #2c3e50;
+    color: #fff;
+    cursor: pointer;
+}
+
+#btn-pick-target.active {
+    background: #f1c40f;
+    color: #000;
+}

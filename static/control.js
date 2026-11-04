@@ -38,6 +38,11 @@ window.addEventListener('keydown', e => {
             changed = true;
         }
 
+        if (window.targetPickMode) {
+            setTargetPickMode(false);
+            changed = true;
+        }
+
         if (window.isRulerMode) {
             window.isRulerMode = false;
             window.rulerStart = null;
@@ -163,6 +168,13 @@ canvas.addEventListener('click', (event) => {
     if (window.threatPlacement) {
         const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
         toggleThreatHex(threatHex.col, threatHex.row);
+        return;
+    }
+
+    // Scelta del bersaglio dalla mappa (🎯 nel pannello d'attacco)
+    if (window.targetPickMode) {
+        const pickHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        pickTargetAt(pickHex.col, pickHex.row);
         return;
     }
 

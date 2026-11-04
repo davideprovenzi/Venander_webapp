@@ -114,6 +114,24 @@ function drawLines() {
 // MIRE: linea rossa da chi mira al bersaglio (tratteggiata finché il
 // bersaglio non ha reagito), con il mirino sul bersaglio
 // ==========================================
+// Scelta del bersaglio dalla mappa: anello sulle pedine selezionabili
+function drawTargetPickHighlights() {
+    if (!window.targetPickMode) return;
+    const ids = getPickableTargetIds();
+    ctx.save();
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([5, 4]);
+    characters.forEach(char => {
+        if (!ids.has(char.id)) return;
+        const p = hexToPixel(char.x, char.y);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, HEX_SIZE * 0.95, 0, 2 * Math.PI);
+        ctx.stroke();
+    });
+    ctx.restore();
+}
+
 function drawAims() {
     if (!combatState.is_active || !combatAims.length) return;
 
@@ -1235,6 +1253,7 @@ function render() {
     drawThreats();
     drawAims();
     window.drawTrinkets?.();
+    drawTargetPickHighlights();
 
     // 3.1 Percorso Movimento (Sopra le pedine)
     drawMovementPath();

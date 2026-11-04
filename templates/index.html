@@ -1221,7 +1221,11 @@
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Gamba Dx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-gd">60</strong>/60</div>
                 <div style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px;">Gamba Sx<br><strong style="color:#f1c40f; font-size:14px;" id="hud-gs">60</strong>/60</div>
             </div>
-            <select id="attack-target" style="width: 100%; padding: 5px; margin-bottom: 8px; border-radius: 3px; border: 1px solid #7f8c8d;"></select>
+            <!-- Bersaglio: dal menu oppure con 🎯 cliccando la pedina sulla mappa -->
+            <div class="attack-target-row">
+                <select id="attack-target" style="flex: 1; min-width: 0; padding: 5px; border-radius: 3px; border: 1px solid #7f8c8d;"></select>
+                <button id="btn-pick-target" type="button" title="Scegli il bersaglio cliccando la pedina sulla mappa (T)">🎯</button>
+            </div>
             <select id="attack-weapon" style="width: 100%; padding: 5px; margin-bottom: 10px; border-radius: 3px; background: #2c3e50; color: white; border: 1px solid #34495e; font-weight: bold;"></select>
 
             <!-- Caricatore dell'arma da fuoco scelta: colpi e ricarica -->

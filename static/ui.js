@@ -8848,6 +8848,58 @@ document.getElementById('btn-drop-aim')?.addEventListener('click', () => {
 
 document.getElementById('attack-target')?.addEventListener('change', updateAttackAimRow);
 
+// ==========================================
+// BERSAGLIO DALLA MAPPA
+// 🎯 (o T) e poi un clic sulla pedina: vale solo chi è nel menu dei bersagli,
+// quindi restano le stesse regole (visibilità, a terra, minaccia scattata).
+// ==========================================
+window.targetPickMode = false;
+
+function getPickableTargetIds() {
+    const select = document.getElementById('attack-target');
+    return new Set([...(select?.options || [])].map(o => parseInt(o.value)).filter(Number.isFinite));
+}
+
+function setTargetPickMode(enabled) {
+    const panelOpen = document.getElementById('combat-action-panel')?.style.display !== 'none';
+    window.targetPickMode = !!enabled && panelOpen && getPickableTargetIds().size > 0;
+    document.getElementById('btn-pick-target')?.classList.toggle('active', window.targetPickMode);
+    if (window.targetPickMode) {
+        if (window.moveMode) setMoveMode(false);
+        statusBar.innerText = '🎯 Clicca la pedina da attaccare (Esc per annullare).';
+    } else if (enabled) {
+        statusBar.innerText = '🎯 Nessun bersaglio disponibile.';
+    }
+    requestRender();
+}
+
+function pickTargetAt(col, row) {
+    const select = document.getElementById('attack-target');
+    const ids = getPickableTargetIds();
+    const target = characters.find(c => c.x === col && c.y === row && ids.has(c.id));
+    if (!target) {
+        statusBar.innerText = '❌ Lì non c\'è un bersaglio valido: clicca una pedina evidenziata.';
+        return;
+    }
+    select.value = String(target.id);
+    select.dispatchEvent(new Event('change'));
+    setTargetPickMode(false);
+    statusBar.innerText = `🎯 Bersaglio: ${target.name}.`;
+}
+
+window.setTargetPickMode = setTargetPickMode;
+window.pickTargetAt = pickTargetAt;
+window.getPickableTargetIds = getPickableTargetIds;
+
+document.getElementById('btn-pick-target')?.addEventListener('click', () => setTargetPickMode(!window.targetPickMode));
+
+window.addEventListener('keydown', (event) => {
+    if (event.key.toLowerCase() !== 't' || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
+    if (!combatState.is_active) return;
+    setTargetPickMode(!window.targetPickMode);
+});
+
 // Popup del bersaglio: un'azione utile della tabella (con i suoi frame) o nessuna reazione
 (() => {
     const modal = document.getElementById('aim-alert-modal');
