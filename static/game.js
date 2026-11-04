@@ -2979,6 +2979,12 @@ document.getElementById(
             return;
         }
 
+        if (file.size > TOKEN_MAX_BYTES) {
+            alert(`La pedina è troppo grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Massimo 5 MB.`);
+            e.target.value = '';
+            return;
+        }
+
         const reader =
             new FileReader();
 

@@ -485,6 +485,18 @@ STARTUP_DB_IDENTITY = db_file_identity()
 # ==========================================
 SOUND_DIR = os.path.join(app.instance_path, "sounds")
 SOUND_MAX_BYTES = 1_000_000
+
+# Pedine: ogni immagine viaggia verso tutti i giocatori, quindi c'è un limite
+TOKEN_MAX_BYTES = 5 * 1024 * 1024
+
+def token_too_big(data_url):
+    """True se l'immagine (data URL base64) supera i 5 MB una volta decodificata."""
+    text = str(data_url or "")
+    payload = text.split(",", 1)[1] if text.startswith("data:") and "," in text else text
+    decoded_size = len(payload) * 3 // 4 - payload[-2:].count("=")
+    return decoded_size > TOKEN_MAX_BYTES
+
+TOKEN_TOO_BIG_MESSAGE = "La pedina è troppo grande: massimo 5 MB."
 SOUND_TYPES = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/mpeg": "mp3", "audio/mp3": "mp3",
                "audio/wav": "wav", "audio/x-wav": "wav", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac"}
 SOUND_FILE_PATTERN = re.compile(r"^[0-9a-f]{32}\.(webm|ogg|mp3|wav|m4a|aac)$")
@@ -838,24 +850,29 @@ def _clean_float(value, default=None, minimum=None):
         number = max(minimum, number)
     return number
 
+def _raw_text(raw, key, default=""):
+    """Testo di un campo del modulo: null/None vale come vuoto (mai la parola "None")."""
+    value = raw.get(key, default)
+    return default if value is None else str(value)
+
 def build_forged_weapon(raw):
     """Valida i campi della forgia e costruisce una voce compatibile col compendio."""
     if not isinstance(raw, dict):
         return None
 
-    name = str(raw.get("name", "")).strip()[:120]
+    name = _raw_text(raw, "name", "").strip()[:120]
     if not name:
         return None
 
-    description = str(raw.get("description", "")).strip()[:2000]
-    brand = str(raw.get("brand", "")).strip()[:100] or "Forgiata dal Master"
-    targeting = str(raw.get("targeting", "Melee")).strip().title()
+    description = _raw_text(raw, "description", "").strip()[:2000]
+    brand = _raw_text(raw, "brand", "").strip()[:100] or "Forgiata dal Master"
+    targeting = _raw_text(raw, "targeting", "Melee").strip().title()
     if targeting not in {"Melee", "Ranged"}:
         targeting = "Melee"
 
-    characteristic = str(raw.get("characteristic", "DES")).strip().upper()[:12]
+    characteristic = _raw_text(raw, "characteristic", "DES").strip().upper()[:12]
     damage = _clean_int(raw.get("damage"), 0, 0, 100000)
-    damage_type = str(raw.get("damage_type", "")).strip()[:80] or None
+    damage_type = _raw_text(raw, "damage_type", "").strip()[:80] or None
     hp = _clean_int(raw.get("hp"), 100, 0, 100000)
     action_cost = _clean_int(raw.get("action_cost"), 0, 0, 100000)
     attack_speed = _clean_int(raw.get("attack_speed"), None, 1, 1000)
@@ -864,7 +881,7 @@ def build_forged_weapon(raw):
     if attack_speed is None:
         return None
 
-    ammo = str(raw.get("ammo", "")).strip()[:100] or None
+    ammo = _raw_text(raw, "ammo", "").strip()[:100] or None
     ammo_qty = _clean_int(raw.get("ammo_qty"), None, 0, 100000)
     base_malus = _clean_int(raw.get("base_malus"), None, -100000, 100000)
     aim_time = _clean_int(raw.get("aim_time"), None, 0, 100000)
@@ -885,7 +902,7 @@ def build_forged_weapon(raw):
     else:
         max_range = next((v for v in reversed(range_bands) if v is not None), None)
 
-    license_name = str(raw.get("license_name", "")).strip()[:160] or None
+    license_name = _raw_text(raw, "license_name", "").strip()[:160] or None
     weight = _clean_float(raw.get("weight"), 0, 0)
     harmonization = _clean_int(raw.get("harmonization"), 0, 0, 100000)
     value_eur = _clean_float(raw.get("value_eur"), None, 0)
@@ -1642,6 +1659,19 @@ def handle_spawn_npc(data):
             })
             return
 
+        # Il limite vale per le immagini nuove: le pedine già salvate nei modelli
+        # o nella libreria restano valide anche se più grandi
+        spawn_token = data.get("token_url", "")
+        known_tokens = set()
+        if data.get("template_id"):
+            known_template = db.session.get(NpcTemplate, data.get("template_id"))
+            if known_template:
+                known_tokens.add((known_template.data or {}).get("token_url") or "")
+        if spawn_token and spawn_token not in known_tokens and token_too_big(spawn_token):
+            if not NpcTokenPreset.query.filter_by(image_data=spawn_token).first():
+                emit_combat_error(TOKEN_TOO_BIG_MESSAGE)
+                return
+
         new_npc = Character(
             name=clean_character_name(data.get("name")) or "Mostro",
             role="npc",
@@ -2014,7 +2044,12 @@ def handle_update_character_sheet(data):
     char = db.session.get(Character, data.get("char_id"))
     if not controls_character(char): return
     if "photo_url" in data: char.photo_url = data["photo_url"]
-    if "token_url" in data: char.token_url = data["token_url"]
+    if "token_url" in data:
+        # Il limite vale per le immagini nuove: quella già salvata resta valida
+        if data["token_url"] != char.token_url and token_too_big(data["token_url"]):
+            emit_combat_error(TOKEN_TOO_BIG_MESSAGE)
+            return
+        char.token_url = data["token_url"]
     if "lore" in data: char.lore = data["lore"]
     if "stats" in data: char.stats = data["stats"]
     if "weapons" in data: char.weapons = data["weapons"]
@@ -3338,6 +3373,38 @@ def handle_master_forge_request():
     if request.sid not in master_sids:
         return
     emit("master_forge_library", get_master_forge_library(), to=request.sid)
+
+@socketio.on("master_forge_give")
+@undoable("Arma forgiata consegnata")
+def handle_master_forge_give(data):
+    """Il Master dà un'arma della Fucina direttamente a un giocatore (senza sidequest)."""
+    if not is_master_request():
+        return {"error": "Solo il Master può consegnare armi forgiate."}
+    data = data or {}
+    definition = build_forged_weapon(data.get("weapon"))
+    if not definition:
+        return {"error": "Arma non valida: controlla almeno nome, danno e velocità d'attacco."}
+    definition["source"] = "Fucina del Master"
+
+    recipient = db.session.get(Character, data.get("char_id"))
+    if not recipient or recipient.role != "player":
+        return {"error": "Scegli il giocatore che riceve l'arma."}
+
+    entry = forged_weapon_inventory_entry(definition)
+    recipient.weapons = list(recipient.weapons or []) + [entry]
+    flag_modified(recipient, "weapons")
+    db.session.commit()
+    emit_character_update(recipient)
+
+    # Come i regali del Master: lo vedono solo il Master e chi la riceve
+    message = {
+        "name": "🔨 FUCINA",
+        "message": f"🔒 Il Master consegna <b>{html.escape(entry['name'])}</b> a <b>{html.escape(recipient.name)}</b>.",
+        "is_master_roll": False
+    }
+    emit_to_masters("dice_result", message)
+    emit_to_character(recipient.id, "dice_result", message)
+    return {"ok": True, "name": entry["name"]}
 
 @socketio.on("master_forge_save")
 def handle_master_forge_save(data):
@@ -6728,6 +6795,9 @@ def handle_save_npc_token(data):
     image_data = data.get("image_data", "")
 
     if not name or not image_data:
+        return
+    if token_too_big(image_data):
+        emit_combat_error(TOKEN_TOO_BIG_MESSAGE)
         return
 
     token = NpcTokenPreset(

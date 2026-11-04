@@ -1523,12 +1523,14 @@ function renderMasterForgeLibrary() {
 openMasterForgeBtn?.addEventListener('click', () => {
     if (!isMaster || !masterForgeModal) return;
     masterForgeModal.style.display = 'flex';
+    refreshMasterForgeGiveTargets();
     socket.emit('master_forge_request');
 });
 
 openMasterForgePanelBtn?.addEventListener('click', () => {
     if (!isMaster || !masterForgeModal) return;
     masterForgeModal.style.display = 'flex';
+    refreshMasterForgeGiveTargets();
     socket.emit('master_forge_request');
 });
 
@@ -1552,6 +1554,41 @@ masterForgeSaveBtn?.addEventListener('click', () => {
     socket.emit('master_forge_save', {
         template_id: masterForgeEditingId,
         weapon
+    });
+});
+
+// Consegna diretta dalla Fucina: l'arma va tra le Armi del giocatore scelto
+function refreshMasterForgeGiveTargets() {
+    const select = document.getElementById('master-forge-give-target');
+    if (!select) return;
+    const previous = select.value;
+    select.innerHTML = '<option value="">-- Giocatore --</option>';
+    (characters || []).filter(c => c.role === 'player').forEach(c => select.add(new Option(c.name, c.id)));
+    if ([...select.options].some(o => o.value === previous)) select.value = previous;
+}
+
+document.getElementById('btn-master-forge-give')?.addEventListener('click', () => {
+    if (!isMaster) return;
+    const charId = parseInt(document.getElementById('master-forge-give-target')?.value);
+    if (!charId) {
+        alert("Scegli il giocatore che riceve l'arma.");
+        return;
+    }
+    const weapon = readMasterForgeDraft();
+    if (!weapon) return;
+    const charName = sidequestPlayerName(charId);
+    if (!confirm(`Dare "${weapon.name}" a ${charName}? Finisce subito tra le sue Armi.`)) return;
+
+    socket.timeout(10000).emit('master_forge_give', { char_id: charId, weapon }, (timeoutError, reply) => {
+        if (timeoutError) {
+            alert("Il server non ha risposto: l'arma NON è stata consegnata. Probabilmente va riavviato.");
+            return;
+        }
+        if (reply?.error) {
+            alert(reply.error);
+            return;
+        }
+        statusBar.innerText = `🎁 ${reply.name} consegnata a ${charName}.`;
     });
 });
 
@@ -2115,6 +2152,13 @@ sendSidequestBtn?.addEventListener('click', () => {
     if (paymentMode === 'assigned' && !Object.values(shares).some(amount => amount > 0)) {
         alert('Assegna una quota ad almeno un giocatore.');
         return;
+    }
+
+    // Arma scritta nel modulo "Forgia arma una tantum" ma non ancora allegata:
+    // si allega ora (prima la sidequest partiva senza arma, senza avvisare)
+    if (!pendingSidequestWeapon && forgeFieldValue('forge-weapon-name')) {
+        sidequestForgeBtn?.click();
+        if (!pendingSidequestWeapon) return;   // dati dell'arma incompleti: l'avviso è già comparso
     }
 
     socket.emit('create_sidequest', {
@@ -4192,8 +4236,8 @@ document.getElementById('profile-token-file')?.addEventListener('change', functi
         return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-        alert("La pedina è troppo grande. Massimo 2 MB.");
+    if (file.size > TOKEN_MAX_BYTES) {
+        alert(`La pedina è troppo grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Massimo 5 MB.`);
         event.target.value = "";
         return;
     }

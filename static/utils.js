@@ -90,3 +90,6 @@ function hexLine(x1, y1, x2, y2) {
     }
     return line;
 }
+
+// Limite delle immagini delle pedine (come TOKEN_MAX_BYTES in app.py)
+const TOKEN_MAX_BYTES = 5 * 1024 * 1024;
