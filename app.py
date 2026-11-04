@@ -1696,12 +1696,13 @@ def handle_save_npc_template(data):
 @socketio.on("set_template_sound")
 def handle_set_template_sound(data):
     """Suono del modello: nuovo file, solo il pubblico (tutti / solo Master) o nessun suono."""
+    # Risponde sempre al client (ack): così il Master sa se il suono è stato salvato
     if not is_master_request():
-        return
+        return {"error": "Solo il Master può impostare i suoni."}
     data = data or {}
     template = db.session.get(NpcTemplate, data.get("template_id"))
     if not template:
-        return
+        return {"error": "Modello NPC non trovato."}
 
     sound = copy.deepcopy((template.data or {}).get("sound"))
     scope = "master" if data.get("scope") == "master" else "all"
@@ -1711,12 +1712,12 @@ def handle_set_template_sound(data):
         url, error = save_sound_data_url(data["data_url"])
         if error:
             emit_combat_error(error)
-            return
+            return {"error": error}
         sound = {"url": url, "scope": scope, "template_id": template.id}
     elif sound:
         sound["scope"] = scope
     else:
-        return
+        return {"error": "Nessun suono da salvare."}
 
     template.data = {**(template.data or {}), "sound": sound}
     flag_modified(template, "data")
@@ -1736,6 +1737,7 @@ def handle_set_template_sound(data):
         "message": f"🔊 Suono del modello <b>{html.escape(template.name)}</b> " + ("rimosso." if not sound else "salvato."),
         "is_master_roll": True
     }, to=request.sid)
+    return {"ok": True, "sound": sound}
 
 @socketio.on("delete_npc_template")
 def handle_delete_npc_template(data):
@@ -6343,15 +6345,77 @@ def handle_save_npc_token(data):
         broadcast=True
     )
 
+# ==========================================
+# HTTPS (opzionale)
+# Il microfono (registrare i suoni degli NPC) il browser lo concede solo su
+# localhost o su https. Chi si collega dalla porta inoltrata usa http, quindi
+# con --https il server usa un certificato fatto in casa: la prima volta ogni
+# browser mostra un avviso ("non sicuro") da accettare, poi funziona tutto.
+# Certificato e chiave stanno in instance/certs (fuori da git).
+# ==========================================
+CERT_DIR = os.path.join(app.instance_path, "certs")
+
+def ensure_https_cert(extra_hosts=()):
+    """Crea (una volta sola) il certificato autofirmato; lo rifà se cambiano gli indirizzi."""
+    import ipaddress
+    import subprocess
+
+    cert_path = os.path.join(CERT_DIR, "cert.pem")
+    key_path = os.path.join(CERT_DIR, "key.pem")
+    hosts_path = os.path.join(CERT_DIR, "hosts.txt")
+
+    hosts = ["localhost", "127.0.0.1", *[h.strip() for h in extra_hosts if h and h.strip()]]
+    hosts = list(dict.fromkeys(hosts))
+    wanted = "\n".join(hosts)
+
+    current = open(hosts_path).read() if os.path.exists(hosts_path) else None
+    if os.path.exists(cert_path) and os.path.exists(key_path) and current == wanted:
+        return cert_path, key_path
+
+    def san(host):
+        try:
+            ipaddress.ip_address(host)
+            return f"IP:{host}"
+        except ValueError:
+            return f"DNS:{host}"
+
+    os.makedirs(CERT_DIR, exist_ok=True)
+    subprocess.run([
+        "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-sha256",
+        "-days", "825", "-subj", "/CN=Venander",
+        "-keyout", key_path, "-out", cert_path,
+        "-addext", "subjectAltName=" + ",".join(san(h) for h in hosts),
+    ], check=True, capture_output=True)
+    os.chmod(key_path, 0o600)
+    with open(hosts_path, "w") as handle:
+        handle.write(wanted)
+    print(f"🔐 Nuovo certificato per: {', '.join(hosts)}")
+    return cert_path, key_path
+
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Avvia la partita di Venander.")
+    parser.add_argument("--https", action="store_true",
+                        help="usa https (serve a chi si collega da fuori per registrare con il microfono)")
+    parser.add_argument("--host", action="append", default=[], metavar="INDIRIZZO",
+                        help="indirizzo pubblico o nome con cui gli altri si collegano (ripetibile)")
+    parser.add_argument("--port", type=int, default=5000)
+    args = parser.parse_args()
+
+    ssl_context = ensure_https_cert(args.host) if args.https else None
+    if ssl_context:
+        print(f"🔐 Partita su https://localhost:{args.port} (la prima volta il browser chiede di accettare il certificato)")
+
     socketio.run(
         app,
         host="0.0.0.0",
-        port=5000,
+        port=args.port,
         debug=True,
         use_reloader=False,
         # Il debugger interattivo stampa un traceback ogni volta che un
         # browser chiude la connessione (ricarica, scheda chiusa...): rumore.
         # Gli errori veri vengono comunque stampati.
-        use_debugger=False
+        use_debugger=False,
+        ssl_context=ssl_context
     )

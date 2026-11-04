@@ -1,5 +1,7 @@
 # Database della partita: è lo stato di gioco locale, non codice
 #instance/
+# La chiave privata del certificato https non va mai condivisa
+instance/certs/
 
 # Python
 __pycache__/

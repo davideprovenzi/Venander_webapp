@@ -17,6 +17,7 @@ Uso:
     python test_env.py            # copia fresca della partita vera
     python test_env.py --keep     # riprende la copia di prova precedente
     python test_env.py --port 5001
+    python test_env.py --https --host mio.indirizzo.pubblico   # https, per il microfono da fuori
 """
 import argparse
 import os
@@ -48,6 +49,9 @@ def main():
     parser = argparse.ArgumentParser(description="Avvia l'ambiente di prova di Venander.")
     parser.add_argument("--keep", action="store_true", help="riusa la copia di prova esistente")
     parser.add_argument("--port", type=int, default=5001, help="porta dell'ambiente di prova (default 5001)")
+    parser.add_argument("--https", action="store_true", help="usa https (microfono per chi si collega da fuori)")
+    parser.add_argument("--host", action="append", default=[], metavar="INDIRIZZO",
+                        help="indirizzo pubblico o nome con cui gli altri si collegano (ripetibile)")
     args = parser.parse_args()
 
     if args.port == 5000:
@@ -81,8 +85,10 @@ def main():
 
     import app as game
 
+    ssl_context = game.ensure_https_cert(args.host) if args.https else None
     if not is_reload:
-        print(f"🧪 Ambiente di prova su http://localhost:{args.port} (si ricarica da solo quando cambia il codice)")
+        scheme = "https" if ssl_context else "http"
+        print(f"🧪 Ambiente di prova su {scheme}://localhost:{args.port} (si ricarica da solo quando cambia il codice)")
 
     game.socketio.run(
         game.app,
@@ -90,7 +96,8 @@ def main():
         port=args.port,
         debug=True,
         use_reloader=True,
-        use_debugger=False
+        use_debugger=False,
+        ssl_context=ssl_context
     )
 
 

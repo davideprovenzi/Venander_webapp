@@ -115,18 +115,40 @@ function npcSeenByPlayers(npc) {
         });
     }
 
+    // Invio con risposta del server: se non risponde (server avviato prima di questa
+    // funzione, o caduto) il Master lo sa subito invece di non vedere nulla
+    function emitSound(payload, okMessage) {
+        const head = box.querySelector('.npc-sound-head');
+        if (head && payload.data_url) head.textContent = '⏳ Salvataggio del suono…';
+        socket.timeout(15000).emit('set_template_sound', payload, (timeoutError, reply) => {
+            if (timeoutError) {
+                alert('Il server non ha risposto e il suono NON è stato salvato.\n' +
+                      'Probabilmente il server va riavviato per avere questa funzione: ' +
+                      'Ctrl+C nel suo terminale e di nuovo "python app.py".');
+                render();
+                return;
+            }
+            if (reply?.error) {
+                alert(`Suono non salvato: ${reply.error}`);
+                render();
+                return;
+            }
+            if (okMessage) statusBar.innerText = okMessage;
+        });
+    }
+
     async function sendSound(template, blob) {
         if (blob.size > SOUND_MAX_BYTES) {
             alert(`Il suono è troppo grande (${Math.round(blob.size / 1000)} KB): massimo ${SOUND_MAX_BYTES / 1000} KB.`);
             return;
         }
         const dataUrl = await blobToDataUrl(blob);
-        socket.emit('set_template_sound', {
+        emitSound({
             template_id: template.id,
             data_url: dataUrl,
             scope: box.querySelector('.npc-sound-scope')?.value || 'all',
             apply_to_spawned: !!box.querySelector('.npc-sound-apply')?.checked
-        });
+        }, `🔊 Suono di "${template.name}" salvato.`);
     }
 
     async function startRecording(template, button) {
@@ -223,7 +245,7 @@ function npcSeenByPlayers(npc) {
             remove.title = 'Togli il suono dal modello';
             remove.addEventListener('click', () => {
                 if (confirm(`Togliere il suono dal modello "${template.name}"?`)) {
-                    socket.emit('set_template_sound', { template_id: template.id, remove: true });
+                    emitSound({ template_id: template.id, remove: true }, `🔈 Suono di "${template.name}" tolto.`);
                 }
             });
             row.append(listen, remove);
@@ -236,7 +258,7 @@ function npcSeenByPlayers(npc) {
         scope.add(new Option('🎩 Solo il Master', 'master'));
         scope.value = sound?.scope || 'all';
         scope.addEventListener('change', () => {
-            if (sound) socket.emit('set_template_sound', { template_id: template.id, scope: scope.value });
+            if (sound) emitSound({ template_id: template.id, scope: scope.value });
         });
         box.appendChild(scope);
 

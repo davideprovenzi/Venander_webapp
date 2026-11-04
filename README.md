@@ -37,6 +37,17 @@ Use the **"Chi sei?"** selector at the top of the page:
 
 There is no authentication; the selector is trust-based. Do not expose the server to the public internet.
 
+### HTTPS (microphone for remote players)
+
+Browsers only allow the microphone (recording NPC sounds) on `localhost` or over `https`. Anyone connecting through a forwarded port over plain `http` cannot record. Start the server with HTTPS instead:
+
+```bash
+python app.py --https --host <address the others use>    # e.g. your public IP or DNS name
+python test_env.py --https --host <address the others use>
+```
+
+The first start creates a self-signed certificate in `instance/certs/` (git-ignored: it holds the private key). It is recreated only if the `--host` list changes. Everyone then connects with `https://<address>:<port>`. The first time, each browser shows a "not secure / self-signed" warning that has to be accepted once; after that the page works normally, microphone included. Plain `http://` links stop working while HTTPS is on.
+
 ### Test environment
 
 To try changes without touching the real session, run a second copy of the game next to it:
