@@ -486,6 +486,19 @@
             <div class="collapsible-content" style="display: none; padding-top: 10px;">
                <button id="btn-toggle-fow" onclick="window.toggleFogOfWar()" style="width: 100%; margin-bottom: 5px; padding: 8px; background: #8e44ad; color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer;">☁️ Attiva Fog of War</button>
                 <button id="btn-reset-fow" onclick="if(confirm('Vuoi davvero coprire nuovamente tutta la mappa?')) socket.emit('reset_fow')" style="width: 100%; padding: 8px; background: #34495e; color: white; border: none; border-radius: 3px; font-weight: bold; cursor: pointer;">⬛ Ripristina Nebbia (Copri Tutto)</button>
+                <!-- Pennello della nebbia: si trascina sulla mappa (vedi fog.js) -->
+                <div class="fog-brush-tools">
+                    <button id="btn-fog-erase" type="button" class="fog-brush-btn" title="Trascina sulla mappa per togliere la nebbia (Esc per finire)">🧽 Gomma (scopri)</button>
+                    <button id="btn-fog-cover" type="button" class="fog-brush-btn" title="Trascina sulla mappa per rimettere la nebbia (Esc per finire)">🌫️ Copri</button>
+                    <label class="fog-brush-size">Pennello
+                        <select id="fog-brush-size">
+                            <option value="0">1 esagono</option>
+                            <option value="1" selected>raggio 1</option>
+                            <option value="2">raggio 2</option>
+                            <option value="3">raggio 3</option>
+                        </select>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -1855,6 +1868,7 @@
     <script src="/static/exchange.js"></script>
     <script src="/static/sounds.js"></script>
     <script src="/static/loot.js"></script>
+    <script src="/static/fog.js"></script>
     <script src="/static/wiki.js"></script>
 
 </body>

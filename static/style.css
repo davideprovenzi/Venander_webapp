@@ -4030,3 +4030,40 @@ body.player-mode #btn-toggle-notes {
     background: #16a085;
     color: #fff;
 }
+
+/* Gomma / pennello della nebbia */
+.fog-brush-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.fog-brush-btn {
+    flex: 1;
+    padding: 7px;
+    border: 1px solid #8e44ad;
+    border-radius: 3px;
+    background: #fff;
+    color: #8e44ad;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.fog-brush-btn.active {
+    background: #8e44ad;
+    color: #fff;
+}
+
+.fog-brush-size {
+    display: flex;
+    flex: 1 1 100%;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.fog-brush-size select {
+    flex: 1;
+    padding: 4px;
+}

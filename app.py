@@ -2074,13 +2074,26 @@ def handle_update_character_sheet(data):
 PROJECTILE_PATTERN = re.compile(r"\b(proiettil\w*|munizion\w*|fmj|pallettoni|cartucc\w*|bossol\w*)\b", re.IGNORECASE)
 
 def firearm_spec(comp):
-    """(calibro, capienza) per un'arma da fuoco, altrimenti None."""
-    ammo = ((comp or {}).get("weapon") or {}).get("ammo") or {}
+    """(calibro, capienza) per un'arma da fuoco, altrimenti None.
+
+    Compendio: weapon.ammo = {"type": "9mm", "capacity": 20}.
+    Armi della Fucina: weapon.ammo = "9mm" (testo) e weapon.ammo_qty = 20.
+    """
+    weapon = (comp or {}).get("weapon") or {}
+    if not isinstance(weapon, dict):
+        return None
+    ammo = weapon.get("ammo")
+    if isinstance(ammo, dict):
+        caliber, raw_capacity = ammo.get("type"), ammo.get("capacity")
+    elif isinstance(ammo, str) and ammo.strip() and ammo.strip().lower() not in ("none", "null", "-"):
+        caliber, raw_capacity = ammo.strip(), weapon.get("ammo_qty")
+    else:
+        return None
     try:
-        capacity = int(ammo.get("capacity") or 0)
+        capacity = int(raw_capacity or 0)
     except (TypeError, ValueError):
         capacity = 0
-    return (str(ammo.get("type") or ""), capacity) if capacity > 0 else None
+    return (str(caliber or ""), capacity) if capacity > 0 else None
 
 def equipped_item_compendium(item):
     if isinstance(item.get("custom_definition"), dict):

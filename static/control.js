@@ -38,6 +38,11 @@ window.addEventListener('keydown', e => {
             changed = true;
         }
 
+        if (window.fogBrush) {
+            window.setFogBrush?.(null);
+            changed = true;
+        }
+
         if (window.targetPickMode) {
             setTargetPickMode(false);
             changed = true;
@@ -436,6 +441,12 @@ canvas.addEventListener('pointerdown', (event) => {
 
     const pos = getWorldPos(event);
 
+    // Gomma / pennello della nebbia (vedi fog.js): dipinge, non sposta la visuale
+    if (window.fogBrushPointer?.('down', pos)) {
+        justFinishedAction = true;
+        return;
+    }
+
     // --- PENNELLO NEBBIA DI GUERRA (Click singolo) ---
     if (isMaster && window.fowEnabled && (window.keysDown['f'] || window.keysDown['g'])) {
         const hex = pixelToHex(pos.x, pos.y);
@@ -504,6 +515,7 @@ canvas.addEventListener('pointerdown', (event) => {
 });
 
 canvas.addEventListener('pointermove', (event) => {
+    if (window.fogBrushPointer?.('move', getWorldPos(event))) return;
 
     // --- NUOVO: MODIFICA MAPPA (Trascinamento e Scala continui) ---
     if (window.isEditingMap && window.mapDragAction) {
@@ -644,8 +656,8 @@ function endPointerAction() {
     setTimeout(() => { justFinishedAction = false; }, 100);
 }
 
-canvas.addEventListener('pointerup', endPointerAction);
-canvas.addEventListener('pointercancel', endPointerAction);
+canvas.addEventListener('pointerup', (event) => { window.fogBrushPointer?.('up'); endPointerAction(event); });
+canvas.addEventListener('pointercancel', (event) => { window.fogBrushPointer?.('up'); endPointerAction(event); });
 canvas.addEventListener('pointerleave', () => {
     isLaserDrawing = false;
     drawingPointerLeave();

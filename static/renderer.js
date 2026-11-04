@@ -1249,6 +1249,9 @@ function render() {
 
     drawFogOfWar();
 
+    // Dietro i muri i giocatori non vedono (vedi fog.js)
+    window.drawSightShadows?.();
+
     // Aree minacciate sopra la nebbia, sotto le pedine
     drawThreats();
     drawAims();

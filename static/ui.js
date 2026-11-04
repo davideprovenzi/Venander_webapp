@@ -8723,10 +8723,20 @@ socket.on(
 // ==========================================
 const PROJECTILE_PATTERN = /\b(proiettil\w*|munizion\w*|fmj|pallettoni|cartucc\w*|bossol\w*)\b/i;
 
+// Compendio: weapon.ammo = { type, capacity }. Fucina: weapon.ammo = "9mm" e weapon.ammo_qty = 20.
 function getFirearmSpec(comp) {
-    const ammo = comp?.weapon?.ammo;
-    const capacity = parseInt(ammo?.capacity) || 0;
-    return capacity > 0 ? { caliber: String(ammo.type || ''), capacity } : null;
+    const weapon = comp?.weapon;
+    const ammo = weapon?.ammo;
+    let caliber = '';
+    let capacity = 0;
+    if (ammo && typeof ammo === 'object') {
+        caliber = String(ammo.type || '');
+        capacity = parseInt(ammo.capacity) || 0;
+    } else if (typeof ammo === 'string' && ammo.trim() && !['none', 'null', '-'].includes(ammo.trim().toLowerCase())) {
+        caliber = ammo.trim();
+        capacity = parseInt(weapon?.ammo_qty) || 0;
+    }
+    return capacity > 0 ? { caliber, capacity } : null;
 }
 
 function getCompatibleAmmo(char, comp, gunName) {
