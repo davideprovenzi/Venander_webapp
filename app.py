@@ -543,6 +543,17 @@ def acting_combatant_id():
         return combat_state["interrupts"][0]["threatener_id"]
     return current_combat_actor_id()
 
+def interrupt_target_error(attacker, target):
+    """Durante l'interruzione di una minaccia si colpisce solo chi è entrato nell'area."""
+    interrupt = (combat_state.get("interrupts") or [None])[0]
+    if not combat_state.get("is_active") or not interrupt:
+        return None
+    if attacker.id != interrupt["threatener_id"]:
+        return f"Ora agisce solo {interrupt['threatener_name']} (minaccia scattata)."
+    if target.id != interrupt["intruder_id"]:
+        return f"Nella minaccia puoi bersagliare solo {interrupt['intruder_name']}, che è entrato nell'area."
+    return None
+
 def is_players_turn(char):
     """In combattimento un giocatore agisce solo nel proprio turno; il Master sempre."""
     if is_master_request() or not combat_state.get("is_active"):
@@ -5334,6 +5345,11 @@ def handle_declare_attack(data):
     if not controls_character(attacker) or not is_players_turn(attacker):
         return
 
+    target_error = interrupt_target_error(attacker, defender)
+    if target_error:
+        emit_combat_error(target_error)
+        return
+
     # Un giocatore non può colpire ciò che non vede (nascosto o invisibile)
     if not is_master_request() and defender.role == "npc" and (defender.is_hidden or defender.is_invisible):
         return
@@ -6002,6 +6018,10 @@ def handle_declare_aim(data):
     if not combat_state.get("is_active") or not shooter or not target or shooter.id == target.id:
         return
     if not controls_character(shooter) or not is_players_turn(shooter):
+        return
+    target_error = interrupt_target_error(shooter, target)
+    if target_error:
+        emit_combat_error(target_error)
         return
 
     slot = data.get("slot")

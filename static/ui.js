@@ -6936,7 +6936,11 @@ window.updateCombatActionPanel = function() {
         targetSelect.innerHTML =
             '<option value="">-- Seleziona Bersaglio --</option>';
 
+        // Minaccia scattata: si può bersagliare solo chi è entrato nell'area
+        const threatInterrupt = combatState.interrupts?.[0];
+
         characters.forEach(char => {
+            if (threatInterrupt && char.id !== threatInterrupt.intruder_id) return;
 
             // Ai giocatori non arrivano gli HP degli NPC, solo se sono a terra
             const isDown = char.hp_current !== undefined
@@ -6983,6 +6987,11 @@ window.updateCombatActionPanel = function() {
 
             targetSelect.value =
                 previousTarget;
+        }
+
+        // Unico bersaglio possibile: già selezionato
+        if (threatInterrupt && [...targetSelect.options].some(o => o.value === String(threatInterrupt.intruder_id))) {
+            targetSelect.value = String(threatInterrupt.intruder_id);
         }
     }
 
