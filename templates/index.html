@@ -226,6 +226,10 @@
                 <span class="master-tool-icon">📖</span><span class="master-tool-label">Wiki</span>
             </button>
 
+            <button class="master-tool-btn sound-toggle-btn" type="button" title="Suoni degli NPC: attivi / muti">
+                <span class="master-tool-icon">🔊</span><span class="master-tool-label">Suoni</span>
+            </button>
+
             <div class="master-dock-separator"></div>
 
             <button id="btn-toggle-combat" class="master-tool-btn master-tool-combat" type="button" title="Avvia / termina combattimento">
@@ -263,6 +267,8 @@
                         <button id="npc-template-delete-btn" type="button" title="Elimina il modello scelto">🗑️</button>
                     </div>
                     <div id="npc-template-info" class="npc-template-info">Salva un NPC come modello dal pannello "Selezione" per riusarne statistiche, equipaggiamento e armi.</div>
+                    <!-- Suono che si sente quando un NPC di questo modello compare (vedi sounds.js) -->
+                    <div id="npc-template-sound" class="npc-sound-box"></div>
                 </div>
 
                 <!-- PEDINA NPC -->
@@ -658,6 +664,10 @@
 
             <button class="master-tool-btn player-tool-btn" type="button" data-player-action="chat" title="Chat, dadi e sidequest">
                 <span class="master-tool-icon">💬</span><span class="master-tool-label">Chat</span>
+            </button>
+
+            <button class="master-tool-btn player-tool-btn sound-toggle-btn" type="button" title="Suoni degli NPC: attivi / muti">
+                <span class="master-tool-icon">🔊</span><span class="master-tool-label">Suoni</span>
             </button>
 
             <div class="master-dock-separator"></div>
@@ -1789,6 +1799,7 @@
     <script src="/static/control.js"></script>
     <script src="/static/trinkets.js"></script>
     <script src="/static/exchange.js"></script>
+    <script src="/static/sounds.js"></script>
     <script src="/static/wiki.js"></script>
 
 </body>
