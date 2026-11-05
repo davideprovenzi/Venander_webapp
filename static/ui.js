@@ -98,8 +98,7 @@ function populatePlayerSheetUI(myChar) {
             for (const [key, value] of Object.entries(myChar.stats)) {
                 if (key === 'equipped' || key === 'pa_stats' || typeof value === 'object') continue;
 
-                let statVal = parseInt(value) || 1;
-                let maxPa = 6 + (statVal - 1) * 3;
+                let maxPa = getStatPaMax(myChar, key);
                 let currentPa = (myChar.pa_stats && myChar.pa_stats[key] !== undefined) ? myChar.pa_stats[key] : maxPa;
 
                 const li = document.createElement('li');
@@ -131,17 +130,18 @@ function populatePlayerSheetUI(myChar) {
                     };
                     spendGroup.appendChild(inputSpend); spendGroup.appendChild(btnSpend);
 
-                    const btnResetStam = document.createElement('button');
-                    btnResetStam.innerHTML = "🔄 STM"; btnResetStam.title = "Spendi 15 Stamina per ricaricare i PA";
-                    btnResetStam.style.background = '#f39c12'; btnResetStam.style.color = 'white'; btnResetStam.style.border = 'none'; btnResetStam.style.padding = '6px 8px'; btnResetStam.style.borderRadius = '3px'; btnResetStam.style.cursor = 'pointer'; btnResetStam.style.fontSize = '12px';
-                    btnResetStam.onclick = () => { if (confirm(`Vuoi spendere 15 di Stamina per ricaricare tutti i PA di ${key}?`)) socket.emit('reset_pa', { char_id: myChar.id, stat: key, cost_type: 'stamina' }); };
+                    btnContainer.appendChild(spendGroup);
 
-                    const btnResetConc = document.createElement('button');
-                    btnResetConc.innerHTML = "🔄 CNC"; btnResetConc.title = "Spendi 15 Concentrazione per ricaricare i PA";
-                    btnResetConc.style.background = '#2980b9'; btnResetConc.style.color = 'white'; btnResetConc.style.border = 'none'; btnResetConc.style.padding = '6px 8px'; btnResetConc.style.borderRadius = '3px'; btnResetConc.style.cursor = 'pointer'; btnResetConc.style.fontSize = '12px';
-                    btnResetConc.onclick = () => { if (confirm(`Vuoi spendere 15 di Concentrazione per ricaricare tutti i PA di ${key}?`)) socket.emit('reset_pa', { char_id: myChar.id, stat: key, cost_type: 'conc' }); };
-
-                    btnContainer.appendChild(spendGroup); btnContainer.appendChild(btnResetStam); btnContainer.appendChild(btnResetConc);
+                    // Ogni caratteristica si ricarica con la sua risorsa (vedi PA_RESET_COSTS)
+                    const reset = PA_RESET_COSTS[key];
+                    if (reset) {
+                        const pool = PA_RESET_POOLS[reset.pool];
+                        const btnReset = document.createElement('button');
+                        btnReset.innerHTML = `🔄 ${pool.short}`; btnReset.title = `Spendi ${reset.cost} ${pool.label} per ricaricare i PA`;
+                        btnReset.style.background = pool.color; btnReset.style.color = 'white'; btnReset.style.border = 'none'; btnReset.style.padding = '6px 8px'; btnReset.style.borderRadius = '3px'; btnReset.style.cursor = 'pointer'; btnReset.style.fontSize = '12px';
+                        btnReset.onclick = () => { if (confirm(`Vuoi spendere ${reset.cost} di ${pool.label} per ricaricare tutti i PA di ${key}?`)) socket.emit('reset_pa', { char_id: myChar.id, stat: key }); };
+                        btnContainer.appendChild(btnReset);
+                    }
                     li.appendChild(btnContainer);
                 }
                 statsList.appendChild(li);
@@ -199,7 +199,7 @@ function populatePlayerSheetUI(myChar) {
             if (canEdit) {
                 controlsHtml = `
                     <div style="display: flex; gap: 5px; margin-top: 6px; border-top: 1px dashed #eee; padding-top: 6px; align-items: center;">
-                      <select onchange="window.equipItem(${myChar.id}, '${item.name.replace(/'/g, "\\'")}', '${item.desc.replace(/'/g, "\\'")}', this.value, 'weapon', '${String(item.compendium_id || '').replace(/'/g, "\\'")}')" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
+                      <select onchange="window.equipFromList(${myChar.id}, 'weapon', ${index}, this.value)" style="padding: 2px; border-radius: 3px; font-size: 11px; flex: 1; border: 1px solid #ccc;">
                             <option value="">-- Assegna --</option>
                             <option value="mano_dx">Arma Dx</option>
                             <option value="mano_sx">Arma Sx</option>
@@ -478,14 +478,7 @@ function populatePlayerSheetUI(myChar) {
 
                     selectHtml = `
                         <select
-                            onchange="window.equipItem(
-                                ${myChar.id},
-                                '${item.name.replace(/'/g, "\\'")}',
-                                '${getCompendioDescription(item).replace(/'/g, "\\'")}',
-                                this.value,
-                                'backpack',
-                                '${item.compendium_id || ''}'
-                            )"
+                            onchange="window.equipFromList(${myChar.id}, 'backpack', ${index}, this.value)"
                             style="padding:2px; border-radius:3px;
                                 font-size:11px; flex:1;
                                 border:1px solid #ccc;"
@@ -883,8 +876,11 @@ document.getElementById('btn-edit-sheet')?.addEventListener('click', () => {
     selectedCharacterId = char.id;
     document.getElementById('edit-char-name').innerText = char.name;
 
+    // Solo i valori semplici: equipaggiamento e gadget (oggetti) non si scrivono a mano
     let statsStr = "";
-    if (char.stats) for (const [key, value] of Object.entries(char.stats)) statsStr += `${key}: ${value}\n`;
+    if (char.stats) for (const [key, value] of Object.entries(char.stats)) {
+        if (value === null || typeof value !== 'object') statsStr += `${key}: ${value}\n`;
+    }
 
     // Controlli di sicurezza per evitare crash se manca un pezzo nell'HTML
     const statsEl = document.getElementById('edit-stats');
@@ -912,7 +908,10 @@ document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
 
     // Lettura sicura
     const statsLines = document.getElementById('edit-stats') ? document.getElementById('edit-stats').value.split('\n').filter(l => l.trim() !== '') : [];
-    const statsObj = {};
+    // Le parti a oggetti (equipaggiamento, gadget...) restano com'erano
+    const statsObj = Object.fromEntries(
+        Object.entries(char.stats || {}).filter(([, value]) => value !== null && typeof value === 'object')
+    );
     statsLines.forEach(line => {
         const parts = line.split(':');
         if (parts.length >= 2) statsObj[parts.shift().trim()] = parts.join(':').trim();
@@ -937,13 +936,9 @@ document.getElementById('save-sheet-btn')?.addEventListener('click', () => {
         return existing ? existing : { name: name, desc: "Nessuna descrizione", qty: 1 };
     });
 
-    const photoUrl = document.getElementById('edit-photo-url') ? document.getElementById('edit-photo-url').value.trim() : "";
-    const loreText = document.getElementById('edit-lore') ? document.getElementById('edit-lore').value.trim() : "";
-
+    // Foto e lore non sono in questa finestra: si cambiano dal profilo
     socket.emit('update_character_sheet', {
         char_id: selectedCharacterId,
-        photo_url: photoUrl,
-        lore: loreText,
         stats: statsObj,
         weapons: updatedWeapons,
         skills: parseList('edit-skills'),
@@ -3134,6 +3129,9 @@ function applyReactionSpeedFromTable() {
 // PANNELLO DI TURNO: "ALTRA AZIONE"
 // ==========================================
 
+// Ricaricare, mirare e sparare hanno i loro comandi (come DEDICATED_FIREARM_ACTIONS in app.py)
+const DEDICATED_FIREARM_ACTIONS = ['Cambiare caricatore', 'Mirare con', 'Sparare con'];
+
 function populateTableActionSection() {
     const categorySelect = document.getElementById('table-action-category');
 
@@ -3162,6 +3160,7 @@ function renderTableActionOptions(selectedAction) {
 
     getActionSpeedEntries()
         .filter(entry => entry.category === category)
+        .filter(entry => !DEDICATED_FIREARM_ACTIONS.some(prefix => entry.action.startsWith(prefix)))
         .forEach(entry => {
             const option = document.createElement('option');
             option.value = entry.action;
@@ -3312,10 +3311,33 @@ const MOVE_PACES = { Camminata: 20, Corsa: 15, Furtivo: 25 };
 const BARRICADE_PA_COST = 5;
 window.barricadeStat = null;
 
+// PA massimi di una caratteristica: valore x 10 (come PA_PER_STAT_POINT in app.py)
+const PA_PER_STAT_POINT = 10;
+
+// Con cosa si ricaricano i PA di ogni caratteristica (come PA_RESET_COSTS in app.py)
+const PA_RESET_COSTS = {
+    'Forza': { pool: 'stamina', cost: 5 },
+    'Destrezza': { pool: 'stamina', cost: 5 },
+    'Percezione': { pool: 'conc', cost: 5 },
+    'Volontà': { pool: 'conc', cost: 5 },
+    'Arguzia': { pool: 'conc', cost: 5 },
+    'Spirito': { pool: 'conc', cost: 5 },
+    'Virtù': { pool: 'hp', cost: 5 }
+};
+const PA_RESET_POOLS = {
+    stamina: { short: 'STM', label: 'Stamina', color: '#f39c12' },
+    conc: { short: 'CNC', label: 'Concentrazione', color: '#2980b9' },
+    hp: { short: 'HP', label: 'Salute', color: '#c0392b' }
+};
+
+function getStatPaMax(char, stat) {
+    const value = parseInt(char.stats?.[stat]);
+    return Math.max(0, Number.isNaN(value) ? 1 : value) * PA_PER_STAT_POINT;
+}
+
 function getStatPa(char, stat) {
     if (char.pa_stats && char.pa_stats[stat] !== undefined) return Number(char.pa_stats[stat]);
-    const value = parseInt(char.stats?.[stat]) || 1;
-    return 6 + (value - 1) * 3;
+    return getStatPaMax(char, stat);
 }
 
 // Barricate attraversate dal percorso e PA necessari (solo per i giocatori)
@@ -3693,8 +3715,17 @@ function findCompendioItemById(itemId) {
     ) || null;
 }
 
+// Nome per i confronti: maiuscole e "Licenza" davanti non contano
+// ("lame corte" della Fucina = "Licenza Lame Corte" dello zaino).
+// Deve coincidere con comparable_item_name in app.py.
+function comparableItemName(name) {
+    const text = String(name ?? '').trim().split(/\s+/).join(' ').toLowerCase();
+    return text.startsWith('licenza ') ? text.slice('licenza '.length) : text;
+}
+
 function characterOwnsCompendiumItem(char, itemId, itemName = null) {
     if (!char) return false;
+    const wantedName = itemName ? comparableItemName(itemName) : '';
 
     const backpack = Array.isArray(char.backpack)
         ? char.backpack
@@ -3709,14 +3740,14 @@ function characterOwnsCompendiumItem(char, itemId, itemName = null) {
     return collections.some(collection =>
         collection.some(entry => {
             if (typeof entry === 'string') {
-                return itemName ? entry === itemName : false;
+                return wantedName ? comparableItemName(entry) === wantedName : false;
             }
 
             if (itemId && entry?.compendium_id === itemId) {
                 return true;
             }
 
-            return itemName && entry?.name === itemName;
+            return !!wantedName && comparableItemName(entry?.name) === wantedName;
         })
     );
 }
@@ -3873,6 +3904,19 @@ socket.on('compendio_data', (data) => {
         items: [],
         indexes: {}
     };
+
+    // Suggerimenti per la licenza delle armi della Fucina: i nomi veri del compendio
+    const licenseOptions = document.getElementById('forge-license-options');
+    if (licenseOptions) {
+        licenseOptions.innerHTML = '';
+        getCompendioItems()
+            .filter(item => item.class === 'Licenza')
+            .forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                licenseOptions.appendChild(option);
+            });
+    }
 
     // Tendina Master: categorie reali del database
     const catSelect = document.getElementById('compendio-category');
@@ -4822,12 +4866,8 @@ window.updateEquippedPanel = function(char) {
             // CERCA DATI NEL NUOVO COMPENDIO
             // ==========================================
 
-            const compItem = typeof findCompendioItem === 'function'
-                ? findCompendioItem({
-                    compendium_id: itemData.compendium_id || null,
-                    name: itemData.name
-                })
-                : null;
+            // Anche le armi della Fucina (custom_definition) mostrano danno, velocità e caricatore
+            const compItem = getEquippedCompendiumItem(itemData);
 
             // ==========================================
             // DATI STRUTTURATI
@@ -5736,6 +5776,22 @@ window.updateGadgetPanel = function(char) {
             }
         });
     });
+};
+
+// Equipaggia un oggetto della lista armi o dello zaino indicandone la posizione.
+// Nome e descrizione non passano più dentro l'HTML: virgolette, a capo o
+// barre nella descrizione (es. armi della Fucina) rompevano la tendina.
+window.equipFromList = function(charId, listType, index, slot) {
+    const char = characters.find(c => c.id === charId);
+    const list = listType === 'weapon' ? char?.weapons : char?.backpack;
+    let entry = list?.[index];
+    if (!entry) return;
+    if (typeof entry === 'string') entry = { name: entry, desc: 'Nessuna descrizione' };
+
+    const desc = listType === 'weapon'
+        ? (entry.desc || 'Nessuna descrizione')
+        : getCompendioDescription(entry);
+    window.equipItem(charId, entry.name, desc, slot, listType, entry.compendium_id || null);
 };
 
 window.equipItem = function(

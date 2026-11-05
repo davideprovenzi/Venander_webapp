@@ -807,6 +807,11 @@ def spend_limb_frames(char_id, shares, cost):
     if sum(clean_shares.values()) != cost:
         return f"La ripartizione dei frame non corrisponde al costo ({cost})."
 
+    # Fuori combattimento i frame non contano: scalarli li lasciava a zero
+    # (si ricaricano solo all'inizio di un combattimento) e poi non si attaccava più
+    if not combat_state.get("is_active"):
+        return None
+
     limbs = get_limb_frames(char_id)
 
     for limb, amount in clean_shares.items():
@@ -2080,9 +2085,7 @@ def handle_spend_pa(data):
     if not controls_character(char): return
 
     current_pa_stats = dict(char.pa_stats) if char.pa_stats else {}
-    if stat_key not in current_pa_stats:
-        stat_val = int(char.stats.get(stat_key, 1))
-        current_pa_stats[stat_key] = 6 + (stat_val - 1) * 3
+    current_pa_stats[stat_key] = stat_pa_current(char, stat_key)
 
     if current_pa_stats[stat_key] > 0 and amount > 0:
         actual_spent = min(amount, current_pa_stats[stat_key])
@@ -2098,30 +2101,31 @@ def handle_spend_pa(data):
 def handle_reset_pa(data):
     char_id = data.get("char_id")
     stat_key = data.get("stat")
-    cost_type = data.get("cost_type")
 
     char = db.session.get(Character, char_id)
     if not controls_character(char): return
 
-    can_reset = False
-    if cost_type == "stamina" and char.stamina_current >= 15:
-        char.stamina_current -= 15
-        can_reset = True
-        msg_cost = "Stamina ⚡"
-    elif cost_type == "conc" and char.conc_current >= 15:
-        char.conc_current -= 15
-        can_reset = True
-        msg_cost = "Concentrazione 🧠"
+    # La risorsa da pagare dipende dalla caratteristica, non da cosa chiede il client
+    reset = PA_RESET_COSTS.get(stat_key)
+    if not reset:
+        return
+    pool, cost = reset
+    attribute, label = PA_RESET_POOLS[pool]
+    available = getattr(char, attribute) or 0
 
-    if can_reset:
-        current_pa_stats = dict(char.pa_stats) if char.pa_stats else {}
-        stat_val = int(char.stats.get(stat_key, 1))
-        current_pa_stats[stat_key] = 6 + (stat_val - 1) * 3
-        char.pa_stats = current_pa_stats
+    # Con la salute non ci si può mettere KO da soli: deve restare almeno 1 HP
+    if available < cost or (pool == "hp" and available <= cost):
+        emit_combat_error(f"Non hai abbastanza {label} per ricaricare i PA di {stat_key}: servono {cost}.")
+        return
 
-        db.session.commit()
-        emit_character_update(char)
-        emit("dice_result", {"name": char.name, "message": f"ha speso 15 {msg_cost} per ripristinare i PA di <b>{stat_key}</b>!", "is_master_roll": False}, broadcast=True)
+    setattr(char, attribute, available - cost)
+    current_pa_stats = dict(char.pa_stats) if char.pa_stats else {}
+    current_pa_stats[stat_key] = stat_pa_max(char, stat_key)
+    char.pa_stats = current_pa_stats
+
+    db.session.commit()
+    emit_character_update(char)
+    emit("dice_result", {"name": char.name, "message": f"ha speso {cost} {label} per ripristinare i PA di <b>{stat_key}</b>!", "is_master_roll": False}, broadcast=True)
 
 @socketio.on("master_set_bank")
 def handle_master_set_bank(data):
@@ -2177,6 +2181,9 @@ def handle_toggle_hidden(data):
         emit("character_hidden_update", {"id": char.id, "is_hidden": char.is_hidden}, broadcast=True)
 
 @socketio.on("update_character_sheet")
+# Annullabile come le altre azioni: senza una sua voce, il primo "Annulla"
+# del Master riportava indietro anche armi equipaggiate e oggetti spostati
+@undoable("Modifica scheda")
 def handle_update_character_sheet(data):
     char = db.session.get(Character, data.get("char_id"))
     if not controls_character(char): return
@@ -2188,7 +2195,11 @@ def handle_update_character_sheet(data):
             return
         char.token_url = data["token_url"]
     if "lore" in data: char.lore = data["lore"]
-    if "stats" in data: char.stats = data["stats"]
+    if "stats" in data:
+        backpack = copy.deepcopy(data["backpack"] if "backpack" in data else (char.backpack or []))
+        if isinstance(backpack, list) and return_unequipped_ammo(char.stats, data["stats"], backpack):
+            data = {**data, "backpack": backpack}
+        char.stats = data["stats"]
     if "weapons" in data: char.weapons = data["weapons"]
     if "skills" in data: char.skills = data["skills"]
     if "backpack" in data: char.backpack = data["backpack"]
@@ -2257,10 +2268,14 @@ def npc_ammo_index(char):
         None
     )
 
+def ammo_qty(value, default=0):
+    """Quantità di colpi come numero: testo strano ("20 colpi") o null valgono default."""
+    return _clean_int(value, default, 0)
+
 def compatible_ammo(char, comp, gun_name):
     fitting = []
     for index, entry in enumerate(char.backpack or []):
-        if not isinstance(entry, dict) or int(entry.get("qty", 1) or 0) <= 0:
+        if not isinstance(entry, dict) or ammo_qty(entry.get("qty", 1)) <= 0:
             continue
         if entry.get("npc_ammo"):
             if char.role == "npc":
@@ -2271,18 +2286,42 @@ def compatible_ammo(char, comp, gun_name):
 
 def return_ammo_to_backpack(backpack, loaded):
     """I colpi tolti dal caricatore tornano nello zaino (si sommano se c'è già la voce)."""
+    count = ammo_qty(loaded.get("count"))
+    if count <= 0:
+        return
     if loaded.get("npc_ammo"):
         pool = next((e for e in backpack if isinstance(e, dict) and e.get("npc_ammo")), None)
         if pool is None:
-            backpack.append({"name": NPC_AMMO_NAME, "qty": loaded["count"], "desc": "Munizioni globali dell'NPC", "npc_ammo": True})
+            backpack.append({"name": NPC_AMMO_NAME, "qty": count, "desc": "Munizioni globali dell'NPC", "npc_ammo": True})
         else:
-            pool["qty"] = int(pool.get("qty", 0) or 0) + loaded["count"]
+            pool["qty"] = ammo_qty(pool.get("qty")) + count
         return
+    name = str(loaded.get("name") or "Proiettili")
     for entry in backpack:
-        if isinstance(entry, dict) and not entry.get("npc_ammo") and entry.get("name", "").lower() == loaded["name"].lower():
-            entry["qty"] = int(entry.get("qty", 0) or 0) + loaded["count"]
+        if isinstance(entry, dict) and not entry.get("npc_ammo") and str(entry.get("name") or "").lower() == name.lower():
+            entry["qty"] = ammo_qty(entry.get("qty")) + count
             return
-    backpack.append({"name": loaded["name"], "qty": loaded["count"], "desc": loaded.get("desc", "")})
+    backpack.append({"name": name, "qty": count, "desc": loaded.get("desc") or ""})
+
+def return_unequipped_ammo(old_stats, new_stats, backpack):
+    """Armi tolte di mano con colpi nel caricatore: i colpi tornano nello zaino.
+
+    Il client rimette l'arma tra le armi senza il caricatore; senza questo
+    controllo i colpi caricati sparivano. Restituisce True se ha cambiato lo zaino.
+    """
+    def loaded_guns(stats):
+        guns = {}
+        for slot, item in ((stats or {}).get("equipped") or {}).items():
+            if isinstance(item, dict) and ammo_qty((item.get("ammo_loaded") or {}).get("count")) > 0:
+                # Un'arma a due mani occupa due slot ma ha un solo caricatore
+                guns.setdefault(item.get("equip_group_id") or f"slot:{slot}", item["ammo_loaded"])
+        return guns
+
+    still_equipped = loaded_guns(new_stats)
+    gone = [loaded for key, loaded in loaded_guns(old_stats).items() if key not in still_equipped]
+    for loaded in gone:
+        return_ammo_to_backpack(backpack, loaded)
+    return bool(gone)
 
 def set_loaded_ammo(char, slot, loaded):
     """Scrive il caricatore su tutti gli slot dell'arma (anche a due mani)."""
@@ -2309,25 +2348,24 @@ def load_firearm(char, slot, ammo_index):
 
     backpack = copy.deepcopy(char.backpack or [])
     entry = backpack[ammo_index]
-    loaded_name, loaded_desc = entry.get("name", "Proiettili"), entry.get("desc", "")
+    loaded_name, loaded_desc = str(entry.get("name") or "Proiettili"), entry.get("desc") or ""
     is_pool = bool(entry.get("npc_ammo"))
 
     # Scorta globale: i colpi rimasti nell'arma tornano prima nella scorta,
     # così il caricatore si riempie fino in fondo
     previous = item.get("ammo_loaded") or {}
-    if is_pool and previous.get("npc_ammo") and previous.get("count"):
-        entry["qty"] = int(entry.get("qty", 0) or 0) + int(previous["count"])
+    if is_pool and previous.get("npc_ammo") and ammo_qty(previous.get("count")):
+        entry["qty"] = ammo_qty(entry.get("qty")) + ammo_qty(previous.get("count"))
         previous = {}
-    take = min(spec[1], int(entry.get("qty", 1) or 1))
+    take = min(spec[1], ammo_qty(entry.get("qty", 1), 1))
 
-    entry["qty"] = int(entry.get("qty", 1) or 1) - take
+    entry["qty"] = ammo_qty(entry.get("qty", 1), 1) - take
     # La scorta globale resta anche a zero: il Master la vede e la riempie
     if entry["qty"] <= 0 and not is_pool:
         backpack.pop(ammo_index)
 
     # Quello che c'era nel caricatore torna nello zaino
-    if previous.get("count"):
-        return_ammo_to_backpack(backpack, previous)
+    return_ammo_to_backpack(backpack, previous)
 
     char.backpack = backpack
     flag_modified(char, "backpack")
@@ -2339,7 +2377,10 @@ def load_firearm(char, slot, ammo_index):
 
 def auto_load_new_firearms(char):
     """Un'arma da fuoco appena equipaggiata si carica da sola con i primi proiettili adatti."""
-    for slot, item in list(((char.stats or {}).get("equipped") or {}).items()):
+    for slot in list(((char.stats or {}).get("equipped") or {}).keys()):
+        # Si rilegge ogni volta: caricando un'arma a due mani si aggiornano
+        # entrambi gli slot, e il secondo non va caricato di nuovo
+        item = ((char.stats or {}).get("equipped") or {}).get(slot)
         if not isinstance(item, dict) or "ammo_loaded" in item:
             continue
         comp = equipped_item_compendium(item)
@@ -2482,15 +2523,40 @@ GADGET_EXCLUDED_CLASSES = {"Arma", "Licenza", "Kit", "Munizione / consumabile", 
 # Codici di costo del compendio -> statistica di cui si spendono i PA ("PA" la sceglie il giocatore)
 GADGET_PA_STATS = {"PAA": "Arguzia", "PAV": "Volontà", "PAP": "Percezione"}
 
-def stat_pa_current(char, stat):
-    pa_stats = char.pa_stats or {}
-    if stat in pa_stats:
-        return int(pa_stats[stat])
+# PA massimi di una caratteristica: valore x 10 (Forza 2 -> 20 PA).
+# Deve coincidere con PA_PER_STAT_POINT in ui.js.
+PA_PER_STAT_POINT = 10
+
+def stat_pa_max(char, stat):
     try:
         stat_val = int((char.stats or {}).get(stat, 1))
     except (TypeError, ValueError):
         stat_val = 1
-    return 6 + (stat_val - 1) * 3
+    return max(0, stat_val) * PA_PER_STAT_POINT
+
+def stat_pa_current(char, stat):
+    pa_stats = char.pa_stats or {}
+    if stat in pa_stats:
+        return int(pa_stats[stat])
+    return stat_pa_max(char, stat)
+
+# Ricarica dei PA: ogni caratteristica si paga con la sua risorsa.
+# Deve coincidere con PA_RESET_COSTS in ui.js.
+PA_RESET_COSTS = {
+    "Forza": ("stamina", 5),
+    "Destrezza": ("stamina", 5),
+    "Percezione": ("conc", 5),
+    "Volontà": ("conc", 5),
+    "Arguzia": ("conc", 5),
+    "Spirito": ("conc", 5),
+    "Virtù": ("hp", 5),
+}
+# Risorsa -> (colonna del personaggio, nome mostrato in chat)
+PA_RESET_POOLS = {
+    "stamina": ("stamina_current", "Stamina ⚡"),
+    "conc": ("conc_current", "Concentrazione 🧠"),
+    "hp": ("hp_current", "Salute ❤️"),
+}
 
 def char_owned_items(char):
     """Oggetti posseduti: zaino, equipaggiamento e gadget equipaggiati."""
@@ -2865,17 +2931,27 @@ def get_action_speed_rule(action_name):
     return None
 
 
+def comparable_item_name(name):
+    """Nome per i confronti: maiuscole e "Licenza" davanti non contano.
+
+    Le armi della Fucina scrivono la licenza a mano ("lame corte"), mentre
+    nello zaino c'è "Licenza Lame Corte": devono valere come la stessa.
+    Deve coincidere con comparableItemName in ui.js.
+    """
+    text = " ".join(str(name or "").split()).casefold()
+    return text[len("licenza "):] if text.startswith("licenza ") else text
+
 def character_owns_compendium_item(character, compendium_id=None, name=None):
     """Controlla zaino e lista armi senza dipendere dalla forma legacy dei dati."""
     if not character:
         return False
 
-    wanted_name = str(name or "").strip().casefold()
+    wanted_name = comparable_item_name(name)
 
     for collection in (character.backpack or [], character.weapons or []):
         for entry in collection:
             if isinstance(entry, str):
-                if wanted_name and entry.strip().casefold() == wanted_name:
+                if wanted_name and comparable_item_name(entry) == wanted_name:
                     return True
                 continue
 
@@ -2886,8 +2962,7 @@ def character_owns_compendium_item(character, compendium_id=None, name=None):
                 return True
 
             if wanted_name:
-                current_name = str(entry.get("name", "")).strip().casefold()
-                if current_name == wanted_name:
+                if comparable_item_name(entry.get("name")) == wanted_name:
                     return True
 
     return False
@@ -2981,7 +3056,7 @@ def compendium_attack_speed(item):
     if not item:
         return None
 
-    speed = item.get("activation", {}).get("speed", {})
+    speed = (item.get("activation") or {}).get("speed") or {}
     raw = speed.get("effect_or_action")
 
     if raw is None:
@@ -2993,8 +3068,8 @@ def compendium_attack_range(item):
     if not item:
         return None
 
-    combat = item.get("combat", {})
-    raw_range = combat.get("range", {}).get("max_m")
+    combat = item.get("combat") or {}
+    raw_range = (combat.get("range") or {}).get("max_m")
 
     if raw_range not in (None, ""):
         try:
@@ -3003,7 +3078,7 @@ def compendium_attack_range(item):
             pass
 
     item_type = str(item.get("type", "")).casefold()
-    mode = str(item.get("activation", {}).get("mode", "")).casefold()
+    mode = str((item.get("activation") or {}).get("mode", "")).casefold()
 
     if "corpo a corpo" in item_type or "colpo senz" in mode:
         return 1.0
@@ -3138,7 +3213,7 @@ def resolve_attack_damage(comp_item, attacker, distance, weapon_name=""):
         }
 
     compendium_id = comp_item.get("id")
-    damage_data = comp_item.get("combat", {}).get("damage", {})
+    damage_data = (comp_item.get("combat") or {}).get("damage") or {}
     raw_formula = damage_data.get("formula")
 
     # CRA-004 — GUANTI NUKEBULLET
@@ -4954,7 +5029,7 @@ def owned_trinket_device(char, device_id):
 
 def trinket_clip_index(char):
     for index, entry in enumerate(char.backpack or []):
-        if not isinstance(entry, dict) or int(entry.get("qty", 1) or 0) <= 0:
+        if not isinstance(entry, dict) or ammo_qty(entry.get("qty", 1)) <= 0:
             continue
         if entry.get("compendium_id") == TRINKET_CLIP_ID or "trinket marca umbryll" in str(entry.get("name", "")).lower():
             return index
@@ -5449,6 +5524,13 @@ def handle_loot_add(data):
         stats[source] = slots
         npc.stats = stats
         flag_modified(npc, "stats")
+        # I colpi nel caricatore restano all'NPC (zaino o scorta globale):
+        # il Master può metterli nel bottino a parte
+        if item.get("ammo_loaded"):
+            backpack = copy.deepcopy(npc.backpack or [])
+            return_ammo_to_backpack(backpack, item["ammo_loaded"])
+            npc.backpack = backpack
+            flag_modified(npc, "backpack")
     else:
         return
 
@@ -5631,6 +5713,9 @@ def handle_quick_armor_repair(data):
         "is_master_roll": False
     })
 
+# Azioni della tabella con un comando dedicato (come DEDICATED_FIREARM_ACTIONS in ui.js)
+DEDICATED_FIREARM_ACTIONS = ("Cambiare caricatore", "Mirare con", "Sparare con")
+
 @socketio.on("perform_table_action")
 @undoable("Azione")
 def handle_perform_table_action(data):
@@ -5643,6 +5728,11 @@ def handle_perform_table_action(data):
     rule = get_action_speed_rule(data.get("action"))
     if not rule or rule.get("action") in (THREAT_ACTION, ARMOR_REPAIR_ACTION):
         emit_combat_error("Azione non presente nella tabella.")
+        return
+    # Ricaricare, mirare e sparare hanno i loro comandi: da qui si pagherebbero
+    # i frame senza caricare l'arma né prendere la mira
+    if str(rule.get("action", "")).startswith(DEDICATED_FIREARM_ACTIONS):
+        emit_combat_error(f"{rule.get('action')}: usa i comandi dell'arma (caricatore sulla doll, Mira, Attacco).")
         return
 
     try:
@@ -6119,14 +6209,14 @@ def handle_declare_attack(data):
             auto_load_new_firearms(attacker)
             equipped_item = ((attacker.stats or {}).get("equipped") or {}).get(equipped_slot) or equipped_item
         loaded_ammo = equipped_item.get("ammo_loaded") or {}
-        if int(loaded_ammo.get("count", 0) or 0) < 1:
+        if ammo_qty(loaded_ammo.get("count")) < 1:
             db.session.commit()
             emit_combat_error(f"{weapon_name} è scarica: ricarica prima di sparare.")
             return
 
-    damage_data = (comp_item or {}).get("combat", {}).get("damage", {})
-    activation = (comp_item or {}).get("activation", {})
-    area = (comp_item or {}).get("combat", {}).get("area", {})
+    damage_data = ((comp_item or {}).get("combat") or {}).get("damage") or {}
+    activation = ((comp_item or {}).get("activation") or {})
+    area = ((comp_item or {}).get("combat") or {}).get("area") or {}
 
     damage_resolution = resolve_attack_damage(
         comp_item,
@@ -6142,7 +6232,7 @@ def handle_declare_attack(data):
         return
 
     if loaded_ammo is not None:
-        set_loaded_ammo(attacker, equipped_slot, {**loaded_ammo, "count": int(loaded_ammo["count"]) - 1})
+        set_loaded_ammo(attacker, equipped_slot, {**loaded_ammo, "count": ammo_qty(loaded_ammo.get("count")) - 1})
         db.session.commit()
         emit_character_update(attacker)
 
@@ -6421,7 +6511,7 @@ def build_counter_attack(char, target, choice, speed):
     if firearm_spec(comp_item) and equipped_item and int((equipped_item.get("ammo_loaded") or {}).get("count", 0) or 0) < 1:
         return f"{weapon_name} è scarica."
 
-    damage_data = (comp_item or {}).get("combat", {}).get("damage", {})
+    damage_data = ((comp_item or {}).get("combat") or {}).get("damage") or {}
     damage_resolution = resolve_attack_damage(comp_item, char, distance, weapon_name=weapon_name)
     return {
         "attack_id": str(uuid.uuid4()),
@@ -6441,8 +6531,8 @@ def build_counter_attack(char, target, choice, speed):
         "damage_note": damage_resolution.get("note"),
         "range": attack_range,
         "distance": distance,
-        "activation_mode": (comp_item or {}).get("activation", {}).get("mode"),
-        "area_shape": (comp_item or {}).get("combat", {}).get("area", {}).get("shape"),
+        "activation_mode": ((comp_item or {}).get("activation") or {}).get("mode"),
+        "area_shape": (((comp_item or {}).get("combat") or {}).get("area") or {}).get("shape"),
         "aim": None,
         "is_firearm": bool(firearm_spec(comp_item)),
         "no_exchange": True

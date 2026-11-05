@@ -1084,7 +1084,7 @@
 
                             <input id="forge-weapon-weight" type="number" min="0" step="0.1" value="0" placeholder="Peso" style="padding:6px;">
                             <input id="forge-weapon-harmonization" type="number" min="0" step="1" value="0" placeholder="Armonizzazione" style="padding:6px;">
-                            <input id="forge-weapon-license" type="text" placeholder="Licenza richiesta (opzionale)" style="grid-column:span 2; padding:6px;">
+                            <input id="forge-weapon-license" type="text" list="forge-license-options" placeholder="Licenza richiesta (opzionale)" style="grid-column:span 2; padding:6px;">
                         </div>
                         <div style="display:flex; gap:6px; margin-top:7px;">
                             <button id="btn-forge-sidequest-weapon" type="button" style="flex:1; padding:7px; border:0; border-radius:4px; background:#ca6f1e; color:white; cursor:pointer; font-weight:bold;">🔨 Forgia e allega</button>
@@ -1171,7 +1171,8 @@
 
                         <input id="master-forge-weapon-weight" type="number" min="0" step="0.1" value="0" placeholder="Peso" style="padding:7px;">
                         <input id="master-forge-weapon-harmonization" type="number" min="0" step="1" value="0" placeholder="Armonizzazione" style="padding:7px;">
-                        <input id="master-forge-weapon-license" type="text" placeholder="Licenza richiesta (opzionale)" style="grid-column:span 2; padding:7px;">
+                        <input id="master-forge-weapon-license" type="text" list="forge-license-options" placeholder="Licenza richiesta (opzionale)" style="grid-column:span 2; padding:7px;">
+                        <datalist id="forge-license-options"></datalist>
                     </div>
                     <div style="display:flex; gap:7px; margin-top:10px;">
                         <button id="btn-master-forge-save" type="button" style="flex:2; padding:9px; border:0; border-radius:5px; background:#ca6f1e; color:white; cursor:pointer; font-weight:bold;">💾 Salva nella Fucina</button>
