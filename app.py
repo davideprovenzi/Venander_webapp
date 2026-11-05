@@ -1,8 +1,12 @@
 from flask import Flask, render_template, request, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import inspect, text
+from sqlalchemy import event, inspect, text
+from sqlalchemy.orm import Session
 from flask_socketio import SocketIO, emit
 from sqlalchemy.orm.attributes import flag_modified
+from image_store import IMAGE_FILE_PATTERN, store_image, store_images_in_json
+import sqlite3
+from datetime import date
 import os
 import random
 import re
@@ -19,7 +23,17 @@ from threading import Lock
 # ==========================================
 # CONFIGURAZIONE FLASK
 # ==========================================
-app = Flask(__name__)
+ONE_YEAR = 365 * 24 * 3600
+
+class VenanderFlask(Flask):
+    def get_send_file_max_age(self, filename):
+        # Con ?v=<impronta> l'indirizzo cambia a ogni modifica del file:
+        # il browser può tenerlo in cache senza più chiedere al server
+        if request.args.get("v"):
+            return ONE_YEAR
+        return super().get_send_file_max_age(filename)
+
+app = VenanderFlask(__name__)
 app.config["SECRET_KEY"] = "chiave_segreta_venander"
 # L'ambiente di prova (test_env.py) usa una copia del database: venander_test.db
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.environ.get('VENANDER_DB', 'venander.db')}"
@@ -82,9 +96,31 @@ def code_status():
         "page": page_fingerprint()
     }
 
+def asset_url(filename):
+    """/static/<file>?v=<impronta>: cambia solo quando cambia il file."""
+    version = files_fingerprint([os.path.join(app.static_folder, filename)])
+    return f"/static/{filename}?v={version}"
+
 @app.context_processor
 def inject_test_mode():
-    return {"test_mode": TEST_MODE, "code_fingerprint": page_fingerprint()}
+    return {"test_mode": TEST_MODE, "code_fingerprint": page_fingerprint(), "asset": asset_url}
+
+@app.after_request
+def set_cache_headers(response):
+    # La pagina va sempre richiesta (contiene le versioni dei file);
+    # file versionati e immagini non cambiano mai: niente controlli
+    if request.path == "/":
+        response.cache_control.no_cache = True
+    elif request.path.startswith("/images/") or (request.path.startswith("/static/") and request.args.get("v")):
+        response.cache_control.immutable = True
+    return response
+
+# Pagina, script e stili compressi (gzip/brotli): pesano un quinto
+try:
+    from flask_compress import Compress
+    Compress(app)
+except ImportError:
+    print("⚠️ Flask-Compress non installato: pip install -r requirements.txt per una pagina più leggera.")
 
 db = SQLAlchemy(app)
 socketio = SocketIO(
@@ -330,6 +366,105 @@ def get_world_state():
         "surfaces": ws.surfaces or {}
     }
 
+# ==========================================
+# IMMAGINI COME FILE (CACHE DEL BROWSER)
+# Pedine, foto, mappe, sticker: ogni data URL che sta per finire nel
+# database diventa un file in instance/images (vedi image_store.py).
+# Così i giocatori scaricano ogni immagine una volta sola, e gli
+# aggiornamenti dei personaggi non si portano dietro megabyte di base64.
+# ==========================================
+IMAGE_DIR = os.path.join(app.instance_path, "images")
+
+# Colonne con un'immagine e colonne JSON che possono contenerne (es. "img" degli oggetti)
+IMAGE_TEXT_COLUMNS = {
+    Character: ("photo_url", "token_url"),
+    NpcTokenPreset: ("image_data",),
+    DrawItem: ("img_data",),
+    WorldState: ("map_url",),
+    Scene: ("map_url",),
+    WikiPage: ("image",),
+}
+IMAGE_JSON_COLUMNS = {
+    Character: ("stats", "weapons", "backpack", "loot"),
+    NpcTemplate: ("data",),
+    Scene: ("drawings", "trinkets"),
+    WorldState: ("trinkets",),
+}
+
+def move_images_to_files(obj):
+    """Sposta su file le immagini di una riga. True se ha cambiato qualcosa."""
+    changed = False
+    for column in IMAGE_TEXT_COLUMNS.get(type(obj), ()):
+        value = getattr(obj, column)
+        stored = store_image(value, IMAGE_DIR)
+        if stored is not value:
+            setattr(obj, column, stored)
+            changed = True
+    for column in IMAGE_JSON_COLUMNS.get(type(obj), ()):
+        value = getattr(obj, column)
+        if value and "data:image/" in json.dumps(value):
+            setattr(obj, column, store_images_in_json(value, IMAGE_DIR))
+            changed = True
+    return changed
+
+@event.listens_for(Session, "before_flush")
+def images_before_flush(session, _flush_context, _instances):
+    for obj in list(session.new) + list(session.dirty):
+        if type(obj) in IMAGE_TEXT_COLUMNS or type(obj) in IMAGE_JSON_COLUMNS:
+            move_images_to_files(obj)
+
+@app.route("/images/<name>")
+def serve_image(name):
+    if not IMAGE_FILE_PATTERN.match(name):
+        abort(404)
+    return send_from_directory(IMAGE_DIR, name, max_age=ONE_YEAR)
+
+def backup_database(reason):
+    """Copia del database in instance/backups (sicura anche col server acceso)."""
+    folder = os.path.join(app.instance_path, "backups")
+    os.makedirs(folder, exist_ok=True)
+    stem = os.path.splitext(os.path.basename(DB_FILE))[0]
+    target_path = os.path.join(folder, f"{stem}-{date.today().isoformat()}-{reason}.db")
+    source = sqlite3.connect(f"file:{DB_FILE}?mode=ro", uri=True)
+    target = sqlite3.connect(target_path)
+    with target:
+        source.backup(target)
+    source.close()
+    target.close()
+    return target_path
+
+def migrate_images_to_files():
+    """Una volta sola: le immagini già salvate nel database diventano file."""
+    def rows_with_images():
+        models = set(IMAGE_TEXT_COLUMNS) | set(IMAGE_JSON_COLUMNS)
+        found = []
+        for model in models:
+            columns = IMAGE_TEXT_COLUMNS.get(model, ()) + IMAGE_JSON_COLUMNS.get(model, ())
+            # Filtro in SQL: le righe senza "data:image/" non si caricano nemmeno
+            condition = " OR ".join(f"CAST({column} AS TEXT) LIKE '%data:image/%'" for column in columns)
+            ids = [row[0] for row in db.session.execute(text(f"SELECT id FROM {model.__tablename__} WHERE {condition}"))]
+            found.extend((model, row_id) for row_id in ids)
+        return found
+
+    pending = rows_with_images()
+    if not pending:
+        return
+
+    backup = backup_database("before-images-to-files")
+    print(f"🖼️ Sposto le immagini del database in instance/images (copia di sicurezza: {os.path.relpath(backup, app.root_path)})...")
+    moved = 0
+    for model, row_id in pending:
+        row = db.session.get(model, row_id)
+        if row is not None and move_images_to_files(row):
+            moved += 1
+    db.session.commit()
+    db.session.remove()
+
+    # Il file del database si rimpicciolisce solo con VACUUM
+    with db.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as connection:
+        connection.exec_driver_sql("VACUUM")
+    print(f"🖼️ Fatto: {moved} righe aggiornate.")
+
 with app.app_context():
     db.create_all()
     # Migrazione leggera: aggiunge token_url ai vecchi database
@@ -470,6 +605,8 @@ with app.app_context():
         db.session.add_all(party)
         db.session.commit()
         print("Database popolato con 3 Giocatori standard!")
+
+    migrate_images_to_files()
 
 # ==========================================
 # ROTTE WEB & SERIALIZZAZIONE
@@ -4326,7 +4463,7 @@ def clean_wiki_image(value):
     if not image or len(image) > WIKI_MAX_IMAGE:
         return None
 
-    if image.startswith("data:image/") or image.startswith(("http://", "https://", "/static/")):
+    if image.startswith("data:image/") or image.startswith(("http://", "https://", "/static/", "/images/")):
         return image
 
     return None

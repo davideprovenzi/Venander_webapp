@@ -64,7 +64,8 @@ It uses `instance/venander_test.db`, a copy of the real database taken at every 
 - **Database**: SQLite at `instance/venander.db` (Flask-SQLAlchemy resolves `sqlite:///venander.db` into the `instance/` folder). It is created on first run and seeded with three default players ("Giocatore 1-3").
 - **Schema changes**: tables are created with `db.create_all()`. Columns added to existing tables need a manual `ALTER TABLE` in the startup block of [app.py](app.py) (see the existing `token_url` and `reward_weapon` migrations), because `create_all()` does not alter existing tables.
 - **Reset**: stop the server and delete `instance/venander.db`.
-- **Not in git**: the database is the live game state, so `instance/` is git-ignored. Back it up by copying `instance/venander.db` while the server is stopped. If you cloned before it was untracked, copy your `venander.db` somewhere safe *before* pulling, then put it back: the pull removes the tracked copy.
+- **Images**: tokens, photos, maps, stickers and item pictures are stored as files in `instance/images/`, named by the SHA-256 of their content; the database keeps only `/images/<file>`. Uploads still arrive as data URLs: a SQLAlchemy `before_flush` hook ([image_store.py](image_store.py)) writes them to disk before they reach the database. Older databases are converted at startup (a copy goes to `instance/backups/` first). SVGs stay inline.
+- **In git**: `instance/venander.db` and `instance/images/` are tracked so the game state moves between machines with a pull (the server warns if the database file is replaced while it runs). `instance/backups/`, `instance/venander_test.db` and `instance/certs/` are not.
 - **Compendium**: [compendio.json](compendio.json) is generated from a spreadsheet (`db_armi.xlsx`, not in the repo). It holds `items`, lookup `indexes` and the `action_speed_table` used to resolve reactions.
 - **In-memory state**: active combat, pending attacks and pending combat results live in process memory and are lost on restart.
 
@@ -82,13 +83,17 @@ static/
   ui.js             Sheets, shop, combat, forge and sidequest panels
   control.js        Keyboard and mouse input, tool handling
   style.css         Styles
+image_store.py      Data URL -> file in instance/images
 instance/
   venander.db       SQLite database
+  images/           Uploaded images (content-addressed)
+  sounds/           NPC sounds
 ```
 
 ## Architecture notes
 
-- Almost everything happens over Socket.IO; the only HTTP route is `/`. On connect the server sends combat state, drawings, the compendium and the map, then the client sends `register_session_role` and gets the role-appropriate character data.
+- Almost everything happens over Socket.IO; the HTTP routes are `/`, `/static/`, `/images/` and `/sounds/`. On connect the server sends combat state, drawings, the compendium and the map, then the client sends `register_session_role` and gets the role-appropriate character data.
 - Master-only events are sent to the sockets in `master_sids`; sidequest events go only to the players they target.
-- Socket.IO runs in `threading` mode with a 50 MB message limit so maps and token images can be sent as data URLs.
+- Socket.IO runs in `threading` mode with a 50 MB message limit so uploads (maps, tokens) can be sent as data URLs.
+- **Caching** (for players on a forwarded port): scripts and styles are linked as `/static/<file>?v=<fingerprint>` and served with a one-year `immutable` cache, so a reload downloads only the page; images are cached the same way because their names never change. The page itself is `no-cache`. Responses are compressed with Flask-Compress.
 - The dev server starts with `debug=True` and the reloader off.
