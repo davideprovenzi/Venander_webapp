@@ -61,6 +61,17 @@ It uses `instance/venander_test.db`, a copy of the real database taken at every 
 
 ## Data
 
+### UltraWiki 0.02
+
+La sezione Wiki include i contenuti di `UltraWiki 0.02.xlsx`: cronologia,
+Towercity, etnie, Merlini e aziende, bestiario e conoscenze, con illustrazioni.
+Tutte le pagine importate sono pubbliche e consultabili da ogni giocatore.
+I testi sono in `data/ultrawiki-0.02.json`, le immagini in `static/wiki/ultrawiki/`.
+Al primo avvio vengono inseriti nel database senza sovrascrivere pagine omonime.
+L'importazione viene registrata nella tabella `wiki_import`: gli avvii successivi
+conservano modifiche, visibilità ed eliminazioni decise dal Master.
+Il file Excel non è necessario per avviare l'applicazione.
+
 - **Database**: SQLite at `instance/venander.db` (Flask-SQLAlchemy resolves `sqlite:///venander.db` into the `instance/` folder). It is created on first run and seeded with three default players ("Giocatore 1-3").
 - **Schema changes**: tables are created with `db.create_all()`. Columns added to existing tables need a manual `ALTER TABLE` in [venander/database.py](venander/database.py) (see the existing `token_url` and `reward_weapon` migrations), because `create_all()` does not alter existing tables.
 - **Reset**: stop the server and delete `instance/venander.db`.

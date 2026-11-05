@@ -8,6 +8,7 @@ from venander import core
 from venander.core import app, db, db_file_identity
 from venander.images import migrate_images_to_files
 from venander.models import Character, WorldState
+from venander.wiki_seed import seed_ultrawiki
 
 
 with app.app_context():
@@ -151,6 +152,7 @@ with app.app_context():
         db.session.commit()
         print("Database popolato con 3 Giocatori standard!")
 
+    seed_ultrawiki()
     migrate_images_to_files()
 
 # Identità del file del database ora che esiste (vedi code_status)

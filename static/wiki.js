@@ -103,8 +103,14 @@ function renderWikiContent(content) {
         const line = rawLine.trimEnd();
         const heading = line.match(/^(#{1,3})\s+(.*)$/);
         const listItem = line.match(/^\s*[-*]\s+(.*)$/);
+        // Solo illustrazioni locali della wiki: nessun HTML o URL arbitrario.
+        const illustration = line.match(/^!\[([^\]]*)\]\((\/static\/wiki\/[a-zA-Z0-9_./-]+)\)$/);
 
-        if (heading) {
+        if (illustration) {
+            flushParagraph();
+            closeList();
+            html += `<img class="wiki-page-image" loading="lazy" src="${escapeWikiHtml(illustration[2])}" alt="${escapeWikiHtml(illustration[1])}">`;
+        } else if (heading) {
             flushParagraph();
             closeList();
             // h1 è il titolo della pagina: i titoli interni partono da h2
