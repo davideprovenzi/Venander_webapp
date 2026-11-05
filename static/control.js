@@ -55,7 +55,7 @@ window.addEventListener('keydown', e => {
             changed = true;
         }
 
-        // Strumenti del Master: Esc chiude il pannello (ui.js) e spegne anche lo strumento,
+        // Strumenti del Master: Esc chiude il pannello (static/ui/layout.js) e spegne anche lo strumento,
         // così non si resta a disegnare o a dipingere muri senza accorgersene
         if (isMaster) {
             if (isDrawingMode) {
@@ -169,7 +169,7 @@ canvas.addEventListener('click', (event) => {
     // Col pennello del terreno il clic dipinge (vedi terrain.js), non seleziona
     if (window.terrainBrush) return;
 
-    // Minacciare: ogni clic aggiunge o toglie un esagono (vedi ui.js)
+    // Minacciare: ogni clic aggiunge o toglie un esagono (vedi static/ui/actions.js)
     if (window.threatPlacement) {
         const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
         toggleThreatHex(threatHex.col, threatHex.row);
@@ -243,7 +243,7 @@ canvas.addEventListener('click', (event) => {
             y: gridY,
             is_hidden: isHidden,
             token_url: window.currentNpcTokenBase64 || "",
-            // Statistiche, equipaggiamento e armi dal modello (vedi game.js)
+            // Statistiche, equipaggiamento e armi dal modello (vedi static/game/library.js)
             template_id: parseInt(document.getElementById('npc-template-select')?.value) || null
         });
         window.isSpawningNpc = false;

@@ -70,7 +70,7 @@ function escapeHtml(value) {
 }
 
 // Esagoni attraversati in linea retta, estremi inclusi.
-// Stessa formula (e stesse piccole spinte) di hex_line in app.py,
+// Stessa formula (e stesse piccole spinte) di hex_line in venander/hexes.py,
 // così client e server concordano su linea di vista e percorsi.
 function hexLine(x1, y1, x2, y2) {
     const a = offsetToCube(x1, y1);
@@ -91,5 +91,5 @@ function hexLine(x1, y1, x2, y2) {
     return line;
 }
 
-// Limite delle immagini delle pedine (come TOKEN_MAX_BYTES in app.py)
+// Limite delle immagini delle pedine (come TOKEN_MAX_BYTES in venander/tokens.py)
 const TOKEN_MAX_BYTES = 5 * 1024 * 1024;

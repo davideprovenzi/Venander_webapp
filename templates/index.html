@@ -12,7 +12,7 @@
 </head>
 
 <body data-code-fingerprint="{{ code_fingerprint }}">
-    <!-- Avviso: server da riavviare o pagina da ricaricare (vedi game.js) -->
+    <!-- Avviso: server da riavviare o pagina da ricaricare (vedi static/game/notices.js) -->
     <div id="code-status-banner" class="code-status-banner"></div>
     {% if test_mode %}
     <!-- Ambiente di prova: copia della partita, non tocca la sessione vera -->
@@ -264,7 +264,7 @@
                     <label class="npc-template-label">📋 Modello NPC</label>
                     <!-- Tanti modelli: si cercano per nome o cartella -->
                     <input id="npc-template-search" class="npc-template-search" type="search" placeholder="🔍 Cerca modello o cartella...">
-                    <!-- Cartelle dei modelli: si aprono e si chiudono (vedi game.js) -->
+                    <!-- Cartelle dei modelli: si aprono e si chiudono (vedi static/game/library.js) -->
                     <div class="npc-template-tree-tools">
                         <button id="npc-template-expand-all" type="button" title="Apri tutte le cartelle">▾ Espandi tutte</button>
                         <button id="npc-template-collapse-all" type="button" title="Chiudi tutte le cartelle">▸ Comprimi tutte</button>
@@ -1859,11 +1859,32 @@
          JAVASCRIPT
          ========================================== -->
     <script src="{{ asset('utils.js') }}"></script>
-    <script src="{{ asset('game.js') }}"></script>
+    <script src="{{ asset('game/core.js') }}"></script>
+    <script src="{{ asset('game/sync.js') }}"></script>
+    <script src="{{ asset('game/entities.js') }}"></script>
+    <script src="{{ asset('game/map.js') }}"></script>
+    <script src="{{ asset('game/library.js') }}"></script>
+    <script src="{{ asset('game/notices.js') }}"></script>
     <script src="{{ asset('renderer.js') }}"></script>
     <script src="{{ asset('drawing.js') }}"></script>
     <script src="{{ asset('terrain.js') }}"></script>
-    <script src="{{ asset('ui.js') }}"></script>
+    <script src="{{ asset('ui/sheet.js') }}"></script>
+    <script src="{{ asset('ui/chat.js') }}"></script>
+    <script src="{{ asset('ui/forge.js') }}"></script>
+    <script src="{{ asset('ui/sidequests.js') }}"></script>
+    <script src="{{ asset('ui/sheet_gadgets.js') }}"></script>
+    <script src="{{ asset('ui/actions.js') }}"></script>
+    <script src="{{ asset('ui/compendium.js') }}"></script>
+    <script src="{{ asset('ui/hud.js') }}"></script>
+    <script src="{{ asset('ui/doll.js') }}"></script>
+    <script src="{{ asset('ui/equipment.js') }}"></script>
+    <script src="{{ asset('ui/limbs.js') }}"></script>
+    <script src="{{ asset('ui/attack_panel.js') }}"></script>
+    <script src="{{ asset('ui/defense.js') }}"></script>
+    <script src="{{ asset('ui/notes.js') }}"></script>
+    <script src="{{ asset('ui/attack_modifiers.js') }}"></script>
+    <script src="{{ asset('ui/layout.js') }}"></script>
+    <script src="{{ asset('ui/ranged.js') }}"></script>
     <script src="{{ asset('control.js') }}"></script>
     <script src="{{ asset('trinkets.js') }}"></script>
     <script src="{{ asset('exchange.js') }}"></script>

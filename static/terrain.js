@@ -3,7 +3,7 @@
 // Il Master dipinge gli esagoni. Altura e coperture sono indicative
 // (le applica il Master); muri e fumo bloccano la vista, i muri anche
 // il movimento; terreno difficile e ghiaccio costano il doppio.
-// Le regole valgono anche sul server (app.py), che è quello che decide.
+// Le regole valgono anche sul server (venander/terrain.py), che è quello che decide.
 // ==========================================
 
 const TERRAIN_DEFS = {
