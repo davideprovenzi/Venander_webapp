@@ -1,5 +1,8 @@
 # Database della partita: è lo stato di gioco locale, non codice
 #instance/
+# Copie di sicurezza e database dell'ambiente di prova restano solo in locale
+instance/backups/
+instance/venander_test.db
 # La chiave privata del certificato https non va mai condivisa
 instance/certs/
 
