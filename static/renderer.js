@@ -174,10 +174,24 @@ function drawAims() {
 // Salgono sopra la pedina e svaniscono; finché ce n'è uno si ridisegna.
 // ==========================================
 const FLOATING_TEXT_COLORS = { damage: '#e74c3c', heal: '#2ecc71', info: '#f1c40f' };
+// Le reazioni con le emoji restano un po' di più e sono più grandi
+const FLOATING_EMOJI_MS = 2600;
+
+function floatingTextDuration(t) {
+    return t.kind === 'emoji' ? FLOATING_EMOJI_MS : FLOATING_TEXT_MS;
+}
+
+// Chi guarda vede la pedina? (stesse regole di drawTokens: vista, nascosti, nebbia)
+function isTokenVisibleToViewer(char) {
+    if (!isNpcVisibleToPlayers(char)) return false;
+    if ((char.is_hidden || char.is_invisible) && !isMaster) return false;
+    if (!isMaster && window.fowEnabled && !window.revealedHexes.has(`${char.x},${char.y}`)) return false;
+    return true;
+}
 
 function drawFloatingTexts() {
     const now = performance.now();
-    window.floatingTexts = window.floatingTexts.filter(t => now - t.start < FLOATING_TEXT_MS);
+    window.floatingTexts = window.floatingTexts.filter(t => now - t.start < floatingTextDuration(t));
     if (!window.floatingTexts.length) return;
 
     ctx.save();
@@ -191,14 +205,23 @@ function drawFloatingTexts() {
 
     window.floatingTexts.forEach(t => {
         const char = characters.find(c => c.id === t.char_id);
-        if (!char || (!isMaster && (char.is_hidden || char.is_invisible))) return;
+        // Una scritta sopra una pedina che non si vede ne tradirebbe la posizione
+        if (!char || !isTokenVisibleToViewer(char)) return;
 
-        const progress = (now - t.start) / FLOATING_TEXT_MS;
+        const isEmoji = t.kind === 'emoji';
+        const progress = (now - t.start) / floatingTextDuration(t);
         const stack = stackByChar[t.char_id] = (stackByChar[t.char_id] ?? -1) + 1;
         const center = hexToPixel(char.x, char.y);
-        const y = center.y - HEX_SIZE - 10 - progress * 35 - stack * 22;
+        const y = center.y - HEX_SIZE - 10 - progress * 35 - stack * (isEmoji ? 34 : 22);
 
         ctx.globalAlpha = 1 - progress * progress;
+        if (isEmoji) {
+            // Le emoji hanno già i loro colori: niente contorno
+            ctx.font = '32px Arial';
+            ctx.fillText(t.text, center.x, y);
+            ctx.font = 'bold 20px Arial';
+            return;
+        }
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.strokeText(t.text, center.x, y);
         ctx.fillStyle = FLOATING_TEXT_COLORS[t.kind] || '#fff';
@@ -464,10 +487,23 @@ function drawDeadMark(centerX, centerY, radius) {
     ctx.lineTo(centerX - arm, centerY + arm);
     ctx.stroke();
 
-    ctx.font = `${Math.round(radius)}px Arial`;
+    // Teschio in un tondo scuro sul bordo: sull'immagine in grigio si perderebbe
+    const badgeX = centerX + radius * 0.62;
+    const badgeY = centerY + radius * 0.62;
+    const badgeRadius = Math.max(9, radius * 0.38);
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(badgeX, badgeY, badgeRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(20, 20, 20, 0.9)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#c0392b';
+    ctx.stroke();
+
+    ctx.font = `${Math.round(badgeRadius * 1.2)}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('💀', centerX, centerY + 1);
+    ctx.fillText('💀', badgeX, badgeY + 1);
     ctx.restore();
 }
 
@@ -491,15 +527,8 @@ function drawTokens() {
     }
 
     characters.forEach(char => {
-        // NPC che nessun personaggio giocante vede (muri, fumo): nascosti ai giocatori
-        if (!isNpcVisibleToPlayers(char)) return;
-
-        // I giocatori non vedono NULLA né se in FoW né se Invisibili. Il Master procede.
-        if ((char.is_hidden || char.is_invisible) && !isMaster) return;
-
-        // --- NUOVO: Nascondi pedine se sono dentro la Fog of War non esplorata ---
-        const hexStr = `${char.x},${char.y}`;
-        if (!isMaster && window.fowEnabled && !window.revealedHexes.has(hexStr)) return;
+        // NPC fuori vista, pedine nascoste o invisibili, nebbia: i giocatori non le vedono
+        if (!isTokenVisibleToViewer(char)) return;
 
         ctx.save();
 

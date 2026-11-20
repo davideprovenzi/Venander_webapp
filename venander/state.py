@@ -47,3 +47,6 @@ pending_explosions = {}
 pending_exchanges = {}
 
 combat_aims = []
+
+# Ultima reazione con emoji di ogni socket (per non riempire la mappa di emoji)
+last_reaction_at = {}

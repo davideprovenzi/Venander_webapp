@@ -5,6 +5,10 @@
 
 const VITALS_BAR_POSITION_KEY = 'venander-vitals-bar-position';
 
+// Reazioni: l'emoji sale sopra la pedina per tutti (come EMOJI_REACTIONS in venander/chat.py)
+const EMOJI_REACTIONS = ['😂', '😮', '😱', '👍', '👎', '❤️', '💀', '🎲', '🔥', '🙏', '😡', '🤔'];
+let emojiPanelOpen = false;
+
 // Chi mostrare: per il Master l'entità selezionata, per il giocatore se stesso
 function getVitalsBarCharacter() {
     if (typeof isMaster !== 'undefined' && isMaster) {
@@ -47,7 +51,7 @@ function renderVitalsBar() {
     const stats = vitalsStatKeys(char);
     const signature = JSON.stringify([
         char.id, char.name, char.hp_current, char.hp_max, char.stamina_current, char.stamina_max,
-        char.conc_current, char.conc_max, char.pa_stats, stats.map(key => char.stats[key])
+        char.conc_current, char.conc_max, char.pa_stats, stats.map(key => char.stats[key]), emojiPanelOpen
     ]);
     bar.style.display = 'block';
     if (bar.dataset.signature === signature) return;
@@ -61,8 +65,16 @@ function renderVitalsBar() {
             ${escapeHtml(stat.slice(0, 3).toUpperCase())} <b>${current}</b>/${max}</span>`;
     }).join('');
 
+    const emojiRow = emojiPanelOpen
+        ? `<div class="vitals-emoji-row">${EMOJI_REACTIONS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('')}</div>`
+        : '';
+
     bar.innerHTML = `
-        <div class="vitals-bar-head" title="Trascina per spostare">${escapeHtml(char.name)}</div>
+        <div class="vitals-bar-head" title="Trascina per spostare">
+            <span>${escapeHtml(char.name)}</span>
+            <button type="button" class="vitals-emoji-toggle${emojiPanelOpen ? ' open' : ''}" data-emoji-toggle title="Reazioni: un'emoji sopra la tua pedina">😀</button>
+        </div>
+        ${emojiRow}
         <div class="vitals-bar-meters">
             ${vitalsMeter('❤️', 'Salute', char.hp_current, char.hp_max, '#e74c3c')}
             ${vitalsMeter('⚡', 'Stamina', char.stamina_current, char.stamina_max, '#f39c12')}
@@ -88,7 +100,7 @@ function renderVitalsBar() {
 
     let drag = null;
     bar.addEventListener('pointerdown', (e) => {
-        if (!e.target.closest('.vitals-bar-head')) return;
+        if (!e.target.closest('.vitals-bar-head') || e.target.closest('button')) return;
         const rect = bar.getBoundingClientRect();
         drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
         bar.style.transform = 'none';
@@ -111,6 +123,23 @@ function renderVitalsBar() {
         } catch (e) { /* senza memoria del browser la posizione vale solo ora */ }
     });
 })();
+
+// Pulsanti della barra: apre le reazioni e manda l'emoji scelta
+document.getElementById('vitals-bar')?.addEventListener('click', (e) => {
+    if (e.target.closest('[data-emoji-toggle]')) {
+        emojiPanelOpen = !emojiPanelOpen;
+        renderVitalsBar();
+        return;
+    }
+    const button = e.target.closest('[data-emoji]');
+    const char = getVitalsBarCharacter();
+    if (!button || !char) return;
+    socket.emit('emoji_reaction', { char_id: char.id, emoji: button.dataset.emoji });
+    // Il server ne accetta una al secondo: i pulsanti si fermano un attimo
+    const buttons = [...document.querySelectorAll('.vitals-emoji-row button')];
+    buttons.forEach(b => { b.disabled = true; });
+    setTimeout(() => buttons.forEach(b => { b.disabled = false; }), 1000);
+});
 
 socket.on('init_state', () => setTimeout(renderVitalsBar, 0));
 socket.on('update_character', () => setTimeout(renderVitalsBar, 0));

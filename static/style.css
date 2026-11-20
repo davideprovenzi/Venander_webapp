@@ -4160,3 +4160,52 @@ body.player-mode #btn-toggle-notes {
 
 .vitals-pa-spent { background: rgba(230, 126, 34, 0.35); }
 .vitals-pa-empty { background: rgba(192, 57, 43, 0.5); }
+
+/* Reazioni con le emoji (static/ui/vitals_bar.js) */
+.vitals-bar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vitals-emoji-toggle {
+    padding: 0 4px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 15px;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.vitals-emoji-toggle.open {
+    border-color: #f1c40f;
+}
+
+.vitals-emoji-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.vitals-emoji-row button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.vitals-emoji-row button:hover:not(:disabled) {
+    background: rgba(241, 196, 15, 0.25);
+}
+
+.vitals-emoji-row button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}

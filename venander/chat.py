@@ -1,14 +1,15 @@
-"""Chat e dadi.
+"""Chat, dadi e reazioni con le emoji.
 """
 import html
 import random
 import re
+import time
 from flask import request
 from flask_socketio import emit
 from venander.core import db, socketio
 from venander.models import Character
 from venander.permissions import controls_character, is_master_request
-from venander.state import client_character_ids, client_roles, master_sids
+from venander.state import client_character_ids, client_roles, last_reaction_at, master_sids
 
 
 def dice_stat_bonus(char, stat_name):
@@ -231,3 +232,35 @@ def handle_chat_message(data):
         {"message": "Destinatario chat non riconosciuto."},
         to=request.sid
     )
+
+
+# Reazioni: un'emoji sale sopra la pedina per qualche secondo, per tutti.
+# Solo quelle della lista (come EMOJI_REACTIONS in static/ui/vitals_bar.js),
+# così nessuno può far comparire testo qualsiasi sulla mappa.
+EMOJI_REACTIONS = ("😂", "😮", "😱", "👍", "👎", "❤️", "💀", "🎲", "🔥", "🙏", "😡", "🤔")
+EMOJI_REACTION_COOLDOWN = 1.0   # secondi tra due reazioni della stessa persona
+
+
+@socketio.on("emoji_reaction")
+def handle_emoji_reaction(data):
+    data = data or {}
+    char = db.session.get(Character, data.get("char_id"))
+    # Il giocatore reagisce come il suo personaggio, il Master come qualsiasi entità
+    if not controls_character(char):
+        return
+    emoji = data.get("emoji")
+    if emoji not in EMOJI_REACTIONS:
+        return
+
+    now = time.monotonic()
+    if now - last_reaction_at.get(request.sid, 0) < EMOJI_REACTION_COOLDOWN:
+        return
+    last_reaction_at[request.sid] = now
+
+    payload = {"char_id": char.id, "text": emoji, "kind": "emoji"}
+    # Un NPC nascosto non deve tradire la sua posizione ai giocatori
+    if char.role == "npc" and (char.is_hidden or char.is_invisible):
+        for sid in list(master_sids):
+            socketio.emit("floating_text", payload, to=sid)
+    else:
+        socketio.emit("floating_text", payload)

@@ -22,6 +22,7 @@ from venander.state import (
     client_roles,
     combat_aims,
     combat_state,
+    last_reaction_at,
     master_sids,
     pending_combat_results,
     pending_exchanges,
@@ -103,6 +104,7 @@ def handle_disconnect():
     master_sids.discard(request.sid)
     client_roles.pop(request.sid, None)
     client_character_ids.pop(request.sid, None)
+    last_reaction_at.pop(request.sid, None)
 
 
 @socketio.on("get_code_status")
