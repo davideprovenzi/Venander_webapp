@@ -138,6 +138,11 @@ class SideQuest(db.Model):
     active = db.Column(db.Boolean, default=True)
 
 
+class WikiImport(db.Model):
+    """Importazioni completate: evita duplicati e rispetta modifiche/eliminazioni."""
+    id = db.Column(db.String(80), primary_key=True)
+
+
 class WikiPage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(160), nullable=False)
