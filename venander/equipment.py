@@ -100,6 +100,67 @@ def calculate_basic_damage(formula, attacker, weapon_name=""):
     return int(round(result))
 
 
+# Caratteristica di un'arma: sigla del compendio (FOR, DES, PRC...) o nome intero
+# (Fucina). Le prime tre lettere bastano a riconoscerla.
+# Deve coincidere con WEAPON_CHARACTERISTICS in static/ui/attack_panel.js.
+WEAPON_CHARACTERISTICS = {
+    "FOR": "Forza",
+    "DES": "Destrezza",
+    "PER": "Percezione",
+    "PRC": "Percezione",
+    "ARG": "Arguzia",
+    "VOL": "Volontà",
+    "SPI": "Spirito",
+    "VIR": "Virtù",
+}
+FLAT_DAMAGE_PATTERN = re.compile(r"\s*\d+(?:[.,]\d+)?\s*HP\s*", re.IGNORECASE)
+
+
+def weapon_characteristic(comp_item):
+    """Nome della caratteristica dell'arma (es. "Percezione"), oppure None."""
+    raw = (((comp_item or {}).get("combat") or {}).get("check") or {}).get("required") \
+        or ((comp_item or {}).get("weapon") or {}).get("characteristic")
+    return WEAPON_CHARACTERISTICS.get(str(raw or "").strip().upper()[:3])
+
+
+def attacker_characteristic(attacker, stat_name):
+    """Valore della caratteristica di chi attacca, None se non ce l'ha (es. NPC senza statistiche)."""
+    for key, value in ((attacker.stats if attacker else None) or {}).items():
+        if str(key).strip().casefold() == stat_name.casefold():
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
+def scale_weapon_damage(comp_item, attacker, formula, base_damage):
+    """Armi: danno base x valore della caratteristica (es. 8 HP x Percezione 3 = 24).
+
+    Vale per le armi con danno fisso; le formule che citano già una
+    caratteristica (es. "8×Destrezza") si calcolano così come sono.
+    """
+    if base_damage is None or (comp_item or {}).get("class") != "Arma" or not FLAT_DAMAGE_PATTERN.fullmatch(str(formula or "")):
+        return None
+    stat = weapon_characteristic(comp_item)
+    if not stat:
+        return None
+    value = attacker_characteristic(attacker, stat)
+    if value is None:
+        return {
+            "damage": base_damage,
+            "formula": str(formula),
+            "note": f"{attacker.name} non ha {stat}: danno base, senza moltiplicatore.",
+            "automatic": True
+        }
+    return {
+        "damage": int(round(base_damage * value)),
+        "formula": f"{formula} × {stat} ({value:g})",
+        "note": None,
+        "automatic": True
+    }
+
+
 def resolve_attack_damage(comp_item, attacker, distance, weapon_name=""):
     """
     Risolve il danno che può essere determinato automaticamente.
@@ -192,6 +253,10 @@ def resolve_attack_damage(comp_item, attacker, distance, weapon_name=""):
         }
 
     basic_damage = calculate_basic_damage(raw_formula, attacker, weapon_name=weapon_name)
+
+    scaled = scale_weapon_damage(comp_item, attacker, raw_formula, basic_damage)
+    if scaled:
+        return scaled
 
     return {
         "damage": basic_damage,

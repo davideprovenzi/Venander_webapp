@@ -236,8 +236,9 @@ function collectCombatActions(char) {
         const range =
             getCompendiumAttackRange(compItem);
 
+        // Armi: "8 HP × Percezione (3) = 24" (il server calcola lo stesso)
         const damage =
-            compItem?.combat?.damage?.formula ??
+            describeWeaponDamage(compItem, char)?.text ??
             null;
 
         const damageType =

@@ -19,6 +19,34 @@ function getEquippedCompendiumItem(itemData) {
     });
 }
 
+// Caratteristica di un'arma (come WEAPON_CHARACTERISTICS in venander/equipment.py)
+const WEAPON_CHARACTERISTICS = {
+    FOR: 'Forza', DES: 'Destrezza', PER: 'Percezione', PRC: 'Percezione',
+    ARG: 'Arguzia', VOL: 'Volontà', SPI: 'Spirito', VIR: 'Virtù'
+};
+
+// Danno di un'arma per chi la impugna: base x caratteristica (8 HP x Percezione 3 = 24).
+// Il calcolo vero lo fa il server (scale_weapon_damage); qui serve a mostrarlo.
+// Restituisce { formula, total, text } oppure null se non c'è danno.
+function describeWeaponDamage(compItem, char) {
+    const formula = compItem?.combat?.damage?.formula ?? null;
+    if (formula === null || String(formula).trim() === '') return null;
+
+    const plain = { formula: String(formula), total: null, text: String(formula) };
+    const flat = String(formula).match(/^\s*(\d+(?:[.,]\d+)?)\s*HP\s*$/i);
+    const code = String(compItem?.combat?.check?.required || compItem?.weapon?.characteristic || '')
+        .trim().toUpperCase().slice(0, 3);
+    const stat = WEAPON_CHARACTERISTICS[code];
+    if (compItem?.class !== 'Arma' || !flat || !stat) return plain;
+
+    const key = Object.keys(char?.stats || {}).find(k => k.trim().toLowerCase() === stat.toLowerCase());
+    const value = key !== undefined ? Number(char.stats[key]) : NaN;
+    if (!Number.isFinite(value)) return plain;
+
+    const total = Math.round(Number(flat[1].replace(',', '.')) * value);
+    return { formula: String(formula), total, text: `${formula} × ${stat} (${value}) = ${total}` };
+}
+
 function formatEquipmentDamage(compItem) {
     const formula = compItem?.combat?.damage?.formula;
 
@@ -296,8 +324,11 @@ window.updateEquippedPanel = function(char) {
             // DATI STRUTTURATI
             // ==========================================
 
-            const damage =
-                compItem?.combat?.damage?.formula ?? null;
+            // Armi: il danno mostrato è già moltiplicato per la caratteristica
+            const damageInfo = describeWeaponDamage(compItem, char);
+            const damage = damageInfo
+                ? (damageInfo.total !== null ? `${damageInfo.total} HP` : damageInfo.formula)
+                : null;
 
             const activationSpeed =
                 compItem?.activation?.speed?.effect_or_action ??
