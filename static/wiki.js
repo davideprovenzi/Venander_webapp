@@ -51,6 +51,56 @@ function getWikiPageMarker(page) {
     return page.shared_with?.length ? '📨 ' : '🔒 ';
 }
 
+// Icona di ogni categoria (le altre usano 📄)
+const WIKI_CATEGORY_ICONS = {
+    bestiario: '🐾',
+    etnie: '🧬',
+    'merlini e aziende': '🏭',
+    regole: '📜',
+    storia: '⏳',
+    towercity: '🏙️',
+    luoghi: '🗺️',
+    fazioni: '⚑',
+    personaggi: '👤',
+    generale: '📖'
+};
+
+// Illustrazioni locali scritte nel testo: ![didascalia](/static/wiki/...)
+const WIKI_ILLUSTRATION_PATTERN = /^!\[([^\]]*)\]\((\/static\/wiki\/[a-zA-Z0-9_./-]+)\)$/;
+
+function getWikiCategoryIcon(category) {
+    return WIKI_CATEGORY_ICONS[String(category || '').trim().toLowerCase()] || '📄';
+}
+
+// Immagine di copertina: quella della pagina o la prima illustrazione del testo
+function getWikiCover(page) {
+    if (page.image) return page.image;
+    for (const line of String(page.content || '').split('\n')) {
+        const match = line.trim().match(WIKI_ILLUSTRATION_PATTERN);
+        if (match) return match[2];
+    }
+    return null;
+}
+
+// Prime parole del testo, senza titoli, immagini e formattazione
+function getWikiExcerpt(page, maxLength = 110) {
+    const text = String(page.content || '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#') && !WIKI_ILLUSTRATION_PATTERN.test(line))
+        .join(' ')
+        .replace(/\[\[(.+?)\]\]/g, '$1')
+        .replace(/[*_]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return text.length > maxLength ? `${text.slice(0, maxLength).replace(/\s+\S*$/, '')}…` : text;
+}
+
+// Didascalia senza il prefisso "Illustrazione:" dell'importazione
+function cleanWikiCaption(alt) {
+    return String(alt || '').replace(/^illustrazione\s*:\s*/i, '').trim();
+}
+
 function getWikiCategories() {
     return [...new Set(wikiPages.map(page => page.category || WIKI_DEFAULT_CATEGORY))]
         .sort((a, b) => a.localeCompare(b, 'it'));
@@ -82,34 +132,67 @@ function renderWikiInline(text) {
         });
 }
 
-function renderWikiContent(content) {
+function renderWikiContent(content, pageTitle = null) {
     let html = '';
     let paragraph = [];
     let inList = false;
+    let inTimeline = false;
 
     const flushParagraph = () => {
         if (!paragraph.length) return;
-        html += `<p>${paragraph.map(renderWikiInline).join('<br>')}</p>`;
+        // Una riga breve da sola, senza punteggiatura finale, è un sottotitolo
+        // ("Il Sabot", "Struttura"): il testo importato non li marca con ##
+        if (paragraph.length === 1 && isWikiImplicitHeading(paragraph[0])) {
+            html += `<h3 class="wiki-subheading">${renderWikiInline(paragraph[0].trim())}</h3>`;
+        } else {
+            html += `<p>${paragraph.map(renderWikiInline).join('<br>')}</p>`;
+        }
         paragraph = [];
     };
 
     const closeList = () => {
-        if (!inList) return;
-        html += '</ul>';
-        inList = false;
+        if (inList) {
+            html += '</ul>';
+            inList = false;
+        }
+        if (inTimeline) {
+            html += '</ol>';
+            inTimeline = false;
+        }
     };
 
-    String(content || '').split('\n').forEach(rawLine => {
+    // Il testo importato ripete spesso il titolo come primo "# titolo": si salta
+    let lines = String(content || '').split('\n');
+    const firstIndex = lines.findIndex(line => line.trim());
+    const firstHeading = firstIndex === -1 ? null : lines[firstIndex].trim().match(/^#{1,3}\s+(.*)$/);
+    if (pageTitle && firstHeading && firstHeading[1].trim().toLowerCase() === pageTitle.trim().toLowerCase()) {
+        lines = lines.slice(firstIndex + 1);
+    }
+
+    lines.forEach(rawLine => {
         const line = rawLine.trimEnd();
         const heading = line.match(/^(#{1,3})\s+(.*)$/);
         const listItem = line.match(/^\s*[-*]\s+(.*)$/);
         // Solo illustrazioni locali della wiki: nessun HTML o URL arbitrario.
-        const illustration = line.match(/^!\[([^\]]*)\]\((\/static\/wiki\/[a-zA-Z0-9_./-]+)\)$/);
+        const illustration = line.trim().match(WIKI_ILLUSTRATION_PATTERN);
+        // Cronologie: "1998 — Caduta di Hope" diventa una linea del tempo
+        const timelineItem = line.trim().match(/^(\d{1,4})\s*[—–-]\s+(.+)$/);
+        const timelineHeader = /^anno\s*[—–-]\s*evento$/i.test(line.trim());
 
-        if (illustration) {
+        if (timelineHeader) {
+            flushParagraph();
+        } else if (timelineItem) {
+            flushParagraph();
+            if (inList) closeList();
+            if (!inTimeline) {
+                html += '<ol class="wiki-timeline">';
+                inTimeline = true;
+            }
+            html += `<li><span class="wiki-timeline-year">${escapeWikiHtml(timelineItem[1])}</span><span class="wiki-timeline-event">${renderWikiInline(timelineItem[2])}</span></li>`;
+        } else if (illustration) {
             flushParagraph();
             closeList();
-            html += `<img class="wiki-page-image" loading="lazy" src="${escapeWikiHtml(illustration[2])}" alt="${escapeWikiHtml(illustration[1])}">`;
+            html += renderWikiFigure(illustration[2], cleanWikiCaption(illustration[1]));
         } else if (heading) {
             flushParagraph();
             closeList();
@@ -118,14 +201,16 @@ function renderWikiContent(content) {
             html += `<h${level}>${renderWikiInline(heading[2])}</h${level}>`;
         } else if (listItem) {
             flushParagraph();
+            if (inTimeline) closeList();
             if (!inList) {
                 html += '<ul>';
                 inList = true;
             }
             html += `<li>${renderWikiInline(listItem[1])}</li>`;
         } else if (!line.trim()) {
+            // Una riga vuota non interrompe una cronologia (voci separate da righe vuote)
             flushParagraph();
-            closeList();
+            if (inList) closeList();
         } else {
             closeList();
             paragraph.push(line);
@@ -136,6 +221,23 @@ function renderWikiContent(content) {
     closeList();
 
     return html || '<p class="wiki-muted">Questa pagina è ancora vuota.</p>';
+}
+
+function isWikiImplicitHeading(line) {
+    const text = line.trim();
+    return text.length <= 40 &&
+        text.split(/\s+/).length <= 5 &&
+        /^[A-ZÀ-Ý]/.test(text) &&
+        !/[.,;:!?…»"')\]]$/.test(text);
+}
+
+// Illustrazione incorniciata con didascalia; un clic la apre a tutto schermo
+function renderWikiFigure(src, caption) {
+    return `
+        <figure class="wiki-figure">
+            <img src="${escapeWikiHtml(src)}" alt="${escapeWikiHtml(caption)}" loading="lazy" data-wiki-zoom>
+            ${caption ? `<figcaption>${escapeWikiHtml(caption)}</figcaption>` : ''}
+        </figure>`;
 }
 
 // ==========================================
@@ -179,7 +281,7 @@ function renderWikiPageList() {
 
         const header = document.createElement('div');
         header.className = 'wiki-list-category';
-        header.textContent = `${category} (${pages.length})`;
+        header.textContent = `${getWikiCategoryIcon(category)} ${category} (${pages.length})`;
         wikiPageList.appendChild(header);
 
         pages.forEach(page => {
@@ -203,32 +305,50 @@ function renderWikiHome() {
     const categories = getWikiCategories();
     const visibleCount = wikiPages.filter(page => !page.hidden).length;
 
-    let html = '<h1>📖 Il mondo di Venander</h1>';
+    let html = `
+        <header class="wiki-home-hero">
+            <div class="wiki-home-kicker">Archivio</div>
+            <h1>Il mondo di Venander</h1>`;
 
     if (!wikiPages.length) {
         html += isMaster
-            ? '<p class="wiki-muted">Il wiki è vuoto. Crea la prima pagina con <b>＋ Nuova pagina</b>.</p>'
-            : '<p class="wiki-muted">Il Master non ha ancora scritto nulla. Torna più tardi!</p>';
+            ? '<p class="wiki-muted">Il wiki è vuoto. Crea la prima pagina con <b>＋ Nuova pagina</b>.</p></header>'
+            : '<p class="wiki-muted">Il Master non ha ancora scritto nulla. Torna più tardi!</p></header>';
         wikiView.innerHTML = html;
         return;
     }
 
-    html += `<p class="wiki-muted">${visibleCount} pagine consultabili${isMaster ? ` · ${wikiPages.length - visibleCount} segrete` : ''}.</p>`;
-    html += '<div class="wiki-category-grid">';
+    html += `<p class="wiki-muted">${visibleCount} pagine consultabili${isMaster ? ` · ${wikiPages.length - visibleCount} segrete` : ''} in ${categories.length} sezioni.</p>
+        </header>`;
 
     categories.forEach(category => {
         const pages = wikiPages
             .filter(page => (page.category || WIKI_DEFAULT_CATEGORY) === category)
             .sort((a, b) => a.title.localeCompare(b.title, 'it'));
 
-        html += `<section class="wiki-category-card"><h3>${escapeWikiHtml(category)}</h3><ul>`;
+        html += `
+            <section class="wiki-home-section">
+                <h2 class="wiki-home-section-title"><span>${getWikiCategoryIcon(category)}</span> ${escapeWikiHtml(category)} <small>${pages.length}</small></h2>
+                <div class="wiki-tile-grid">`;
         pages.forEach(page => {
-            html += `<li><a class="wiki-link" data-wiki-id="${page.id}">${getWikiPageMarker(page)}${escapeWikiHtml(page.title)}</a></li>`;
+            const cover = getWikiCover(page);
+            const excerpt = getWikiExcerpt(page);
+            html += `
+                <a class="wiki-link wiki-tile${page.hidden ? ' secret' : ''}" data-wiki-id="${page.id}">
+                    <span class="wiki-tile-cover${cover ? '' : ' empty'}">
+                        ${cover
+                            ? `<img src="${escapeWikiHtml(cover)}" alt="" loading="lazy">`
+                            : `<span>${getWikiCategoryIcon(category)}</span>`}
+                    </span>
+                    <span class="wiki-tile-body">
+                        <span class="wiki-tile-title">${getWikiPageMarker(page)}${escapeWikiHtml(page.title)}</span>
+                        ${excerpt ? `<span class="wiki-tile-excerpt">${escapeWikiHtml(excerpt)}</span>` : ''}
+                    </span>
+                </a>`;
         });
-        html += '</ul></section>';
+        html += '</div></section>';
     });
 
-    html += '</div>';
     wikiView.innerHTML = html;
 }
 
@@ -238,8 +358,15 @@ function renderWikiPage(page) {
         other.content.toLowerCase().includes(`[[${page.title.toLowerCase()}]]`)
     );
 
-    let html = `<div class="wiki-page-category">${escapeWikiHtml(page.category || WIKI_DEFAULT_CATEGORY)}</div>`;
-    html += `<h1>${escapeWikiHtml(page.title)}</h1>`;
+    const category = page.category || WIKI_DEFAULT_CATEGORY;
+    let html = `
+        <header class="wiki-page-header">
+            <nav class="wiki-breadcrumb">
+                <a class="wiki-link" data-wiki-home>Indice</a> ›
+                <span>${getWikiCategoryIcon(category)} ${escapeWikiHtml(category)}</span>
+            </nav>
+            <h1>${getWikiPageMarker(page)}${escapeWikiHtml(page.title)}</h1>
+        </header>`;
 
     if (isMaster) {
         const sharedNames = (page.shared_with || [])
@@ -259,11 +386,11 @@ function renderWikiPage(page) {
         html += '<div class="wiki-page-actions"><span class="wiki-handout-badge">📨 Il Master ha consegnato questa pagina a te</span></div>';
     }
 
+    html += '<div class="wiki-content">';
     if (page.image) {
-        html += `<img class="wiki-page-image" src="${escapeWikiHtml(page.image)}" alt="">`;
+        html += renderWikiFigure(page.image, '');
     }
-
-    html += `<div class="wiki-content">${renderWikiContent(page.content)}</div>`;
+    html += `${renderWikiContent(page.content, page.title)}</div>`;
 
     if (backlinks.length) {
         html += '<div class="wiki-backlinks"><b>Citata in:</b> ';
@@ -271,6 +398,21 @@ function renderWikiPage(page) {
             .map(other => `<a class="wiki-link" data-wiki-id="${other.id}">${escapeWikiHtml(other.title)}</a>`)
             .join(', ');
         html += '</div>';
+    }
+
+    // Pagina precedente e successiva della stessa categoria
+    const siblings = wikiPages
+        .filter(other => (other.category || WIKI_DEFAULT_CATEGORY) === category)
+        .sort((a, b) => a.title.localeCompare(b.title, 'it'));
+    const index = siblings.findIndex(other => other.id === page.id);
+    const previous = siblings[index - 1];
+    const next = siblings[index + 1];
+    if (previous || next) {
+        html += `
+            <nav class="wiki-page-nav">
+                ${previous ? `<a class="wiki-link wiki-page-nav-prev" data-wiki-id="${previous.id}"><small>‹ Precedente</small>${escapeWikiHtml(previous.title)}</a>` : '<span></span>'}
+                ${next ? `<a class="wiki-link wiki-page-nav-next" data-wiki-id="${next.id}"><small>Successiva ›</small>${escapeWikiHtml(next.title)}</a>` : '<span></span>'}
+            </nav>`;
     }
 
     wikiView.innerHTML = html;
@@ -314,6 +456,27 @@ function openWiki() {
     wikiSearch?.focus();
 }
 
+// Illustrazione a tutto schermo: si chiude con un clic o con Esc
+function openWikiLightbox(src, caption) {
+    const box = document.createElement('div');
+    box.className = 'wiki-lightbox';
+    box.innerHTML = `<img src="${escapeWikiHtml(src)}" alt="${escapeWikiHtml(caption || '')}">` +
+        (caption ? `<div class="wiki-lightbox-caption">${escapeWikiHtml(caption)}</div>` : '');
+    const close = () => {
+        box.remove();
+        document.removeEventListener('keydown', onKey, true);
+    };
+    const onKey = (e) => {
+        if (e.key === 'Escape') {
+            e.stopPropagation();
+            close();
+        }
+    };
+    box.addEventListener('click', close);
+    document.addEventListener('keydown', onKey, true);
+    wikiModal.appendChild(box);
+}
+
 function closeWiki() {
     if (!confirmDiscardWikiEdit()) return;
     closeWikiEditor();
@@ -322,7 +485,18 @@ function closeWiki() {
 
 // Clic su collegamenti e pulsanti della pagina
 wikiView?.addEventListener('click', (event) => {
+    const zoom = event.target.closest('[data-wiki-zoom]');
+    if (zoom) {
+        openWikiLightbox(zoom.getAttribute('src'), zoom.getAttribute('alt'));
+        return;
+    }
+
     const link = event.target.closest('.wiki-link');
+
+    if (link?.hasAttribute('data-wiki-home')) {
+        showWikiPage(null);
+        return;
+    }
 
     if (link) {
         if (link.dataset.wikiId) {
