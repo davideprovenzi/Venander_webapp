@@ -596,6 +596,8 @@ socket.on('move_rejected', (data) => {
             frames: "⛔ Movimento rifiutato: frame di movimento insufficienti.",
             not_your_turn: "⛔ Movimento rifiutato: non è il tuo turno.",
             wall: "⛔ Movimento rifiutato: un muro blocca il percorso.",
+            total_cover: "🧱 Movimento rifiutato: una copertura totale blocca il percorso.",
+            cover_stop: "🛡️ Movimento rifiutato: non puoi fermarti su una barricata, scavalcala.",
             barricade_pa: "🧱 Movimento rifiutato: non hai abbastanza PA per scavalcare la barricata.",
             barricade_stat: "🧱 Movimento rifiutato: scegli la statistica per scavalcare la barricata."
         };

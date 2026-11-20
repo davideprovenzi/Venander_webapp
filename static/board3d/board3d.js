@@ -294,7 +294,9 @@ function drawOverlay() {
         overlayCtx.lineWidth = 3;
         overlayCtx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
         overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-        const hint = 'WASD per camminare · frecce, Q/E o trascina per guardarti intorno · Esc per uscire';
+        const hint = isMaster
+            ? 'WASD per camminare · frecce, Q/E o trascina per guardarti intorno · Tab: prossimo NPC · Esc per uscire'
+            : 'WASD per camminare · frecce, Q/E o trascina per guardarti intorno · Esc per uscire';
         overlayCtx.strokeText(hint, overlay.width / 2, overlay.height - 12);
         overlayCtx.fillText(hint, overlay.width / 2, overlay.height - 12);
     }
@@ -385,6 +387,7 @@ function frame(now) {
 
     syncBoard();
     syncStandees(delta);
+    syncAims(now);
 
     // Le superfici di fuoco tremolano
     layers.terrain?.children.forEach(mesh => {
@@ -426,14 +429,19 @@ function firstPersonCandidate() {
     return characters.find(c => c.id === myId && c.role === 'player') || null;
 }
 
-function enterFirstPerson() {
-    const char = firstPersonCandidate();
+function enterFirstPerson(chosen = null) {
+    const char = chosen || firstPersonCandidate();
     if (!char || !standees.has(char.id)) {
-        alert(isMaster
-            ? 'Seleziona prima un\'entità sulla mappa: guarderai con i suoi occhi.'
-            : 'Scegli il tuo personaggio (e che sia visibile sulla mappa) per guardare con i suoi occhi.');
+        // Il Master non ha un personaggio: sceglie da una lista con gli occhi di chi guardare
+        if (isMaster) {
+            openEntityPicker();
+            return;
+        }
+        alert('Scegli il tuo personaggio (e che sia visibile sulla mappa) per guardare con i suoi occhi.');
         return;
     }
+    closeEntityPicker();
+    if (isMaster) selectedCharacterId = char.id;
 
     // Sguardo iniziale verso il personaggio più vicino ma non attaccato (una
     // carta a un passo riempirebbe lo schermo), altrimenti verso il centro della mappa
@@ -521,7 +529,13 @@ document.addEventListener('keydown', (event) => {
         heldKeys.add(key);
         return;
     }
-    if (!firstPerson) return;
+    // Master in prima persona: Tab passa al prossimo NPC
+    if (key === 'tab' && firstPerson && isMaster) {
+        event.preventDefault();
+        switchFirstPersonNpc(event.shiftKey ? -1 : 1);
+        return;
+    }
+    // WASD e Q/E: in prima persona camminano, dall'alto spostano la telecamera
     if (!(key in STEP_KEYS) && key !== 'q' && key !== 'e') return;
     event.preventDefault();
     if (key in STEP_KEYS && !heldKeys.has(key)) lastStepAt = 0;   // il primo passo parte subito
@@ -542,9 +556,16 @@ function neighborTowards(char, angle) {
         const p = hexToPixel(hex.col, hex.row);
         const length = Math.hypot(p.x - here.x, p.y - here.y) || 1;
         const score = ((p.x - here.x) * dirX + (p.y - here.y) * dirY) / length;
-        if (!best || score > best.score) best = { hex, pos: p, score };
+        if (!best || score > best.score) best = { hex, pos: p, score, direction: d };
     });
     return best;
+}
+
+// Esagono dopo, nella stessa direzione: dove si atterra scavalcando una barricata
+function hexBeyond(char, direction) {
+    const origin = offsetToCube(char.x, char.y);
+    const hex = cubeToOffset({ q: origin.q + 2 * direction.q, r: origin.r + 2 * direction.r, s: origin.s + 2 * direction.s });
+    return { hex, pos: hexToPixel(hex.col, hex.row) };
 }
 
 function updateFirstPersonKeys(now, delta) {
@@ -565,12 +586,36 @@ function updateFirstPersonKeys(now, delta) {
     if (Math.hypot(standee.position.x - here.x, standee.position.z - here.y) > 8) return;
     lastStepAt = now;
 
-    const next = neighborTowards(char, firstPerson.yaw + STEP_KEYS[stepKey]);
+    let next = neighborTowards(char, firstPerson.yaw + STEP_KEYS[stepKey]);
     if (!next) return;
+
+    // Coperture: quella totale si aggira, la mezza barricata si scavalca fino
+    // all'esagono dopo (in combattimento costa i PA, li scala il server)
+    const ahead = terrainAt(next.hex.col, next.hex.row);
+    if (ahead === 'copertura_totale') {
+        statusBar.innerText = '🧱 Una copertura totale blocca il passo: aggirala.';
+        return;
+    }
+    if (ahead === 'copertura_parziale') {
+        next = hexBeyond(char, next.direction);
+        const blockMessage = movementBlockMessage(char.x, char.y, next.hex.col, next.hex.row);
+        if (blockMessage) {
+            statusBar.innerText = blockMessage;
+            return;
+        }
+        statusBar.innerText = combatState.is_active
+            ? `🛡️ Scavalchi la barricata (${BARRICADE_PA_COST} PA di ${window.barricadeStat || 'una statistica'}).`
+            : '🛡️ Scavalchi la barricata.';
+    }
 
     // Nella nebbia non si entra (il clic mostrerebbe un avviso a ogni passo)
     if (!isMaster && window.fowEnabled && !window.revealedHexes.has(`${next.hex.col},${next.hex.row}`)) {
         statusBar.innerText = '🌫️ La nebbia copre quella direzione.';
+        return;
+    }
+    // Casella occupata: per il Master il clic selezionerebbe chi c'è, cambiando personaggio
+    if (isHexOccupied(next.hex.col, next.hex.row, char.id)) {
+        statusBar.innerText = '⛔ Quella casella è occupata.';
         return;
     }
     // Il Master muove l'entità selezionata: dopo ogni passo la selezione va ripristinata
@@ -582,8 +627,27 @@ function updateFirstPersonKeys(now, delta) {
 const orbitOffset = new THREE.Vector3();
 const orbitSpherical = new THREE.Spherical();
 
+const panForward = new THREE.Vector3();
+const panRight = new THREE.Vector3();
+
 function updateOverviewKeys(delta) {
-    const left = heldKeys.has('arrowleft'), right = heldKeys.has('arrowright');
+    // WASD: si sorvola la mappa (telecamera e punto guardato si spostano insieme),
+    // più veloce quando si è lontani
+    const moveF = (heldKeys.has('w') ? 1 : 0) - (heldKeys.has('s') ? 1 : 0);
+    const moveR = (heldKeys.has('d') ? 1 : 0) - (heldKeys.has('a') ? 1 : 0);
+    if (moveF || moveR) {
+        camera.getWorldDirection(panForward);
+        panForward.y = 0;
+        panForward.normalize();
+        panRight.crossVectors(panForward, camera.up).normalize();
+        const speed = camera.position.distanceTo(controls.target) * 1.1 * delta;
+        const step = panForward.multiplyScalar(moveF * speed).add(panRight.multiplyScalar(moveR * speed));
+        camera.position.add(step);
+        controls.target.add(step);
+    }
+
+    const left = heldKeys.has('arrowleft') || heldKeys.has('q');
+    const right = heldKeys.has('arrowright') || heldKeys.has('e');
     const up = heldKeys.has('arrowup'), down = heldKeys.has('arrowdown');
     if (!left && !right && !up && !down) return;
 
@@ -597,6 +661,134 @@ function updateOverviewKeys(delta) {
     orbitSpherical.phi = Math.max(0.12, Math.min(controls.maxPolarAngle, orbitSpherical.phi));
     orbitOffset.setFromSpherical(orbitSpherical);
     camera.position.copy(controls.target).add(orbitOffset);
+}
+
+// ==========================================
+// MIRE IN COMBATTIMENTO: raggio rosso da chi mira al bersaglio
+// Lampeggia finché il bersaglio non ha reagito, poi resta fisso (come la linea
+// tratteggiata / piena della vista 2D). Solo tra pedine che chi guarda vede.
+// ==========================================
+
+const AIM_COLOR = 0xff2a1a;
+const AIM_CHEST = 46;   // altezza del petto della pedina
+const aimMeshes = new Map();
+const aimUp = new THREE.Vector3(0, 1, 0);
+const aimFrom = new THREE.Vector3();
+const aimTo = new THREE.Vector3();
+const aimDir = new THREE.Vector3();
+
+function createAimMeshes() {
+    const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.6, 2.6, 1, 10, 1, true),
+        new THREE.MeshBasicMaterial({ color: AIM_COLOR, transparent: true, opacity: 0.9, depthWrite: false })
+    );
+    const ring = new THREE.Mesh(
+        new THREE.RingGeometry(26, 32, 40),
+        new THREE.MeshBasicMaterial({ color: AIM_COLOR, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    scene.add(beam, ring);
+    return { beam, ring };
+}
+
+function syncAims(now) {
+    const wanted = new Set();
+    if (combatState.is_active) {
+        (typeof combatAims !== 'undefined' ? combatAims : []).forEach(aim => {
+            const shooter = standees.get(aim.shooter_id);
+            const target = standees.get(aim.target_id);
+            if (!shooter || !target) return;
+            const key = String(aim.id ?? `${aim.shooter_id}-${aim.target_id}`);
+            wanted.add(key);
+
+            let meshes = aimMeshes.get(key);
+            if (!meshes) {
+                meshes = createAimMeshes();
+                aimMeshes.set(key, meshes);
+            }
+
+            aimFrom.copy(shooter.position).y += AIM_CHEST * shooter.scale.y;
+            aimTo.copy(target.position).y += AIM_CHEST * target.scale.y;
+            aimDir.subVectors(aimTo, aimFrom);
+            const length = aimDir.length();
+            meshes.beam.position.copy(aimFrom).addScaledVector(aimDir, 0.5);
+            meshes.beam.scale.set(1, Math.max(1, length), 1);
+            meshes.beam.quaternion.setFromUnitVectors(aimUp, aimDir.normalize());
+            meshes.ring.position.set(target.position.x, target.position.y + 1.4, target.position.z);
+
+            const opacity = aim.ready ? 0.95 : 0.5 + 0.4 * (0.5 + 0.5 * Math.sin(now / 140));
+            meshes.beam.material.opacity = opacity;
+            meshes.ring.material.opacity = opacity;
+        });
+    }
+
+    aimMeshes.forEach((meshes, key) => {
+        if (wanted.has(key)) return;
+        [meshes.beam, meshes.ring].forEach(mesh => {
+            scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+        });
+        aimMeshes.delete(key);
+    });
+}
+
+// ==========================================
+// IL MASTER SCEGLIE CON GLI OCCHI DI CHI GUARDARE
+// ==========================================
+
+const entityPicker = document.createElement('div');
+entityPicker.className = 'board3d-picker';
+document.body.appendChild(entityPicker);
+
+// NPC vivi per primi, poi i giocatori; solo chi ha una pedina in scena
+function firstPersonEntities() {
+    return characters
+        .filter(c => standees.has(c.id) && !isDeadNpc(c))
+        .sort((a, b) => (a.role === 'npc' ? 0 : 1) - (b.role === 'npc' ? 0 : 1) || a.name.localeCompare(b.name, 'it'));
+}
+
+function openEntityPicker() {
+    const entities = firstPersonEntities();
+    if (!entities.length) {
+        alert('Nessuna entità sulla mappa.');
+        return;
+    }
+    entityPicker.innerHTML = '<div class="board3d-picker-title">👁️ Guarda con gli occhi di…</div>' +
+        entities.map(c => `<button type="button" data-char-id="${c.id}">${c.role === 'npc' ? '👹' : '🧑'} ${escapeHtml(c.name)}${c.is_hidden || c.is_invisible ? ' 👻' : ''}</button>`).join('');
+    const rect = firstPersonButton.getBoundingClientRect();
+    entityPicker.style.left = `${Math.max(8, rect.left)}px`;
+    entityPicker.style.top = `${rect.bottom + 6}px`;
+    entityPicker.classList.add('open');
+}
+
+function closeEntityPicker() {
+    entityPicker.classList.remove('open');
+}
+
+entityPicker.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-char-id]');
+    if (!button) return;
+    const char = characters.find(c => c.id === Number(button.dataset.charId));
+    if (char) enterFirstPerson(char);
+});
+
+document.addEventListener('pointerdown', (event) => {
+    if (!entityPicker.contains(event.target) && event.target !== firstPersonButton) closeEntityPicker();
+});
+
+// Tab / Maiusc+Tab: il Master passa al prossimo NPC senza uscire dalla prima persona
+function switchFirstPersonNpc(direction) {
+    const npcs = firstPersonEntities().filter(c => c.role === 'npc');
+    if (!npcs.length) return;
+    const index = npcs.findIndex(c => c.id === firstPerson.charId);
+    const next = npcs[(index + direction + npcs.length) % npcs.length];
+    if (!next || next.id === firstPerson.charId) return;
+    const previous = standees.get(firstPerson.charId);
+    if (previous) previous.visible = true;
+    firstPerson.charId = next.id;
+    selectedCharacterId = next.id;
+    statusBar.innerText = `👁️ Guardi con gli occhi di ${next.name}`;
 }
 
 function updateFirstPersonCamera() {
@@ -663,7 +855,9 @@ function updateFirstPersonButton() {
 
 // Esc esce dalla prima persona (oltre a chiudere i pannelli come sempre)
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && firstPerson) exitFirstPerson();
+    if (event.key !== 'Escape') return;
+    closeEntityPicker();
+    if (firstPerson) exitFirstPerson();
 });
 
 // "Centra" in 3D porta la telecamera sul personaggio

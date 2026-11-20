@@ -47,6 +47,16 @@ def wall_hexes(ws):
     return {h for h, kind in (ws.terrain or {}).items() if kind == "muro"}
 
 
+def movement_blocking_hexes(ws):
+    """Esagoni che non si attraversano: muri e coperture totali (si aggirano)."""
+    return {h for h, kind in (ws.terrain or {}).items() if kind in ("muro", "copertura_totale")}
+
+
+def partial_cover_hexes(ws):
+    """Mezze barricate: si scavalcano (in combattimento con i PA) ma non ci si ferma sopra."""
+    return {h for h, kind in (ws.terrain or {}).items() if kind == "copertura_parziale"}
+
+
 def sight_blocking_hexes(ws):
     blocked = wall_hexes(ws)
     blocked |= {h for h, kind in (ws.surfaces or {}).items() if kind == "fumo"}

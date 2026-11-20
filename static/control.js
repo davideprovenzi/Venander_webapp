@@ -316,9 +316,10 @@ function handleBoardClick(pos) {
             if (Number(activeId) === Number(currentCharacterId)) isMyTurn = true;
         }
 
-        // I muri non si attraversano (il Master riposiziona liberamente fuori dal combattimento)
-        if ((combatState.is_active || !isMaster) && pathCrossesWall(myChar.x, myChar.y, gridX, gridY)) {
-            statusBar.innerText = "⛔ Un muro blocca il percorso: aggiralo.";
+        // Muri, coperture e barricate (il Master riposiziona liberamente fuori dal combattimento)
+        const blockMessage = (combatState.is_active || !isMaster) && movementBlockMessage(myChar.x, myChar.y, gridX, gridY);
+        if (blockMessage) {
+            statusBar.innerText = blockMessage;
             return;
         }
 
@@ -701,8 +702,9 @@ function performCombatMove(gridX, gridY) {
         statusBar.innerText = "☁️ L'area è avvolta dalla nebbia: avvicinati prima di camminarci.";
         return;
     }
-    if (pathCrossesWall(mover.x, mover.y, gridX, gridY)) {
-        statusBar.innerText = "⛔ Un muro blocca il percorso: aggiralo.";
+    const blockMessage = movementBlockMessage(mover.x, mover.y, gridX, gridY);
+    if (blockMessage) {
+        statusBar.innerText = blockMessage;
         return;
     }
 

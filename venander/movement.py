@@ -14,9 +14,10 @@ from venander.stats import stat_pa_current
 from venander.terrain import (
     BARRICADE_PA_COST,
     SURFACE_EFFECTS,
+    movement_blocking_hexes,
     movement_frame_cost,
+    partial_cover_hexes,
     prompt_surface_effect,
-    wall_hexes,
 )
 from venander.threats import find_threat_stop, start_threat_interrupts
 from venander.undo import undoable
@@ -66,13 +67,21 @@ def handle_move(data):
             reject("occupied")
             return
 
-        # I muri non si attraversano (il Master può comunque riposizionare
-        # le pedine liberamente, senza andatura)
+        # Muri e coperture totali non si attraversano; su una mezza barricata non
+        # ci si ferma (si scavalca). Il Master può comunque riposizionare le
+        # pedine liberamente, senza andatura.
         ws = WorldState.query.first()
-        if mode or not is_master_request():
+        follows_rules = bool(mode) or not is_master_request()
+        if follows_rules:
             full_path = hex_line(char.pos_x, char.pos_y, target_x, target_y)
-            if any(hex_key(hx, hy) in wall_hexes(ws) for hx, hy in full_path[1:]):
-                reject("wall")
+            terrain = ws.terrain or {}
+            blocked = movement_blocking_hexes(ws)
+            hit = next((terrain.get(hex_key(hx, hy)) for hx, hy in full_path[1:] if hex_key(hx, hy) in blocked), None)
+            if hit:
+                reject("total_cover" if hit == "copertura_totale" else "wall")
+                return
+            if hex_key(target_x, target_y) in partial_cover_hexes(ws):
+                reject("cover_stop")
                 return
 
         # Entrando in un'area minacciata da un nemico ci si ferma lì
@@ -83,9 +92,12 @@ def handle_move(data):
             stop_index, triggered_threats = find_threat_stop(char, path)
 
             if stop_index is not None:
-                # Se l'esagono è occupato si ferma sull'ultimo libero prima
+                # Se l'esagono è occupato (o è una mezza barricata) si ferma sull'ultimo libero prima
+                covers = partial_cover_hexes(ws)
                 for index in range(stop_index, 0, -1):
                     hx, hy = path[index]
+                    if hex_key(hx, hy) in covers:
+                        continue
                     if not Character.query.filter(
                         Character.pos_x == hx, Character.pos_y == hy, Character.id != char_id
                     ).first():

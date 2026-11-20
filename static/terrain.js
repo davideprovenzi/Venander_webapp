@@ -47,6 +47,8 @@ function surfaceAt(col, row) {
 
 // ==========================================
 // LINEA DI VISTA E MOVIMENTO
+// Muri e coperture totali bloccano il movimento; le mezze barricate si
+// scavalcano (in combattimento con i PA) ma non ci si ferma sopra.
 // ==========================================
 
 function isWallHex(col, row) {
@@ -70,7 +72,21 @@ function hasLineOfSight(x1, y1, x2, y2) {
 }
 
 function pathCrossesWall(x1, y1, x2, y2) {
-    return hexLine(x1, y1, x2, y2).slice(1).some(h => isWallHex(h.col, h.row));
+    return movementBlockMessage(x1, y1, x2, y2) !== null;
+}
+
+// Perché un movimento non si può fare (stesse regole del server, venander/movement.py):
+// muri e coperture totali non si attraversano, su una mezza barricata non ci si ferma
+function movementBlockMessage(x1, y1, x2, y2) {
+    for (const h of hexLine(x1, y1, x2, y2).slice(1)) {
+        const type = terrainAt(h.col, h.row);
+        if (type === 'muro') return "⛔ Un muro blocca il percorso: aggiralo.";
+        if (type === 'copertura_totale') return "🧱 Una copertura totale blocca il percorso: aggirala.";
+    }
+    if (terrainAt(x2, y2) === 'copertura_parziale') {
+        return "🛡️ Non puoi fermarti su una barricata: scavalcala fino all'esagono dopo.";
+    }
+    return null;
 }
 
 // Costo in frame del percorso: terreno difficile e ghiaccio valgono doppio

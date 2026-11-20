@@ -20,7 +20,7 @@ from venander.permissions import controls_character, emit_combat_error, is_maste
 from venander.serialization import emit_character_update, emit_to_character, emit_to_masters
 from venander.state import client_character_ids, client_roles, pending_explosions
 from venander.stats import stat_pa_current
-from venander.terrain import has_line_of_sight, sight_blocking_hexes, wall_hexes
+from venander.terrain import has_line_of_sight, movement_blocking_hexes, partial_cover_hexes, sight_blocking_hexes
 from venander.undo import float_text, undoable
 
 
@@ -321,15 +321,19 @@ def handle_explosion_response(data):
 
 
 def escape_hexes(explosion, char):
-    """Esagoni liberi fuori dall'area di tutte le bombe, raggiungibili senza passare dai muri."""
+    """Esagoni liberi fuori dall'area di tutte le bombe, raggiungibili senza passare da muri
+    o coperture totali, e non sopra una mezza barricata (come il movimento normale)."""
     ws = WorldState.query.first()
-    walls = wall_hexes(ws)
+    walls = movement_blocking_hexes(ws)
+    covers = partial_cover_hexes(ws)
     taken = {(c.pos_x, c.pos_y) for c in Character.query.filter(Character.id != char.id).all()}
     result = []
     for dx in range(-ESCAPE_MAX_STEPS, ESCAPE_MAX_STEPS + 1):
         for dy in range(-ESCAPE_MAX_STEPS - 1, ESCAPE_MAX_STEPS + 2):
             x, y = char.pos_x + dx, char.pos_y + dy
             if x < 0 or y < 0 or (x, y) in taken or hex_distance(char.pos_x, char.pos_y, x, y) > ESCAPE_MAX_STEPS:
+                continue
+            if hex_key(x, y) in covers:
                 continue
             if any(hex_distance(b["x"], b["y"], x, y) <= BOMB_BLAST_RADIUS for b in explosion["bombs"]):
                 continue

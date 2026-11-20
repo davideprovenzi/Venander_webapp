@@ -4559,3 +4559,47 @@ body.player-mode #btn-toggle-notes {
     background: #c9a227;
     color: #1b232c;
 }
+
+/* Scelta dell'entità per la prima persona (Master) */
+.board3d-picker {
+    display: none;
+    position: fixed;
+    z-index: 12000;
+    min-width: 200px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid #c9a227;
+    border-radius: 8px;
+    background: rgba(20, 26, 33, 0.97);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+}
+
+.board3d-picker.open {
+    display: block;
+}
+
+.board3d-picker-title {
+    padding: 4px 6px 6px;
+    color: #f4d35e;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.board3d-picker button {
+    display: block;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #ecf0f1;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.board3d-picker button:hover {
+    background: rgba(201, 162, 39, 0.25);
+}
