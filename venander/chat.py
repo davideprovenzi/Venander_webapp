@@ -11,6 +11,19 @@ from venander.permissions import controls_character, is_master_request
 from venander.state import client_character_ids, client_roles, master_sids
 
 
+def dice_stat_bonus(char, stat_name):
+    """(nome, valore) della caratteristica da sommare al tiro, se il personaggio ce l'ha."""
+    if not char or not stat_name:
+        return None
+    value = (char.stats or {}).get(str(stat_name))
+    if value is None or isinstance(value, (dict, list)):
+        return None
+    try:
+        return str(stat_name), int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
 @socketio.on("roll_dice")
 def handle_roll_dice(data):
     char = db.session.get(Character, data.get("char_id")) if data.get("char_id") else None
@@ -29,8 +42,20 @@ def handle_roll_dice(data):
         sides = min(int(match.group(2)), 1000)
         rolls = [random.randint(1, sides) for _ in range(num)]
         total = sum(rolls)
-        detail = f" <span style='font-size:11px; color:#7f8c8d;'>({'+'.join(map(str, rolls))})</span>" if num > 1 else ""
-        msg = f"ha tirato {num}d{sides}: <strong style='font-size:16px; color:#2c3e50;'>{total}</strong>{detail}"
+        parts = list(map(str, rolls)) if num > 1 else []
+
+        # Caratteristica sommata al tiro (es. d20 + Percezione): il valore viene
+        # dalla scheda di chi tira, non dal client
+        label = f"{num}d{sides}"
+        stat = dice_stat_bonus(char, data.get("stat"))
+        if stat:
+            stat_name, bonus = stat
+            total += bonus
+            label += f" + {html.escape(stat_name)}"
+            parts = (parts or [str(rolls[0])]) + [f"{bonus} {html.escape(stat_name)}"]
+
+        detail = f" <span style='font-size:11px; color:#7f8c8d;'>({' + '.join(parts)})</span>" if parts else ""
+        msg = f"ha tirato {label}: <strong style='font-size:16px; color:#2c3e50;'>{total}</strong>{detail}"
     else:
         msg = f"ha provato a tirare '<i>{html.escape(dice_expr)}</i>', ma non è un formato valido."
 

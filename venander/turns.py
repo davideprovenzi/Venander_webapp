@@ -6,7 +6,14 @@ from flask_socketio import emit
 from sqlalchemy.orm.attributes import flag_modified
 from venander.aiming import emit_aims
 from venander.armor_repair import ARMOR_REPAIR_ACTION
-from venander.combat import LIMB_KEYS, current_combat_actor_id, is_players_turn, spend_limb_frames
+from venander.combat import (
+    LIMB_KEYS,
+    current_combat_actor_id,
+    is_dead_npc,
+    is_players_turn,
+    refill_turn_frames,
+    spend_limb_frames,
+)
 from venander.compendium import get_action_speed_rule
 from venander.core import db, socketio
 from venander.exchange import emit_exchanges
@@ -46,7 +53,8 @@ def handle_toggle_combat():
     emit_aims()
 
     if combat_state["is_active"]:
-        characters = Character.query.filter_by(is_hidden=False).all()
+        # Gli NPC morti restano sulla mappa ma non combattono più
+        characters = [c for c in Character.query.filter_by(is_hidden=False).all() if not is_dead_npc(c)]
         if not characters:
             combat_state["is_active"] = False
             return
@@ -160,7 +168,7 @@ def handle_next_turn():
     next_index = combat_state["current_index"] + 1
 
     if next_index >= len(combat_state["turn_order"]):
-        characters = Character.query.filter_by(is_hidden=False).all()
+        characters = [c for c in Character.query.filter_by(is_hidden=False).all() if not is_dead_npc(c)]
         if not characters:
             return
 
@@ -190,11 +198,14 @@ def handle_next_turn():
     else:
         combat_state["current_index"] = next_index
         next_char_id = combat_state["turn_order"][combat_state["current_index"]]["id"]
-        combat_state["players_pa"][str(next_char_id)] = 120 # Ripristina i 120 frame del nuovo giocatore
         next_char = db.session.get(Character, next_char_id)
         if next_char:
             combat_state["turn_order"][combat_state["current_index"]]["start_x"] = next_char.pos_x
             combat_state["turn_order"][combat_state["current_index"]]["start_y"] = next_char.pos_y
+
+    # Chi inizia il turno riparte con arti e movimento pieni (anche al primo
+    # turno di un nuovo round, che prima teneva il movimento del round prima)
+    refill_turn_frames(current_combat_actor_id())
 
     # Le minacce di chi inizia il turno scadono
     clear_threats_of(current_combat_actor_id())

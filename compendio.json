@@ -17536,8 +17536,8 @@
       {
         "category": "Armi da fuoco",
         "action": "Mirare con pistola",
-        "speed": 50,
-        "frames": 60
+        "speed": 60,
+        "frames": 50
       },
       {
         "category": "Armi da fuoco",

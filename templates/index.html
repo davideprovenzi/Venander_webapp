@@ -49,6 +49,9 @@
         </div>
     </div>
 
+    <!-- Vitali sempre visibili: HP, stamina, concentrazione e PA (vedi static/ui/vitals_bar.js) -->
+    <div id="vitals-bar" class="vitals-bar"></div>
+
     <!-- Pulsante Scheda Fluttuante in basso a destra -->
     <button id="sheet-btn" style="display: none; position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #3498db; color: white; border: none; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.6); font-size: 28px; cursor: pointer; z-index: 1100; align-items: center; justify-content: center; transition: transform 0.2s ease, background 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.background='#2980b9';" onmouseout="this.style.transform='scale(1)'; this.style.background='#3498db';" title="Apri Scheda">📄</button>
 
@@ -1102,6 +1105,10 @@
 
             <div style="padding: 12px; border-top: 1px solid #ccc; background: #eee; border-radius: 0 0 6px 6px;">
                 <div style="font-size:11px; font-weight:bold; color:#7f8c8d; margin-bottom:6px;">🎲 DADI</div>
+                <!-- Caratteristica da sommare al tiro (es. "d20 + Percezione"): vale per un tiro -->
+                <select id="dice-stat" title="Somma una caratteristica al tiro" style="width: 100%; margin-bottom: 8px; padding: 5px; border: 1px solid #bdc3c7; border-radius: 4px;">
+                    <option value="">➕ Caratteristica: nessuna</option>
+                </select>
                 <div style="display: flex; gap: 5px; margin-bottom: 8px;">
                     <button class="dice-btn" data-dice="1d20" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d20</button>
                     <button class="dice-btn" data-dice="1d10" style="flex: 1; padding: 6px; background: #fff; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; font-weight: bold;">d10</button>
@@ -1343,6 +1350,10 @@
                 <div id="attack-aim-status"></div>
                 <button id="btn-declare-aim" type="button" class="attack-aim-btn">🎯 MIRA</button>
                 <button id="btn-drop-aim" type="button" class="attack-aim-drop">✖ Abbassa la mira</button>
+                <!-- Senza mirare si spara subito: tiro d20 + Virtù, l'esito lo decide il Master -->
+                <label id="attack-unaimed-label" class="attack-unaimed">
+                    <input type="checkbox" id="attack-unaimed"> 🍀 Spara senza mirare (d20 + Virtù)
+                </label>
             </div>
             <button id="btn-execute-attack" style="width: 100%; padding: 10px; background: #c0392b; color: white; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;">SFERRA ATTACCO</button>
 
@@ -1712,7 +1723,7 @@
             ">
         </div>
 
-        <label>
+        <label id="master-review-att-roll-label">
             🎲 Tiro Attacco
         </label>
 
@@ -1727,20 +1738,23 @@
             "
         >
 
-        <label>
-            🛡️ Tiro Difesa
-        </label>
+        <!-- Nascosto per i colpi senza mira: conta solo la fortuna dell'attaccante -->
+        <div id="master-review-def-roll-row">
+            <label>
+                🛡️ Tiro Difesa
+            </label>
 
-        <input
-            id="master-review-def-roll"
-            type="number"
-            style="
-                width:100%;
-                box-sizing:border-box;
-                margin-bottom:10px;
-                padding:6px;
-            "
-        >
+            <input
+                id="master-review-def-roll"
+                type="number"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    margin-bottom:10px;
+                    padding:6px;
+                "
+            >
+        </div>
 
         <!-- Bonus/malus all'attacco per la situazione: il valore deciso resta per le volte dopo -->
         <div id="master-review-modifiers" class="review-modifiers">
@@ -1760,6 +1774,8 @@
         </label>
 
         <select id="master-review-outcome" class="master-review-outcome">
+            <!-- Solo per i colpi senza mira: l'esito non viene proposto, lo sceglie il Master -->
+            <option value="" hidden>— Scegli l'esito —</option>
             <option value="colpito">Colpito</option>
             <option value="bruciapelo">Colpito a bruciapelo</option>
             <option value="parzialmente_parato">Colpito ma parzialmente parato</option>
@@ -1885,6 +1901,7 @@
     <script src="{{ asset('ui/attack_modifiers.js') }}"></script>
     <script src="{{ asset('ui/layout.js') }}"></script>
     <script src="{{ asset('ui/ranged.js') }}"></script>
+    <script src="{{ asset('ui/vitals_bar.js') }}"></script>
     <script src="{{ asset('control.js') }}"></script>
     <script src="{{ asset('trinkets.js') }}"></script>
     <script src="{{ asset('exchange.js') }}"></script>

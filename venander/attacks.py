@@ -5,8 +5,6 @@ schivata o scambio d'attacco), poi il Master conferma il risultato prima che
 arrivi a tutti.
 """
 import html
-import random
-import re
 import uuid
 from flask import request
 from flask_socketio import emit
@@ -31,86 +29,18 @@ from venander.core import db, socketio
 from venander.equipment import (
     AIM_AREAS,
     armor_pieces,
-    default_armor_slot,
     get_equipped_attack_item,
     resolve_attack_damage,
     set_equipment_current_hp,
 )
 from venander.exchange import build_counter_attack, start_exchange
-from venander.hexes import hex_distance, hex_key, hex_line
-from venander.models import Character, CombatModifier, WorldState
+from venander.hexes import hex_distance
+from venander.models import Character
 from venander.permissions import controls_character, emit_combat_error, is_master_request
 from venander.serialization import emit_character_update, emit_to_masters, incoming_attack_payload
 from venander.state import combat_aims, combat_state, master_sids, pending_attacks, pending_combat_results
-from venander.terrain import has_line_of_sight, sight_blocking_hexes
+from venander.review import UNAIMED_SHOT_LABEL, build_pending_result, save_combat_modifiers
 from venander.undo import float_text, undoable
-
-
-def detect_attack_situations(attacker, defender, aim):
-    """Situazioni dello scontro che possono dare un bonus/malus all'attacco.
-
-    Ognuna porta il valore salvato dal Master (None = mai decisa).
-    """
-    ws = WorldState.query.first()
-    terrain = ws.terrain or {}
-    situations = []
-
-    if aim in AIM_AREAS:
-        situations.append((f"mira_{aim}", f"Mira: {AIM_AREAS[aim][0]}"))
-
-    # Copertura: sull'esagono del difensore o su quello subito prima lungo la linea di tiro
-    # (mai l'esagono dell'attaccante, che c'è quando sono adiacenti)
-    line = hex_line(attacker.pos_x, attacker.pos_y, defender.pos_x, defender.pos_y)
-    cover_hexes = line[1:][-2:]
-    covers = {terrain.get(hex_key(col, row)) for col, row in cover_hexes}
-    if "copertura_totale" in covers:
-        situations.append(("copertura_totale", "Bersaglio in copertura totale"))
-    elif "copertura_parziale" in covers:
-        situations.append(("copertura_parziale", "Bersaglio in copertura parziale"))
-
-    attacker_high = terrain.get(hex_key(attacker.pos_x, attacker.pos_y)) == "altura"
-    defender_high = terrain.get(hex_key(defender.pos_x, defender.pos_y)) == "altura"
-    if attacker_high and not defender_high:
-        situations.append(("altura_attaccante", "Attaccante in altura"))
-    if defender_high and not attacker_high:
-        situations.append(("altura_difensore", "Difensore in altura"))
-
-    if not has_line_of_sight(attacker.pos_x, attacker.pos_y, defender.pos_x, defender.pos_y, sight_blocking_hexes(ws)):
-        situations.append(("senza_vista", "Nessuna linea di vista"))
-
-    return [
-        {"key": key, "label": label, "value": saved.value if saved else None}
-        for key, label in situations
-        for saved in [db.session.get(CombatModifier, key)]
-    ]
-
-
-def saved_custom_modifiers():
-    """Situazioni aggiunte a mano dal Master: si possono ripescare nella revisione."""
-    return [
-        {"key": m.key, "label": m.label, "value": m.value}
-        for m in CombatModifier.query.filter(CombatModifier.key.like("custom_%")).order_by(CombatModifier.label).all()
-    ]
-
-
-def save_combat_modifiers(raw_modifiers):
-    """Salva i modificatori applicati dal Master per riproporli le volte successive."""
-    for raw in raw_modifiers if isinstance(raw_modifiers, list) else []:
-        if not isinstance(raw, dict) or not raw.get("applied"):
-            continue
-        key = re.sub(r"[^a-z0-9_]", "", str(raw.get("key", "")).lower())[:80]
-        label = str(raw.get("label", "")).strip()[:120]
-        try:
-            value = int(raw.get("value"))
-        except (TypeError, ValueError):
-            continue
-        if not key or not label:
-            continue
-        modifier = db.session.get(CombatModifier, key) or CombatModifier(key=key)
-        modifier.label = label
-        modifier.value = value
-        db.session.merge(modifier)
-
 
 @socketio.on("declare_attack")
 @undoable("Attacco")
@@ -268,11 +198,14 @@ def handle_declare_attack(data):
             ranged_shot_label = "Nella zona minacciata"
         elif aim_on_target and aim_on_target["ready"]:
             ranged_shot_label = f"Mirato ({aim_on_target['reaction']})"
+        elif data.get("unaimed"):
+            # Senza mirare si spara affidandosi alla fortuna: d20 + Virtù, decide il Master
+            ranged_shot_label = UNAIMED_SHOT_LABEL
         elif aim_on_target:
-            emit_combat_error(f"Aspetta che {defender.name} reagisca alla mira.")
+            emit_combat_error(f"Aspetta che {defender.name} reagisca alla mira (o spara senza mirare).")
             return
         else:
-            emit_combat_error(f"Prima devi prendere la mira su {defender.name}.")
+            emit_combat_error(f"Prima devi prendere la mira su {defender.name} (o spara senza mirare).")
             return
 
     # Arma da fuoco: serve almeno un colpo nel caricatore
@@ -331,7 +264,8 @@ def handle_declare_attack(data):
         "distance": distance,
         "activation_mode": activation.get("mode"),
         "area_shape": area.get("shape"),
-        "aim": aim
+        "aim": aim,
+        "unaimed": ranged_shot_label == UNAIMED_SHOT_LABEL
     }
 
     pending_attacks[attack_id] = attack
@@ -358,57 +292,6 @@ def handle_declare_attack(data):
         return
 
     emit("incoming_attack", incoming_attack_payload(attack), broadcast=True)
-
-
-def build_pending_result(attack, attacker, defender, reaction, reaction_label, def_speed, def_limb_key):
-    """Tira i dadi e manda il risultato in revisione al Master (nessun HP cambia qui)."""
-    try:
-        att_speed = int(attack["speed"])
-    except (TypeError, ValueError):
-        att_speed = 0
-
-    # I dadi vengono tirati qui, ma il risultato resta segreto fino alla pubblicazione del Master.
-    att_roll = random.randint(1, 20) + (att_speed // 10)
-    def_roll = random.randint(1, 20) + (def_speed // 10)
-
-    result_id = str(uuid.uuid4())
-    result = {
-        "result_id": result_id,
-        "attack_id": attack["attack_id"],
-        "attacker_id": attacker.id,
-        "attacker_name": attacker.name,
-        "defender_id": defender.id,
-        "defender_name": defender.name,
-        "weapon": attack.get("weapon", "Mani Nude"),
-        "reaction_type": reaction,
-        "reaction_label": reaction_label,
-        "def_limb": def_limb_key,
-        "att_speed": att_speed,
-        "def_speed": def_speed,
-        "att_roll": att_roll,
-        "def_roll": def_roll,
-        "damage": attack.get("resolved_damage"),
-        "damage_formula": attack.get("resolved_damage_formula") or attack.get("damage_formula"),
-        "damage_note": attack.get("damage_note"),
-        "damage_type": attack.get("damage_type"),
-        "distance": attack.get("distance"),
-        "range": attack.get("range"),
-        "compendium_id": attack.get("compendium_id"),
-        "source_slot": attack.get("source_slot"),
-        "aim": attack.get("aim"),
-        "aim_label": AIM_AREAS[attack["aim"]][0] if attack.get("aim") in AIM_AREAS else None,
-        "armor_pieces": armor_pieces(defender),
-        "modifiers": detect_attack_situations(attacker, defender, attack.get("aim")),
-        "custom_modifiers": saved_custom_modifiers(),
-        "armor_slot": default_armor_slot(defender, attack.get("aim"), reaction, def_limb_key)
-    }
-
-    pending_combat_results[result_id] = result
-
-    # Una reazione può essere inviata una sola volta.
-    pending_attacks.pop(attack["attack_id"], None)
-
-    emit_to_masters("master_pending_combat_result", result)
 
 
 @socketio.on("resolve_reaction")
@@ -638,6 +521,10 @@ def handle_master_publish_combat_result(data):
     reaction = result.get("reaction_type", "Schivata")
     outcome = data.get("outcome")
     if outcome not in COMBAT_OUTCOMES:
+        # Colpo senza mira: i dadi non bastano a dire com'è andata, sceglie il Master
+        if result.get("unaimed"):
+            emit_combat_error("Colpo senza mira: scegli tu l'esito prima di pubblicare.")
+            return
         outcome = default_combat_outcome(reaction, result.get("att_roll"), result.get("def_roll"))
 
     label, is_hit = COMBAT_OUTCOMES[outcome]
@@ -685,6 +572,8 @@ def handle_master_publish_combat_result(data):
         "⚔️ <b>RISOLUZIONE SCONTRO</b> ⚔️<br>"
         + combat_outcome_sentence(outcome, reaction, defender.name, damage)
     )
+    if result.get("unaimed"):
+        public_message += "<br>🍀 Sparato senza mirare, affidandosi alla fortuna."
     if armor_hit:
         public_message += (
             f"<br>🛡️ <b>{html.escape(str(armor_hit['name']))}</b>: -{armor_hit['damage']} "

@@ -3203,6 +3203,17 @@ body.player-mode #btn-toggle-notes {
     cursor: pointer;
 }
 
+/* Sparare senza mirare: si affida alla fortuna (d20 + Virtù) */
+.attack-unaimed {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    color: #abebc6;
+    font-size: 12px;
+    cursor: pointer;
+}
+
 #btn-execute-attack:disabled {
     background: #566573 !important;
     cursor: not-allowed !important;
@@ -3625,6 +3636,11 @@ body.player-mode #btn-toggle-notes {
 
 .exchange-actions button.suggested {
     background: #27ae60;
+}
+
+/* Terzo esito ("colpiscono entrambi") su tutta la riga */
+.exchange-actions button:last-child {
+    grid-column: 1 / -1;
 }
 
 /* ==========================================
@@ -4067,3 +4083,80 @@ body.player-mode #btn-toggle-notes {
     flex: 1;
     padding: 4px;
 }
+
+/* ==========================================
+   BARRA DEI VITALI (static/ui/vitals_bar.js)
+   ========================================== */
+.vitals-bar {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    z-index: 1100;
+    max-width: calc(100vw - 32px);
+    padding: 6px 10px 8px;
+    border: 1px solid #3498db;
+    border-radius: 8px;
+    background: rgba(10, 15, 20, 0.92);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+    color: #ecf0f1;
+    font-size: 12px;
+    touch-action: none;
+}
+
+.vitals-bar-head {
+    margin-bottom: 4px;
+    color: #f1c40f;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+}
+
+.vitals-bar-meters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.vitals-meter {
+    display: flex;
+    flex-direction: column;
+    min-width: 96px;
+}
+
+.vitals-meter-label {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.vitals-meter-track {
+    height: 5px;
+    margin-top: 2px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+}
+
+.vitals-meter-track span {
+    display: block;
+    height: 100%;
+}
+
+.vitals-bar-pa {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.vitals-pa {
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: rgba(142, 68, 173, 0.35);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.vitals-pa-spent { background: rgba(230, 126, 34, 0.35); }
+.vitals-pa-empty { background: rgba(192, 57, 43, 0.5); }

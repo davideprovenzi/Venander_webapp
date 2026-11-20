@@ -642,24 +642,51 @@ sidequestPaymentMode?.addEventListener('change', updateSidequestPaymentUI);
 updateSidequestPaymentUI();
 
 // --- 4. INVIO LANCIO DADI (BOTTONI E TASTIERA) ---
+
+// Caratteristiche del proprio personaggio da sommare al tiro (il valore lo legge il server)
+function refreshDiceStatOptions() {
+    const select = document.getElementById('dice-stat');
+    if (!select) return;
+    const myChar = characters.find(c => c.id === parseInt(userSelect?.value) && c.role === 'player');
+    const keys = Object.entries(myChar?.stats || {})
+        .filter(([, value]) => typeof value !== 'object' && value !== '' && Number.isFinite(Number(value)))
+        .map(([key, value]) => [key, value]);
+
+    const signature = JSON.stringify(keys);
+    if (select.dataset.signature === signature) return;
+    select.dataset.signature = signature;
+
+    const chosen = select.value;
+    select.innerHTML = '<option value="">➕ Caratteristica: nessuna</option>';
+    keys.forEach(([key, value]) => select.add(new Option(`➕ ${key} (+${value})`, key)));
+    select.value = keys.some(([key]) => key === chosen) ? chosen : '';
+    select.style.display = keys.length ? 'block' : 'none';
+}
+
+// Il bonus vale per un solo tiro: dopo si torna a "nessuna"
+function sendDiceRoll(diceExpr) {
+    const statSelect = document.getElementById('dice-stat');
+    const charId = parseInt(userSelect?.value) || null;
+    socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster, stat: statSelect?.value || null });
+    if (statSelect) statSelect.value = '';
+}
+
+socket.on('init_state', () => setTimeout(refreshDiceStatOptions, 0));
+socket.on('update_character', () => setTimeout(refreshDiceStatOptions, 0));
+userSelect?.addEventListener('change', () => setTimeout(refreshDiceStatOptions, 0));
+
 document.querySelectorAll('.dice-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        const diceExpr = e.target.getAttribute('data-dice');
-        const selectElem = document.getElementById('user-select');
-        const charId = selectElem ? parseInt(selectElem.value) : null;
-
-        socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster });
+        sendDiceRoll(e.target.getAttribute('data-dice'));
     });
 });
 
 document.getElementById('btn-custom-dice')?.addEventListener('click', () => {
     const input = document.getElementById('custom-dice');
     const diceExpr = input.value.trim();
-    const selectElem = document.getElementById('user-select');
-    const charId = selectElem ? parseInt(selectElem.value) : null;
 
     if (diceExpr) {
-        socket.emit('roll_dice', { dice: diceExpr, char_id: charId, is_master: isMaster });
+        sendDiceRoll(diceExpr);
         input.value = ''; // Pulisce la barra dopo il lancio
     }
 });

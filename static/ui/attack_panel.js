@@ -1062,6 +1062,10 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
         aim:
             document.getElementById('attack-aim')?.value || null,
 
+        // Arma a distanza sparata senza prendere la mira (d20 + Virtù)
+        unaimed:
+            typeof isUnaimedShotSelected === 'function' && isUnaimedShotSelected(),
+
         // NUOVI DATI
         compendium_id:
             actionOption.dataset.compendiumId ||
@@ -1093,6 +1097,10 @@ document.getElementById('btn-execute-attack')?.addEventListener('click', () => {
             actionOption.dataset.areaShape ||
             null
     });
+
+    // Il colpo senza mira è una scelta per un solo colpo
+    const unaimedBox = document.getElementById('attack-unaimed');
+    if (unaimedBox) unaimedBox.checked = false;
 
     updateCombatActionPanel();
 });

@@ -1,9 +1,12 @@
 """Scambio d'attacco.
 
-Il difensore risponde attaccando: i due tirano d20 + velocità/10 (pareggio =
-si ritira), il Master conferma o decide lui chi vince. Chi vince attacca con
-la sua arma, chi perde si difende normalmente (parata o schivata), poi il
-Master rivede l'attacco come sempre.
+Il difensore (B) risponde all'attaccante (A) attaccando: i due tirano
+d20 + velocità/10 (pareggio = si ritira). Dai tiri:
+  - vince A: A colpisce, B non può difendersi;
+  - vince B di 5 o più: B non subisce niente e il suo colpo va a segno;
+  - vince B di meno di 5: colpiscono entrambi, il Master decide quanto.
+Il Master conferma l'esito proposto o ne sceglie un altro; ogni colpo a segno
+passa poi dalla sua revisione (esito già su "Colpito", danno modificabile).
 """
 import html
 import random
@@ -15,9 +18,30 @@ from venander.equipment import get_equipped_attack_item, resolve_attack_damage
 from venander.hexes import hex_distance
 from venander.models import Character
 from venander.permissions import controls_character, is_master_request
-from venander.serialization import emit_character_update, incoming_attack_payload
+from venander.review import build_pending_result
+from venander.serialization import emit_character_update
 from venander.state import pending_attacks, pending_exchanges
 from venander.undo import undoable
+
+
+# B deve vincere di almeno tanto per colpire senza prendere niente
+EXCHANGE_CLEAN_MARGIN = 5
+
+# Esiti dello scambio: testo del pulsante / della chat
+EXCHANGE_RESULTS = {
+    "attacker": "vince l'attaccante e colpisce",
+    "defender": "vince chi risponde, netto: colpisce solo lui",
+    "both": "vince chi risponde di poco: colpiscono entrambi",
+}
+
+
+def exchange_result_from_rolls(attacker_total, defender_total):
+    """Esito proposto dai tiri (None in caso di pareggio)."""
+    if attacker_total == defender_total:
+        return None
+    if attacker_total > defender_total:
+        return "attacker"
+    return "defender" if defender_total - attacker_total >= EXCHANGE_CLEAN_MARGIN else "both"
 
 
 def emit_exchanges():
@@ -99,7 +123,8 @@ def start_exchange(attack, counter, attacker, defender, def_speed):
             {"char_id": attacker.id, "name": attacker.name, "weapon": attack.get("weapon"), "speed": int(attack.get("speed") or 0), "roll": None},
             {"char_id": defender.id, "name": defender.name, "weapon": counter["weapon"], "speed": int(def_speed), "roll": None}
         ],
-        "proposed_winner": None
+        "proposed_winner": None,
+        "proposed_result": None
     }
     pending_exchanges[exchange["id"]] = exchange
     socketio.emit("dice_result", {
@@ -136,57 +161,71 @@ def handle_exchange_roll(data):
 
     a, b = exchange["sides"]
     if a["roll"] and b["roll"]:
-        if a["roll"]["total"] == b["roll"]["total"]:
+        result = exchange_result_from_rolls(a["roll"]["total"], b["roll"]["total"])
+        if result is None:
             a["roll"] = b["roll"] = None
-            exchange["proposed_winner"] = None
+            exchange["proposed_winner"] = exchange["proposed_result"] = None
             socketio.emit("dice_result", {"name": "SISTEMA", "message": "⚔️ Scambio in parità: si ritira!", "is_master_roll": False})
         else:
-            winner = a if a["roll"]["total"] > b["roll"]["total"] else b
-            exchange["proposed_winner"] = winner["char_id"]
+            exchange["proposed_result"] = result
+            exchange["proposed_winner"] = (a if result == "attacker" else b)["char_id"]
     emit_exchanges()
 
 
 @socketio.on("exchange_decide")
 @undoable("Esito dello scambio")
 def handle_exchange_decide(data):
-    """Il Master conferma (o decide lui) chi vince: il vincitore attacca, l'altro si difende."""
+    """Il Master conferma l'esito proposto dai tiri o ne sceglie un altro (vedi EXCHANGE_RESULTS)."""
     if not is_master_request():
         return
     data = data or {}
     exchange = pending_exchanges.get(data.get("exchange_id"))
     if not exchange:
         return
-    original_attacker_id = exchange["sides"][0]["char_id"]
-    winner_id = data.get("winner_id")
-    if str(winner_id) not in {str(s["char_id"]) for s in exchange["sides"]}:
-        return
-
-    if str(winner_id) == str(original_attacker_id):
-        attack = {**exchange["attack"], "no_exchange": True}
-    else:
-        attack = dict(exchange["counter"])
-        winner = db.session.get(Character, attack["attacker_id"])
-        # L'arma da fuoco spara davvero: un colpo in meno
-        if attack.pop("is_firearm", False) and winner and attack.get("source_slot"):
-            item = ((winner.stats or {}).get("equipped") or {}).get(attack["source_slot"]) or {}
-            loaded = item.get("ammo_loaded") or {}
-            if int(loaded.get("count", 0) or 0) > 0:
-                set_loaded_ammo(winner, attack["source_slot"], {**loaded, "count": int(loaded["count"]) - 1})
-                db.session.commit()
-                emit_character_update(winner)
-    attack.pop("is_firearm", None)
+    result = data.get("result")
+    if result not in EXCHANGE_RESULTS:
+        # Vecchi client: si sceglieva solo il vincitore
+        winner_id = str(data.get("winner_id"))
+        if winner_id == str(exchange["sides"][0]["char_id"]):
+            result = "attacker"
+        elif winner_id == str(exchange["sides"][1]["char_id"]):
+            result = "defender"
+        else:
+            return
 
     pending_exchanges.pop(exchange["id"], None)
-    pending_attacks[attack["attack_id"]] = attack
     emit_exchanges()
+
+    attack = {**exchange["attack"], "no_exchange": True}
+    counter = dict(exchange["counter"])
+    attacker = db.session.get(Character, attack["attacker_id"])
+    defender = db.session.get(Character, counter["attacker_id"])
+    if not attacker or not defender:
+        return
 
     socketio.emit("dice_result", {
         "name": "SISTEMA",
-        "message": (
-            f"⚔️ <b>{html.escape(attack['attacker_name'])}</b> vince lo scambio e attacca "
-            f"<b>{html.escape(attack['defender_name'])}</b> con <b>{html.escape(str(attack['weapon']))}</b>: "
-            "ora può solo parare o schivare."
-        ),
+        "message": f"⚔️ Scambio tra <b>{html.escape(attacker.name)}</b> e <b>{html.escape(defender.name)}</b>: {EXCHANGE_RESULTS[result]}.",
         "is_master_roll": False
     })
-    socketio.emit("incoming_attack", incoming_attack_payload(attack))
+
+    # Ogni colpo a segno va dritto alla revisione del Master, senza reazione
+    if result in ("attacker", "both"):
+        label = "Scambio perso" if result == "attacker" else "Scambio: colpiscono entrambi (danno a tua scelta)"
+        build_pending_result(attack, attacker, defender, "Nessuna", label, 0, "bd", sure_hit=True)
+    if result in ("defender", "both"):
+        fire_counter_weapon(defender, counter)
+        label = "Scambio vinto netto" if result == "defender" else "Scambio: colpiscono entrambi (danno a tua scelta)"
+        build_pending_result(counter, defender, attacker, "Nessuna", label, 0, "bd", sure_hit=True)
+
+
+def fire_counter_weapon(shooter, counter):
+    """L'arma da fuoco di chi risponde spara davvero: un colpo in meno."""
+    if not counter.pop("is_firearm", False) or not counter.get("source_slot"):
+        return
+    item = ((shooter.stats or {}).get("equipped") or {}).get(counter["source_slot"]) or {}
+    loaded = item.get("ammo_loaded") or {}
+    if int(loaded.get("count", 0) or 0) > 0:
+        set_loaded_ammo(shooter, counter["source_slot"], {**loaded, "count": int(loaded["count"]) - 1})
+        db.session.commit()
+        emit_character_update(shooter)

@@ -5,6 +5,7 @@ per mappa e bersagli (mai HP o statistiche).
 """
 import re
 from flask import render_template
+from venander.combat import drop_dead_from_turn_order
 from venander.core import app, db, socketio
 from venander.models import Character, WorldState
 from venander.state import client_character_ids, client_roles, master_sids, pending_attacks
@@ -100,6 +101,9 @@ def emit_character_update(char, extra=None):
         payload = dict(get_char_data_for_role(char, role))
         payload.update(extra)
         socketio.emit("update_character", payload, to=sid)
+
+    # Un NPC appena arrivato a 0 HP muore ed esce dall'ordine di turno
+    drop_dead_from_turn_order(char)
 
 
 def emit_to_masters(event_name, data):

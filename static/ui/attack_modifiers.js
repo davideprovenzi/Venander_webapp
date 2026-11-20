@@ -23,6 +23,14 @@ function updateReviewModifierTotal() {
     const total = getModifiedAttackRoll();
     const def = document.getElementById('master-review-def-roll').value;
 
+    // Colpo senza mira: si mostra la fortuna e l'esito resta quello scelto dal Master
+    if (pendingMasterCombatResult?.unaimed) {
+        document.getElementById('review-modifier-total').textContent = total === base
+            ? `🍀 Fortuna ${base} · esito a tua scelta`
+            : `🍀 Fortuna ${base} → ${total} con modificatori · esito a tua scelta`;
+        return;
+    }
+
     document.getElementById('review-modifier-total').textContent = total === base
         ? `🎲 Attacco ${base} · Difesa ${def}`
         : `🎲 Attacco ${base} → ${total} con modificatori · Difesa ${def}`;
@@ -193,6 +201,14 @@ document.getElementById(
             ).value.trim();
 
         if (
+            pendingMasterCombatResult.unaimed &&
+            !document.getElementById('master-review-outcome').value
+        ) {
+            alert("Colpo senza mira: scegli l'esito.");
+            return;
+        }
+
+        if (
             !Number.isFinite(attRoll) ||
             !Number.isFinite(defRoll) ||
             !Number.isFinite(damage)
@@ -249,6 +265,8 @@ document.getElementById(
 
         pendingMasterCombatResult =
             null;
+
+        showNextMasterReview();
     }
 );
 
@@ -279,5 +297,7 @@ document.getElementById(
 
         pendingMasterCombatResult =
             null;
+
+        showNextMasterReview();
     }
 );

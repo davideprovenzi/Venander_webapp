@@ -439,6 +439,38 @@ function getCharacterTokenImage(char) {
     return image;
 }
 
+// NPC a 0 HP: morto (il Master vede gli HP, i giocatori solo is_defeated)
+function isDeadNpc(char) {
+    if (!char || char.role !== 'npc') return false;
+    return char.hp_current !== undefined ? char.hp_current <= 0 : !!char.is_defeated;
+}
+
+// Pedina di un NPC morto: croce rossa e teschio sopra l'immagine in grigio
+function drawDeadMark(centerX, centerY, radius) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.fill();
+
+    const arm = radius * 0.7;
+    ctx.strokeStyle = 'rgba(192, 57, 43, 0.9)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(centerX - arm, centerY - arm);
+    ctx.lineTo(centerX + arm, centerY + arm);
+    ctx.moveTo(centerX + arm, centerY - arm);
+    ctx.lineTo(centerX - arm, centerY + arm);
+    ctx.stroke();
+
+    ctx.font = `${Math.round(radius)}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💀', centerX, centerY + 1);
+    ctx.restore();
+}
+
 function drawTokens() {
     // Disegna l'epicentro del combattimento
     if (combatState.is_active && combatState.epicenter) {
@@ -530,6 +562,13 @@ function drawTokens() {
             }
         }
 
+        // NPC morto: pedina in grigio e un po' trasparente
+        const isDead = isDeadNpc(char);
+        if (isDead) {
+            ctx.filter = 'grayscale(1)';
+            ctx.globalAlpha *= 0.75;
+        }
+
         // Sfondo della pedina
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
@@ -589,6 +628,11 @@ function drawTokens() {
         ctx.lineWidth = isSelected ? 4 : 2;
         ctx.strokeStyle = isSelected ? '#ffeb3b' : '#000000';
         ctx.stroke();
+
+        if (isDead) {
+            ctx.filter = 'none';
+            drawDeadMark(centerX, centerY, radius);
+        }
 
         // Mostra gli HP durante il combattimento, ma gli NPC sono segreti ai giocatori.
         if (combatState.is_active && (isMaster || char.role !== 'npc')) {

@@ -186,6 +186,11 @@ function updateAttackAimRow() {
     row.style.display = ranged ? 'block' : 'none';
     attackBtn.disabled = false;
     attackBtn.textContent = 'SFERRA ATTACCO';
+
+    // "Spara senza mirare" serve solo quando non si può ancora sparare
+    const unaimedLabel = document.getElementById('attack-unaimed-label');
+    const unaimedBox = document.getElementById('attack-unaimed');
+    if (unaimedLabel) unaimedLabel.style.display = 'none';
     if (!ranged) return;
 
     const status = document.getElementById('attack-aim-status');
@@ -221,8 +226,24 @@ function updateAttackAimRow() {
             : '🎯 Arma a distanza: prima prendi la mira sul bersaglio.';
         attackBtn.disabled = true;
         attackBtn.textContent = '🔫 PRIMA PRENDI LA MIRA';
+
+        if (unaimedLabel && target) {
+            unaimedLabel.style.display = 'flex';
+            if (unaimedBox?.checked) {
+                attackBtn.disabled = false;
+                attackBtn.textContent = '🍀 SPARA SENZA MIRARE';
+            }
+        }
     }
 }
+
+// Il colpo senza mira vale solo se la casella è visibile e spuntata
+function isUnaimedShotSelected() {
+    const label = document.getElementById('attack-unaimed-label');
+    return !!document.getElementById('attack-unaimed')?.checked && label?.style.display !== 'none';
+}
+
+document.getElementById('attack-unaimed')?.addEventListener('change', updateAttackAimRow);
 
 document.getElementById('btn-declare-aim')?.addEventListener('click', () => {
     const ranged = getSelectedRangedWeapon();

@@ -3,9 +3,10 @@
 Ogni arto ha i suoi frame per turno; le azioni li spendono. Fuori dal
 combattimento i frame non contano.
 """
+import html
 from venander.core import socketio
 from venander.permissions import is_master_request
-from venander.state import combat_state
+from venander.state import combat_state, master_sids
 
 
 LIMB_KEYS = ("bd", "bs", "gd", "gs")
@@ -50,6 +51,16 @@ def is_players_turn(char):
         return True
 
     return acting_combatant_id() == char.id
+
+
+def refill_turn_frames(char_id):
+    """All'inizio del proprio turno arti e movimento tornano pieni.
+
+    I frame spesi reagendo durante i turni degli altri non si portano dietro:
+    ognuno comincia il suo turno con tutti i frame.
+    """
+    combat_state["players_limbs"][str(char_id)] = {limb: DEFAULT_LIMB_FRAMES for limb in LIMB_KEYS}
+    combat_state["players_pa"][str(char_id)] = DEFAULT_MOVE_FRAMES
 
 
 def get_limb_frames(char_id):
@@ -123,3 +134,37 @@ SLOT_COMBAT_LIMBS = {
 }
 
 UNARMED_LIMBS = {"pugno dx": "bd", "pugno sx": "bs"}
+
+
+def is_dead_npc(char):
+    """Un NPC a 0 HP è morto: non entra nell'ordine di turno (la pedina resta per il bottino)."""
+    return bool(char) and char.role == "npc" and (char.hp_current or 0) <= 0
+
+
+def drop_dead_from_turn_order(char):
+    """Toglie dall'ordine di turno un NPC appena morto. True se l'ha tolto."""
+    if not combat_state.get("is_active") or not is_dead_npc(char):
+        return False
+    order = combat_state["turn_order"]
+    index = next((i for i, entry in enumerate(order) if int(entry["id"]) == char.id), None)
+    if index is None:
+        return False
+
+    was_acting = index == combat_state["current_index"]
+    order.pop(index)
+    if index < combat_state["current_index"]:
+        combat_state["current_index"] -= 1
+    if combat_state["current_index"] >= len(order):
+        combat_state["current_index"] = 0
+    # Era il suo turno: tocca al prossimo, con i frame pieni
+    if was_acting and order:
+        refill_turn_frames(order[combat_state["current_index"]]["id"])
+
+    message = {"name": "SISTEMA", "message": f"💀 <b>{html.escape(char.name)}</b> è morto ed esce dal combattimento.", "is_master_roll": False}
+    if char.is_hidden or char.is_invisible:
+        for sid in list(master_sids):
+            socketio.emit("dice_result", message, to=sid)
+    else:
+        socketio.emit("dice_result", message)
+    socketio.emit("combat_update", combat_state)
+    return True

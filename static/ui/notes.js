@@ -64,113 +64,141 @@ document.getElementById('save-notes-btn')?.addEventListener('click', () => {
 
 let pendingMasterCombatResult = null;
 
+// Risultati arrivati mentre il Master ne rivede già uno (es. scambio in cui
+// colpiscono entrambi): si aprono uno dopo l'altro
+const masterReviewQueue = [];
+
+function showNextMasterReview() {
+    const next = masterReviewQueue.shift();
+    if (next) openMasterReview(next);
+}
+
 // Risultato tolto da un "Annulla" del Master: si chiude la revisione
 socket.on('master_combat_result_cancelled', (data) => {
+    const queued = masterReviewQueue.findIndex(r => r.result_id === data.result_id);
+    if (queued !== -1) masterReviewQueue.splice(queued, 1);
     if (pendingMasterCombatResult?.result_id !== data.result_id) return;
     pendingMasterCombatResult = null;
     document.getElementById('master-combat-review').style.display = 'none';
+    showNextMasterReview();
 });
 
-socket.on(
-    'master_pending_combat_result',
-    (data) => {
-
-        if (!isMaster) return;
-
-        pendingMasterCombatResult =
-            data;
-
-        const modal =
-            document.getElementById(
-                'master-combat-review'
-            );
-
-        const summary =
-            document.getElementById(
-                'master-review-summary'
-            );
-
-        summary.innerHTML = `
-
-            <b>${escapeHtml(data.attacker_name)}</b>
-            attacca
-            <b>${escapeHtml(data.defender_name)}</b>
-
-            <br>
-
-            ⚔️ ${escapeHtml(data.weapon)}
-
-            <br>
-
-            🛡️ Reazione:
-            <b>${escapeHtml(data.reaction_label || data.reaction_type)}</b>
-
-            ${data.aim_label ? `<br>🎯 Mirato a: <b>${escapeHtml(data.aim_label)}</b>` : ''}
-
-            ${
-                describeAttackTerrain(data.attacker_id, data.defender_id)
-                    .map(note => `<br>${note}`)
-                    .join('')
-            }
-
-            ${
-                data.distance !== null &&
-                data.distance !== undefined
-
-                ? `<br>📏 Distanza: ${data.distance} m`
-
-                : ''
-            }
-
-            ${
-                data.damage_formula
-
-                ? `<br>💥 Formula: ${escapeHtml(data.damage_formula)}`
-
-                : ''
-            }
-        `;
-
-        document.getElementById(
-            'master-review-att-roll'
-        ).value =
-            data.att_roll;
-
-        document.getElementById(
-            'master-review-def-roll'
-        ).value =
-            data.def_roll;
-
-        // Danno totale: si divide con l'armatura (vedi splitReviewDamage)
-        document.getElementById('master-review-total').value = data.damage ?? 0;
-
-        // Nota libera: vuota, in chat vanno già esito e danno
-        document.getElementById('master-review-message').value = '';
-
-        // Armatura: si propone il pezzo dell'area mirata (o quello che ha parato)
-        const armorSelect = document.getElementById('master-review-armor-slot');
-        const pieces = data.armor_pieces || [];
-        armorSelect.innerHTML = '';
-        armorSelect.add(new Option('Nessuna armatura', ''));
-        pieces.forEach(piece => armorSelect.add(new Option(`${piece.name} (${piece.hp}/${piece.max_hp})`, piece.slot)));
-        armorSelect.value = data.armor_slot || '';
-        document.getElementById('master-review-armor-row').style.display = pieces.length ? 'block' : 'none';
-
-        document.getElementById('master-review-total').disabled = false;
-        reviewDamageBeforeMiss = null;
-
-        // Bonus/malus: quelli già decisi in passato partono applicati
-        reviewModifiers = (data.modifiers || []).map(m => ({ ...m, saved: m.value, applied: m.value !== null }));
-        savedCustomModifiers = data.custom_modifiers || [];
-        const savedList = document.getElementById('review-modifier-saved');
-        savedList.innerHTML = '';
-        savedCustomModifiers.forEach(m => savedList.appendChild(new Option(m.label, m.label)));
-        renderReviewModifiers();
-
-        modal.style.display =
-            'block';
+socket.on('master_pending_combat_result', (data) => {
+    if (!isMaster) return;
+    if (pendingMasterCombatResult && pendingMasterCombatResult.result_id !== data.result_id) {
+        if (!masterReviewQueue.some(r => r.result_id === data.result_id)) masterReviewQueue.push(data);
+        return;
     }
-);
+    openMasterReview(data);
+});
+
+function openMasterReview(data) {
+    pendingMasterCombatResult =
+        data;
+
+    const modal =
+        document.getElementById(
+            'master-combat-review'
+        );
+
+    const summary =
+        document.getElementById(
+            'master-review-summary'
+        );
+
+    summary.innerHTML = `
+
+        <b>${escapeHtml(data.attacker_name)}</b>
+        attacca
+        <b>${escapeHtml(data.defender_name)}</b>
+
+        <br>
+
+        ⚔️ ${escapeHtml(data.weapon)}
+
+        <br>
+
+        🛡️ Reazione:
+        <b>${escapeHtml(data.reaction_label || data.reaction_type)}</b>
+
+        ${data.aim_label ? `<br>🎯 Mirato a: <b>${escapeHtml(data.aim_label)}</b>` : ''}
+
+        ${data.unaimed && data.luck_roll
+            ? `<br>🍀 Senza mira: d20 (${data.luck_roll.d20}) + Virtù (${data.luck_roll.virtu}) = <b>${data.luck_roll.total}</b> · l'esito lo scegli tu`
+            : ''}
+
+        ${
+            describeAttackTerrain(data.attacker_id, data.defender_id)
+                .map(note => `<br>${note}`)
+                .join('')
+        }
+
+        ${
+            data.distance !== null &&
+            data.distance !== undefined
+
+            ? `<br>📏 Distanza: ${data.distance} m`
+
+            : ''
+        }
+
+        ${
+            data.damage_formula
+
+            ? `<br>💥 Formula: ${escapeHtml(data.damage_formula)}`
+
+            : ''
+        }
+    `;
+
+    document.getElementById(
+        'master-review-att-roll'
+    ).value =
+        data.att_roll;
+
+    document.getElementById(
+        'master-review-def-roll'
+    ).value =
+        data.def_roll;
+
+    // Danno totale: si divide con l'armatura (vedi splitReviewDamage)
+    document.getElementById('master-review-total').value = data.damage ?? 0;
+
+    // Nota libera: vuota, in chat vanno già esito e danno
+    document.getElementById('master-review-message').value = '';
+
+    // Armatura: si propone il pezzo dell'area mirata (o quello che ha parato)
+    const armorSelect = document.getElementById('master-review-armor-slot');
+    const pieces = data.armor_pieces || [];
+    armorSelect.innerHTML = '';
+    armorSelect.add(new Option('Nessuna armatura', ''));
+    pieces.forEach(piece => armorSelect.add(new Option(`${piece.name} (${piece.hp}/${piece.max_hp})`, piece.slot)));
+    armorSelect.value = data.armor_slot || '';
+    document.getElementById('master-review-armor-row').style.display = pieces.length ? 'block' : 'none';
+
+    document.getElementById('master-review-total').disabled = false;
+    reviewDamageBeforeMiss = null;
+
+    // Bonus/malus: quelli già decisi in passato partono applicati
+    reviewModifiers = (data.modifiers || []).map(m => ({ ...m, saved: m.value, applied: m.value !== null }));
+    savedCustomModifiers = data.custom_modifiers || [];
+    const savedList = document.getElementById('review-modifier-saved');
+    savedList.innerHTML = '';
+    savedCustomModifiers.forEach(m => savedList.appendChild(new Option(m.label, m.label)));
+    renderReviewModifiers();
+
+    // Colpo senza mira: niente tiro di difesa e nessun esito proposto
+    const unaimed = !!data.unaimed;
+    document.getElementById('master-review-def-roll-row').style.display = unaimed ? 'none' : 'block';
+    document.getElementById('master-review-att-roll-label').textContent = unaimed ? '🍀 Tiro Fortuna (d20 + Virtù)' : '🎲 Tiro Attacco';
+    if (unaimed) {
+        document.getElementById('master-review-outcome').value = '';
+        syncReviewOutcome();
+    }
+
+    modal.style.display =
+        'block';
+}
 
 // Esito proposto dai tiri (stessa regola di default_combat_outcome in venander/attacks.py)
 function defaultCombatOutcome(reaction, attRoll, defRoll) {

@@ -84,7 +84,8 @@ venander/             Server package, one module per topic
   undo.py             Snapshots and the @undoable decorator (undo_handler.py: the button)
   session.py          Connect, roles, player registration
   combat.py, turns.py Limb frames and turns; start/stop combat, next turn, table actions
-  attacks.py          Declare attack, reactions, Master review
+  attacks.py          Declare attack, reactions, publishing the Master's review
+  review.py           Pending results for the Master (dice, situational bonus/malus)
   equipment.py        Attacking weapon, damage, armor durability
   aiming.py, exchange.py, threats.py, ammo.py, terrain.py, trinkets.py, loot.py, ...
   characters.py, stats.py   Sheet, vitals, PA rules
