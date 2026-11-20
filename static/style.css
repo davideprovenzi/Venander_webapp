@@ -4513,3 +4513,49 @@ body.player-mode #btn-toggle-notes {
     opacity: 0.4;
     cursor: default;
 }
+
+/* ==========================================
+   PLANCIA 3D (static/board3d/)
+   ========================================== */
+.board3d-canvas,
+.board3d-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.board3d-canvas {
+    z-index: 2;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.board3d-overlay {
+    z-index: 3;
+    pointer-events: none;
+    /* La regola generale "canvas" la farebbe bianca e coprirebbe la vista 3D */
+    background: transparent;
+    border-color: transparent;
+}
+
+.board3d-on .board3d-canvas,
+.board3d-on .board3d-overlay {
+    display: block;
+}
+
+.board3d-toggle {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #34495e;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.board3d-toggle.on {
+    background: #c9a227;
+    color: #1b232c;
+}

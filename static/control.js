@@ -152,6 +152,10 @@ window.addEventListener('keyup', (event) => {
 // ==========================================
 // MOVIMENTI E DISEGNI SULLA MAPPA
 // ==========================================
+// Un trascinamento (mappa, disegno, pennello) appena finito: il clic che lo
+// chiude non deve anche selezionare o muovere. Prima non era mai dichiarata.
+let justFinishedAction = false;
+
 function isHexOccupied(x, y, excludeCharId = null) {
     return characters.some(c => {
         if (!c) return false;
@@ -169,37 +173,43 @@ canvas.addEventListener('click', (event) => {
     // Col pennello del terreno il clic dipinge (vedi terrain.js), non seleziona
     if (window.terrainBrush) return;
 
+    handleBoardClick(getWorldPos(event));
+});
+
+// Clic su un punto della mappa (coordinate in pixel della mappa, come getWorldPos).
+// Lo usano la vista 2D e quella 3D (static/board3d/), così le regole sono le stesse.
+function handleBoardClick(pos) {
     // Minacciare: ogni clic aggiunge o toglie un esagono (vedi static/ui/actions.js)
     if (window.threatPlacement) {
-        const threatHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        const threatHex = pixelToHex(pos.x, pos.y);
         toggleThreatHex(threatHex.col, threatHex.row);
         return;
     }
 
     // Scelta del bersaglio dalla mappa (🎯 nel pannello d'attacco)
     if (window.targetPickMode) {
-        const pickHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        const pickHex = pixelToHex(pos.x, pos.y);
         pickTargetAt(pickHex.col, pickHex.row);
         return;
     }
 
     // Schivata di un'esplosione: il clic sceglie dove buttarsi (vedi trinkets.js)
     if (window.explosionEscape) {
-        const escapeHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        const escapeHex = pixelToHex(pos.x, pos.y);
         escapeExplosionAt(escapeHex.col, escapeHex.row);
         return;
     }
 
     // Trinket: il clic sceglie dove piazzarlo o lanciarlo (vedi trinkets.js)
     if (window.trinketPlacement) {
-        const trinketHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        const trinketHex = pixelToHex(pos.x, pos.y);
         placeTrinketAt(trinketHex.col, trinketHex.row);
         return;
     }
 
     // Modalità movimento del combattimento ("Muovi" o tasto M)
     if (window.moveMode) {
-        const moveHex = pixelToHex(getWorldPos(event).x, getWorldPos(event).y);
+        const moveHex = pixelToHex(pos.x, pos.y);
         performCombatMove(moveHex.col, moveHex.row);
         return;
     }
@@ -213,7 +223,6 @@ canvas.addEventListener('click', (event) => {
         return;
     }
 
-    const pos = getWorldPos(event);
     const hex = pixelToHex(pos.x, pos.y);
     const gridX = hex.col;
     const gridY = hex.row;
@@ -427,7 +436,7 @@ canvas.addEventListener('click', (event) => {
         updateMasterEditPanel(null);
         updateSheetButton();
     }
-});
+}
 
 // Usiamo i Pointer Events: funzionano uguale col mouse, ma gestiscono
 // anche la penna della tavoletta grafica (pressione, niente tratti spezzati).

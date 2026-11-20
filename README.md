@@ -110,6 +110,8 @@ static/
   renderer.js         Board, token and drawing rendering
   ui/                 Panels: sheet, chat, forge, sidequests, compendium, doll, equipment, attack/defense, ammo/aim...
   control.js          Keyboard and mouse input, tool handling
+  board3d/            3D board (prototype, ES modules): layers.js builds the scene, board3d.js runs it
+  vendor/three/       three.js 0.160.0 (MIT), pinned and served locally
   style.css           Styles
 instance/
   venander.db         SQLite database
@@ -117,7 +119,7 @@ instance/
   sounds/             NPC sounds
 ```
 
-The scripts in `static/game/` and `static/ui/` are classic scripts sharing one global scope: keep the order in `index.html` when adding files.
+The 3D board (🧊 3D button, per-browser choice) reads the same client state as the 2D one and sends clicks through the same `handleBoardClick` in `control.js`, so the rules are identical; the Master's drawing and brush tools stay in 2D. The scripts in `static/game/` and `static/ui/` are classic scripts sharing one global scope: keep the order in `index.html` when adding files.
 
 ## Architecture notes
 

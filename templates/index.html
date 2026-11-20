@@ -1910,5 +1910,17 @@
     <script src="{{ asset('fog.js') }}"></script>
     <script src="{{ asset('wiki.js') }}"></script>
 
+    <!-- Plancia 3D (prototipo): three.js è in static/vendor/three (MIT), versione fissata -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "{{ asset('vendor/three/three.module.min.js') }}",
+            "three/addons/OrbitControls.js": "{{ asset('vendor/three/OrbitControls.js') }}",
+            "board3d/layers.js": "{{ asset('board3d/layers.js') }}"
+        }
+    }
+    </script>
+    <script type="module" src="{{ asset('board3d/board3d.js') }}"></script>
+
 </body>
 </html>
