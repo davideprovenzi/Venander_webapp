@@ -9,6 +9,7 @@ from venander.combat import drop_dead_from_turn_order
 from venander.core import app, db, socketio
 from venander.models import Character, WorldState
 from venander.state import client_character_ids, client_roles, master_sids, pending_attacks
+from venander.weapon_kinds import held_weapons
 
 
 # Funzione per leggere sempre i dati aggiornati dal database
@@ -44,7 +45,9 @@ def get_char_data(char):
         "heal_rate": char.heal_rate or 0,
         "knowledge": char.knowledge or [],
         "spawn_sound": char.spawn_sound,
-        "loot": char.loot or []
+        "loot": char.loot or [],
+        # Tipo delle armi in mano, per i modelli della vista 3D
+        "held_weapons": held_weapons(char)
     }
 
 
@@ -73,6 +76,8 @@ def get_public_char_data(char):
         "is_defeated": (char.hp_current or 0) <= 0,
         # Il bottino si vede solo quando l'NPC è a terra (prima è un segreto del Master)
         "loot": public_loot(char),
+        # Solo il tipo delle armi in mano (spada, pistola...): si vede al tavolo, le statistiche no
+        "held_weapons": held_weapons(char),
         # Il suono "solo Master" non arriva nemmeno ai giocatori
         "spawn_sound": char.spawn_sound if (char.spawn_sound or {}).get("scope") == "all" else None
     }

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import {
     FIRST_PERSON_HEIGHT_SCALE, boardBounds, buildFog, buildGrid, buildGround, buildTerrain,
-    createStandee, groundHeightAt, hexesInBounds, updateStandee
+    buildViewmodel, createStandee, groundHeightAt, hexesInBounds, updateStandee
 } from 'board3d/layers.js';
 
 const VIEW_KEY = 'venander-board-view';
@@ -35,6 +35,11 @@ scene.fog = new THREE.Fog(0x101418, 2500, 9000);
 
 const camera = new THREE.PerspectiveCamera(42, 4 / 3, 2, 20000);
 camera.position.set(0, 700, 700);
+// La telecamera sta nella scena: così le armi in prima persona (sue figlie) si vedono
+scene.add(camera);
+const viewmodel = new THREE.Group();
+camera.add(viewmodel);
+let viewmodelKey = null;
 
 let controls = null;
 
@@ -196,7 +201,8 @@ function syncStandees(delta) {
         updateStandee(standee, char, {
             selected: char.id === selectedCharacterId,
             acting: char.id === acting,
-            dead
+            dead,
+            showWeapons: !!combatState.is_active
         });
 
         // La carta guarda la telecamera (ruota solo sull'asse verticale); i morti restano stesi
@@ -225,8 +231,10 @@ function syncStandees(delta) {
         scene.remove(standee);
         standee.traverse(child => {
             child.geometry?.dispose();
-            child.material?.map?.dispose();
-            child.material?.dispose();
+            if (child.material && !child.material.userData.shared) {
+                child.material.map?.dispose();
+                child.material.dispose();
+            }
         });
         standees.delete(id);
     });
@@ -469,6 +477,7 @@ function enterFirstPerson(chosen = null) {
 function exitFirstPerson() {
     if (!firstPerson) return;
     heldKeys.clear();
+    setViewmodel({});
     const standee = standees.get(firstPerson.charId);
     if (standee) standee.visible = true;
     firstPerson = null;
@@ -802,6 +811,21 @@ function updateFirstPersonCamera() {
     camera.position.set(standee.position.x, standee.position.y + EYE_HEIGHT, standee.position.z);
     camera.rotation.order = 'YXZ';
     camera.rotation.set(firstPerson.pitch, firstPerson.yaw, 0);
+
+    // Le proprie armi in primo piano (in combattimento, come sulle pedine)
+    const char = characters.find(c => c.id === firstPerson.charId);
+    setViewmodel(combatState.is_active && char ? (char.held_weapons || {}) : {});
+}
+
+function setViewmodel(held) {
+    const key = JSON.stringify(held);
+    if (key === viewmodelKey) return;
+    viewmodelKey = key;
+    viewmodel.children.slice().forEach(model => {
+        model.traverse(child => child.geometry?.dispose());
+        viewmodel.remove(model);
+    });
+    if (held.dx || held.sx) viewmodel.add(buildViewmodel(held));
 }
 
 function setView3d(enabled) {
@@ -874,4 +898,4 @@ updateFirstPersonButton();
 if (startIn3d) setView3d(true);
 
 // Per le prove dalla console
-window.board3d = { setView3d, focusCamera, enterFirstPerson, exitFirstPerson, scene, camera, getRenderer: () => renderer };
+window.board3d = { setView3d, focusCamera, enterFirstPerson, exitFirstPerson, scene, camera, getRenderer: () => renderer, getControls: () => controls };
